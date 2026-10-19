@@ -8,6 +8,10 @@ import io.bluetape4k.io.serializer.BinarySerializers
 import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.ObjectInputStream
+import java.io.ObjectOutputStream
 import java.time.Instant
 
 class KinesisStartingPositionTest {
@@ -64,6 +68,13 @@ class KinesisStartingPositionTest {
         }
 
         @Test
+        fun `AtSequenceNumber Java 역직렬화도 빈 시퀀스 번호를 거부한다`() {
+            assertFailsWith<IllegalArgumentException> {
+                deserializeWithBlankSequenceNumber(KinesisStartingPosition.AtSequenceNumber("sequence"))
+            }
+        }
+
+        @Test
         fun `AfterSequenceNumber equality and serialization`() {
             val pos = KinesisStartingPosition
                 .AfterSequenceNumber("49590338271490256608559692540925702759324208523137515522")
@@ -79,6 +90,13 @@ class KinesisStartingPositionTest {
         fun `AfterSequenceNumber rejects blank sequenceNumber`() {
             assertFailsWith<IllegalArgumentException> {
                 KinesisStartingPosition.AfterSequenceNumber("")
+            }
+        }
+
+        @Test
+        fun `AfterSequenceNumber Java 역직렬화도 빈 시퀀스 번호를 거부한다`() {
+            assertFailsWith<IllegalArgumentException> {
+                deserializeWithBlankSequenceNumber(KinesisStartingPosition.AfterSequenceNumber("sequence"))
             }
         }
 
@@ -120,6 +138,21 @@ class KinesisStartingPositionTest {
             label(KinesisStartingPosition.AtSequenceNumber("seq")) shouldBeEqualTo "at"
             label(KinesisStartingPosition.AfterSequenceNumber("seq")) shouldBeEqualTo "after"
             label(KinesisStartingPosition.AtTimestamp(Instant.now())) shouldBeEqualTo "ts"
+        }
+    }
+
+    private fun deserializeWithBlankSequenceNumber(value: KinesisStartingPosition): KinesisStartingPosition {
+        val sequenceNumberField = value.javaClass.getDeclaredField("sequenceNumber").apply {
+            isAccessible = true
+        }
+        sequenceNumberField.set(value, " ")
+
+        val bytes = ByteArrayOutputStream().also { output ->
+            ObjectOutputStream(output).use { it.writeObject(value) }
+        }.toByteArray()
+
+        return ObjectInputStream(ByteArrayInputStream(bytes)).use {
+            it.readObject() as KinesisStartingPosition
         }
     }
 

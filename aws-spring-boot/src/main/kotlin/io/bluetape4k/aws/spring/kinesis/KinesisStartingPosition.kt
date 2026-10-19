@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.spring.kinesis
 
 import io.bluetape4k.support.requireNotBlank
+import java.io.ObjectInputStream
 import java.io.Serializable
 import java.time.Instant
 
@@ -32,6 +33,12 @@ sealed interface KinesisStartingPosition: Serializable {
             sequenceNumber.requireNotBlank("sequenceNumber")
         }
 
+        @Suppress("UnusedPrivateMember")
+        private fun readObject(stream: ObjectInputStream) {
+            stream.defaultReadObject()
+            sequenceNumber.requireNotBlank("sequenceNumber")
+        }
+
         companion object {
             private const val serialVersionUID: Long = 1L
         }
@@ -40,6 +47,12 @@ sealed interface KinesisStartingPosition: Serializable {
     /** [sequenceNumber] 다음 레코드부터 읽습니다. */
     data class AfterSequenceNumber(val sequenceNumber: String): KinesisStartingPosition {
         init {
+            sequenceNumber.requireNotBlank("sequenceNumber")
+        }
+
+        @Suppress("UnusedPrivateMember")
+        private fun readObject(stream: ObjectInputStream) {
+            stream.defaultReadObject()
             sequenceNumber.requireNotBlank("sequenceNumber")
         }
 

@@ -53,7 +53,7 @@ inline fun sesClientOf(
  *
  * @param block client로 실행할 suspend 블록입니다. AWS SDK 작업이 suspend 함수이므로 이 블록도 suspend입니다.
  */
-suspend inline fun <R> withSesClient(
+suspend fun <R> withSesClient(
     endpointUrl: Url? = null,
     region: String? = null,
     credentialsProvider: CredentialsProvider? = null,
@@ -70,7 +70,7 @@ suspend inline fun <R> withSesClient(
  * 이 내부 seam은 public helper가 동일한 소유권 경로를 사용하도록 유지하면서
  * 네트워크 I/O 없이 client 수명 주기를 결정적으로 회귀 테스트할 수 있게 합니다.
  */
-suspend inline fun <R> withSesClient(
+internal suspend fun <R> withSesClient(
     clientFactory: () -> SesClient,
     block: suspend (SesClient) -> R,
 ): R =
