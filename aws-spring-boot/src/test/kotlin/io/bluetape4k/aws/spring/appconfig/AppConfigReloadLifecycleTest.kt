@@ -17,7 +17,10 @@ import org.junit.jupiter.api.Test
 import org.springframework.boot.context.config.ConfigDataLocation
 import java.time.Duration
 import java.util.concurrent.CancellationException
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration.Companion.seconds
 
@@ -122,12 +125,43 @@ class AppConfigReloadLifecycleTest {
     @Test
     fun `transport failure discards session and retries with a new session`() {
         val client = RetryingClient()
+        val callbackStarted = CountDownLatch(1)
+        val retryRequested = CountDownLatch(1)
         val source = source(client, refreshInterval = 15.seconds())
         val lifecycle = AppConfigReloadLifecycle(
             sourcesSupplier = { listOf(source) },
-            executorFactory = ::ScheduledThreadPoolExecutor,
+            executorFactory = { size ->
+                object: ScheduledThreadPoolExecutor(size) {
+                    private var firstSchedule = true
+
+                    override fun schedule(
+                        command: Runnable,
+                        delay: Long,
+                        unit: TimeUnit,
+                    ): ScheduledFuture<*> {
+                        if (firstSchedule) {
+                            firstSchedule = false
+                            val future = super.schedule(
+                                {
+                                    callbackStarted.countDown()
+                                    command.run()
+                                },
+                                delay,
+                                unit,
+                            )
+                            callbackStarted.await(1, TimeUnit.SECONDS).shouldBeTrue()
+                            retryRequested.await(1, TimeUnit.SECONDS).shouldBeTrue()
+                            return future
+                        }
+                        return super.schedule(command, delay, unit)
+                    }
+                }
+            },
             initialDelay = { Duration.ZERO },
-            randomDelay = { 1.millis() },
+            randomDelay = {
+                retryRequested.countDown()
+                1.millis()
+            },
         )
 
         lifecycle.start()
