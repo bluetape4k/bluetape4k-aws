@@ -82,7 +82,7 @@ class DynamoDbClientExtensionsMockTest {
             describeTableResponse(TableStatus.Active),
         )
 
-        client.waitForTableReady("orders")
+        client.waitForTableReady("orders", 1.seconds)
 
         coVerify(exactly = 2) { client.describeTable(any<DescribeTableRequest>()) }
     }
