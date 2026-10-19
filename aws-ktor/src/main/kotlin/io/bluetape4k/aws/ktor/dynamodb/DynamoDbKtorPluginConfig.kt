@@ -122,7 +122,7 @@ class DynamoDbKtorPluginConfig {
 /**
  * [DynamoDbKtorRuntime]이 사용하는 명시적 DynamoDB 테이블 정의입니다.
  */
-data class DynamoDbKtorTableDefinition(
+class DynamoDbKtorTableDefinition(
     val tableName: String,
     val keySchema: List<KeySchemaElement>,
     val attributeDefinitions: List<AttributeDefinition>,

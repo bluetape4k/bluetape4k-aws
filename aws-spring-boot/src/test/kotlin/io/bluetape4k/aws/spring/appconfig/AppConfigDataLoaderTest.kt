@@ -114,6 +114,26 @@ class AppConfigDataLoaderTest {
         }
     }
 
+    @Test
+    fun `anonymous initial failure is wrapped without exposing its message`() {
+        mockkObject(AppConfigDataSdkAdapter)
+        try {
+            every {
+                AppConfigDataSdkAdapter.initialLoad(any(), any())
+            } throws object: RuntimeException("secret-body") {}
+
+            val error = assertFailsWith<AwsConfigDataLoadException> {
+                AppConfigDataLoader(mockk(relaxed = true), bootstrap)
+                    .load(contextOf(bootstrap), resource(bootstrap))
+            }
+
+            error.message.shouldNotBeNull()
+            error.toString() shouldNotContain "secret-body"
+        } finally {
+            unmockkObject(AppConfigDataSdkAdapter)
+        }
+    }
+
     private fun resource(
         bootstrap: ConfigurableBootstrapContext,
         location: String = "aws-app-config:app#profile#env",
