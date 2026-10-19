@@ -35,7 +35,7 @@ abstract class AbstractSfnTest: AbstractAwsTest() {
             System.getProperty(EMULATOR_PROPERTY, "floci").trim().lowercase()
     }
 
-    protected suspend inline fun <R> withTestSfnClient(
+    protected suspend fun <R> withTestSfnClient(
         awsServer: AwsEmulatorServer = sfnEmulator,
         action: suspend (SfnClient) -> R,
     ): R =
