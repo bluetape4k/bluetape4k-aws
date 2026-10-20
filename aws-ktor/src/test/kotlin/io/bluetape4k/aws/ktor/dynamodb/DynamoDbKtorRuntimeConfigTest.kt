@@ -1,20 +1,27 @@
 package io.bluetape4k.aws.ktor.dynamodb
 
 import aws.sdk.kotlin.services.dynamodb.DynamoDbClient
+import aws.sdk.kotlin.services.dynamodb.endpoints.DynamoDbEndpointParameters
+import aws.sdk.kotlin.services.dynamodb.endpoints.DynamoDbEndpointProvider
 import aws.sdk.kotlin.services.dynamodb.model.AttributeDefinition
 import aws.sdk.kotlin.services.dynamodb.model.CreateTableRequest
 import aws.sdk.kotlin.services.dynamodb.model.KeySchemaElement
+import aws.smithy.kotlin.runtime.client.endpoints.Endpoint
 import aws.smithy.kotlin.runtime.auth.awscredentials.CloseableCredentialsProvider
 import aws.smithy.kotlin.runtime.http.engine.CloseableHttpClientEngine
+import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.aws.kotlin.dynamodb.model.partitionKeyOf
 import io.bluetape4k.aws.kotlin.dynamodb.model.stringAttrDefinitionOf
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.AwsKtorDynamoDbClientCustomizer
+import io.bluetape4k.aws.ktor.AwsKotlinEndpointPolicyInterceptor
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.ktor.core.ApplicationResourceRegistry
 import io.bluetape4k.ktor.core.ApplicationResourceRegistryState
@@ -265,14 +272,27 @@ class DynamoDbKtorRuntimeConfigTest {
             ),
         )
 
-        assertFailsWith<IllegalArgumentException> {
-            DynamoDbKtorPluginConfig()
-                .apply {
-                    client {
-                        endpointUrl = aws.smithy.kotlin.runtime.net.url.Url.parse("http://169.254.169.254")
-                    }
+        val runtimeConfig = DynamoDbKtorPluginConfig()
+            .apply {
+                client {
+                    endpointUrl = Url.parse("http://169.254.169.254")
                 }
-                .toRuntimeConfig(defaults)
+            }
+            .toRuntimeConfig(defaults)
+
+        try {
+            assertFailsWith<IllegalArgumentException> {
+                runSuspendIO {
+                    runtimeConfig.dynamoDbClient.config.endpointProvider.resolveEndpoint(
+                        DynamoDbEndpointParameters {
+                            region = "ap-northeast-2"
+                            endpoint = runtimeConfig.dynamoDbClient.config.endpointUrl?.toString()
+                        },
+                    )
+                }
+            }
+        } finally {
+            runtimeConfig.dynamoDbClient.close()
         }
     }
 
@@ -281,7 +301,7 @@ class DynamoDbKtorRuntimeConfigTest {
         val runtimeConfig = DynamoDbKtorPluginConfig()
             .apply {
                 client {
-                    endpointUrl = aws.smithy.kotlin.runtime.net.url.Url.parse("http://localhost:4566")
+                    endpointUrl = Url.parse("http://localhost:4566")
                 }
             }
             .toRuntimeConfig(
@@ -291,7 +311,64 @@ class DynamoDbKtorRuntimeConfigTest {
                 ),
             )
 
+        var resolvedEndpoint: Endpoint? = null
+        runSuspendIO {
+            resolvedEndpoint =
+                runtimeConfig.dynamoDbClient.config.endpointProvider.resolveEndpoint(
+                    DynamoDbEndpointParameters {
+                        region = "ap-northeast-2"
+                        endpoint = runtimeConfig.dynamoDbClient.config.endpointUrl?.toString()
+                    },
+                )
+        }
+
+        resolvedEndpoint.shouldNotBeNull().uri.toString() shouldBeEqualTo "http://localhost:4566"
         runtimeConfig.dynamoDbClient.close()
+    }
+
+    @Test
+    fun `rejects remote HTTP endpoint returned by service custom endpoint provider`() {
+        var sharedProviderCalls = 0
+        var serviceProviderCalls = 0
+        val runtimeConfig = DynamoDbKtorPluginConfig().apply {
+            client {
+                endpointProvider = DynamoDbEndpointProvider {
+                    serviceProviderCalls++
+                    Endpoint(Url.parse("http://169.254.169.254/latest/meta-data"))
+                }
+            }
+        }.toRuntimeConfig(
+            AwsKtorDefaults(
+                region = "ap-northeast-2",
+                dynamoDbClientCustomizers = listOf(
+                    AwsKtorDynamoDbClientCustomizer { builder ->
+                        builder.endpointProvider = DynamoDbEndpointProvider {
+                            sharedProviderCalls++
+                            Endpoint(Url.parse("https://service.example.com"))
+                        }
+                    },
+                ),
+            ),
+        )
+
+        try {
+            runtimeConfig.dynamoDbClient.config.interceptors
+                .any { it is AwsKotlinEndpointPolicyInterceptor }
+                .shouldBeTrue()
+
+            assertFailsWith<IllegalArgumentException> {
+                runSuspendIO {
+                    runtimeConfig.dynamoDbClient.config.endpointProvider.resolveEndpoint(
+                        DynamoDbEndpointParameters { region = "ap-northeast-2" },
+                    )
+                }
+            }
+
+            serviceProviderCalls shouldBeEqualTo 1
+            sharedProviderCalls shouldBeEqualTo 0
+        } finally {
+            runtimeConfig.dynamoDbClient.close()
+        }
     }
 
     private val keySchema: List<KeySchemaElement> = listOf(partitionKeyOf("id"))

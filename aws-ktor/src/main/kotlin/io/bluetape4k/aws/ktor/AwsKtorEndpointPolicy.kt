@@ -1,9 +1,12 @@
 package io.bluetape4k.aws.ktor
 
+import aws.smithy.kotlin.runtime.client.ProtocolRequestInterceptorContext
+import aws.smithy.kotlin.runtime.http.interceptors.HttpInterceptor
+import aws.smithy.kotlin.runtime.http.request.HttpRequest
 import java.net.URI
 import java.util.Locale
 
-/** Validates the final AWS Kotlin SDK endpoint after every client customizer has run. */
+/** AWS 서비스 요청에 사용할 최종 endpoint URL을 검사합니다. */
 internal fun validateAwsKotlinServiceEndpoint(
     endpoint: String?,
     region: String?,
@@ -29,6 +32,24 @@ internal fun validateAwsKotlinServiceEndpoint(
 
     require(scheme == "http" && allowInsecureLocalHttpEndpoint && isLoopbackLiteral(uri.host)) {
         "AWS service endpoint must use HTTPS; HTTP is allowed only for opted-in loopback endpoints."
+    }
+}
+
+internal class AwsKotlinEndpointPolicyInterceptor(
+    private val region: String,
+    private val allowInsecureLocalHttpEndpoint: Boolean,
+) : HttpInterceptor {
+
+    override suspend fun modifyBeforeTransmit(
+        context: ProtocolRequestInterceptorContext<Any, HttpRequest>,
+    ): HttpRequest {
+        val request = context.protocolRequest
+        validateAwsKotlinServiceEndpoint(
+            endpoint = request.url.toString(),
+            region = region,
+            allowInsecureLocalHttpEndpoint = allowInsecureLocalHttpEndpoint,
+        )
+        return request
     }
 }
 

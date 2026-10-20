@@ -1,6 +1,8 @@
 package io.bluetape4k.aws.ktor.dynamodb
 
 import aws.sdk.kotlin.services.dynamodb.DynamoDbClient
+import aws.sdk.kotlin.services.dynamodb.endpoints.DefaultDynamoDbEndpointProvider
+import aws.sdk.kotlin.services.dynamodb.endpoints.DynamoDbEndpointProvider
 import aws.sdk.kotlin.services.dynamodb.model.AttributeDefinition
 import aws.sdk.kotlin.services.dynamodb.model.CreateTableRequest
 import aws.sdk.kotlin.services.dynamodb.model.KeySchemaElement
@@ -10,6 +12,7 @@ import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.aws.kotlin.dynamodb.dynamoDbClientOf
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
+import io.bluetape4k.aws.ktor.AwsKotlinEndpointPolicyInterceptor
 import io.bluetape4k.aws.ktor.validateAwsKotlinServiceEndpoint
 import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.requireNotEmpty
@@ -21,8 +24,9 @@ import kotlin.time.Duration.Companion.seconds
  *
  * 계약:
  * - 주입된 [dynamoDbClient] 인스턴스는 애플리케이션이 계속 소유하며 플러그인은 닫지 않습니다.
- *   주입 client에는 플러그인의 builder endpoint 검사가 적용되지 않으므로 호출자가 전송 endpoint를 보호해야 합니다.
+ *   주입 client에는 플러그인의 요청 endpoint 검사가 적용되지 않으므로 호출자가 전송 endpoint를 보호해야 합니다.
  * - 클라이언트를 주입하지 않으면 [region]이 필요하고 플러그인이 AWS Kotlin SDK [DynamoDbClient]를 생성합니다.
+ *   생성한 client는 endpoint provider 반환 뒤 endpoint discovery가 host를 변경한 경우까지 전송 직전에 검사합니다.
  * - [httpClient] 또는 공유 [AwsKtorDefaults.kotlinHttpClient]를 지정하면 호출자가 엔진을 소유합니다.
  *   DynamoDB 클라이언트를
  *   먼저 닫고 공유 엔진을 마지막에 닫아야 합니다.
@@ -97,23 +101,38 @@ class DynamoDbKtorPluginConfig {
         val injectedClient = dynamoDbClient
         val effectiveEndpointUrl = endpointUrl ?: defaults.endpointOverride?.let { Url.parse(it.toString()) }
         val effectiveRegion = region?.takeIf { it.isNotBlank() } ?: defaults.region?.takeIf { it.isNotBlank() }
-        val client = injectedClient ?: dynamoDbClientOf(
-            endpointUrl = effectiveEndpointUrl,
-            region = requireNotNull(effectiveRegion) {
+        val client = injectedClient ?: run {
+            val clientRegion = requireNotNull(effectiveRegion) {
                 "region must be configured when dynamoDbClient is not provided."
-            },
-            credentialsProvider = credentialsProvider ?: defaults.kotlinCredentialsProvider,
-            httpClient = httpClient ?: defaults.kotlinHttpClient,
-            builder = {
-                defaults.dynamoDbClientCustomizers.forEach { it.customize(this) }
-                clientBuilder()
-                validateAwsKotlinServiceEndpoint(
-                    endpoint = this.endpointUrl?.toString(),
-                    region = this.region,
-                    allowInsecureLocalHttpEndpoint = defaults.allowInsecureLocalHttpEndpoint,
-                )
-            },
-        )
+            }
+            dynamoDbClientOf(
+                endpointUrl = effectiveEndpointUrl,
+                region = clientRegion,
+                credentialsProvider = credentialsProvider ?: defaults.kotlinCredentialsProvider,
+                httpClient = httpClient ?: defaults.kotlinHttpClient,
+                builder = {
+                    defaults.dynamoDbClientCustomizers.forEach { it.customize(this) }
+                    clientBuilder()
+                    val configuredEndpointProvider =
+                        this.endpointProvider ?: DefaultDynamoDbEndpointProvider()
+                    this.endpointProvider = DynamoDbEndpointProvider { parameters ->
+                        val endpoint = configuredEndpointProvider.resolveEndpoint(parameters)
+                        validateAwsKotlinServiceEndpoint(
+                            endpoint = endpoint.uri.toString(),
+                            region = parameters.region,
+                            allowInsecureLocalHttpEndpoint = defaults.allowInsecureLocalHttpEndpoint,
+                        )
+                        endpoint
+                    }
+                    interceptors.add(
+                        AwsKotlinEndpointPolicyInterceptor(
+                            region = clientRegion,
+                            allowInsecureLocalHttpEndpoint = defaults.allowInsecureLocalHttpEndpoint,
+                        ),
+                    )
+                },
+            )
+        }
 
         return DynamoDbKtorRuntimeConfig(
             dynamoDbClient = client,
