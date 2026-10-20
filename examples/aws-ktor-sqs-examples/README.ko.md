@@ -3,8 +3,11 @@
 [English](./README.md) | 한국어
 
 `aws-ktor` SQS consumer 플러그인을 사용하는 Ktor 3 예제입니다.
-`SqsConsumer`를 설치하고, `SqsAsyncClient`로 메시지를 전송하며, 수신한 메시지를 메모리에 기록하고 queue 관리 route를 제공합니다. 핵심은 관찰 가능한 consumer contract입니다. Manual ack/nack, retry-once redelivery, interceptor event, observer summary를 모두 HTTP route로 확인할 수 있습니다. Route parameter 검증에는
+`SqsConsumer`를 설치하고 AWS Kotlin `SqsClient`로 메시지를 전송하며, 수신한 메시지를 메모리에 기록하고 queue 관리 route를 제공합니다. 핵심은 관찰 가능한 consumer contract입니다. Manual ack/nack, retry-once redelivery, interceptor event, observer summary를 모두 HTTP route로 확인할 수 있습니다. Route parameter 검증에는
 `bluetape4k-ktor-core`, 공통 Ktor response assertion에는 `bluetape4k-ktor-testing`을 사용합니다.
+
+`aws-ktor`의 API dependency는 plugin이 노출하는 Kotlin SQS client와 model을
+제공합니다. Ktor engine과 serialization 설정은 애플리케이션이 선택합니다.
 
 ## 아키텍처
 
@@ -12,11 +15,11 @@
 
 ## Consumer 설정
 
-`sqsExampleModule`은 `SqsAsyncClient`와 queue URL을 받아 Jackson content negotiation을 설치하고 consumer를 설정합니다.
+`sqsExampleModule`은 AWS Kotlin `SqsClient`와 queue URL을 받아 Jackson content negotiation을 설치하고 consumer를 설정합니다.
 
 ```kotlin
 install(SqsConsumer) {
-    sqsAsyncClient = sqsClient
+    sqsClient = sqsClient
     this.queueUrl = queueUrl
     coroutines = 2
     maxMessages = 10
@@ -48,7 +51,7 @@ install(SqsConsumer) {
 
 ## 설정
 
-테스트는 `SqsClientFactory.Async`로 Floci 기반 `SqsAsyncClient`를 만들고, 무작위 이름의 queue를 생성한 뒤 해당 queue URL을 Ktor 애플리케이션에 전달합니다.
+테스트는 `sqsClientOf`와 Kotlin `StaticCredentialsProvider`로 Floci 기반 AWS Kotlin `SqsClient`를 만들고, Kotlin SQS helper로 무작위 이름의 queue를 생성한 뒤 해당 queue URL을 Ktor 애플리케이션에 전달합니다.
 
 ```kotlin
 application { sqsExampleModule(sqsClient, queueUrl) }

@@ -761,10 +761,9 @@ as a `compileOnly` dependency, so applications must add it at runtime when signa
 and `allow-structural-only=true`; this bypasses signature verification and must not be used for production SNS traffic. Disable the adapter entirely with
 `bluetape4k.aws.sns.http-endpoints.enabled=false`.
 
-### SNS — AWS SDK wrappers
+### SNS — AWS SDK v2 extensions
 
-The sibling `bluetape4k-aws-java` extensions keep AWS SDK responses and exceptions visible while validating the topic ARN, entry IDs, duplicate IDs, and the ten-entry `PublishBatch` limit. The sync,
-`CompletableFuture`, and coroutine APIs share one request model; the AWS Kotlin SDK wrapper provides the native suspend equivalent.
+The sibling Java wrapper module keeps AWS SDK v2 responses and exceptions visible while validating the topic ARN, entry IDs, duplicate IDs, and the ten-entry `PublishBatch` limit. Its synchronous, `CompletableFuture`, and coroutine extensions share one Java SDK request model.
 
 ```kotlin
 import io.bluetape4k.aws.sns.model.publishBatchRequestEntryOf
@@ -773,29 +772,17 @@ import io.bluetape4k.aws.sns.publishBatch
 import io.bluetape4k.aws.sns.publishBatchAsync
 import io.bluetape4k.aws.sns.publishBatchSuspend
 
-val javaEntries = listOf(
+val entries = listOf(
     publishBatchRequestEntryOf(id = "order-001", message = "created"),
 )
-val request = publishBatchRequestOf(topicArn, javaEntries)
+val request = publishBatchRequestOf(topicArn, entries)
 
-val syncResponse = snsClient.publishBatch(topicArn, javaEntries)
+val syncResponse = snsClient.publishBatch(topicArn, entries)
 val futureResponse = snsAsyncClient.publishBatchAsync(request)
 val suspendResponse = snsAsyncClient.publishBatchSuspend(request)
 ```
 
-The AWS Kotlin SDK wrapper uses its native request-entry model:
-
-```kotlin
-import io.bluetape4k.aws.kotlin.sns.model.publishBatchRequestEntryOf
-import io.bluetape4k.aws.kotlin.sns.publishBatch
-
-val kotlinEntries = listOf(
-    publishBatchRequestEntryOf(id = "order-001", message = "created"),
-)
-val kotlinResponse = kotlinSnsClient.publishBatch(topicArn, kotlinEntries)
-```
-
-Raw responses can contain successful and failed entries together; reconcile by entry ID. These wrappers do not retry or roll back partial sends, and cancellation is propagated (the Java coroutine extension also cancels its underlying future). FIFO group/deduplication fields and an external idempotency key remain caller responsibilities. Use the Spring API below when a redacted transport/protocol exception boundary is preferred.
+Raw responses can contain successful and failed entries together; reconcile by entry ID. The extensions do not retry or roll back partial sends, and cancellation is propagated (the coroutine extension also cancels its underlying future). FIFO group/deduplication fields and an external idempotency key remain caller responsibilities. Use the Spring API below when a redacted transport/protocol exception boundary is preferred.
 
 #### SNS batch publishing
 
@@ -820,7 +807,7 @@ val result = sns.publishBatch(
 )
 ```
 
-`result.successful` and `result.failed` keep input order within each list and include the entry ID for reconciliation. Transport or protocol failures use a redacted Spring exception; cancellation is propagated and no automatic retry is attempted. FIFO group/deduplication values and external idempotency remain the caller's responsibility. The low-level Java/Kotlin SDK APIs pass raw SDK responses and exceptions through, while this Spring template provides the safe transport/protocol boundary.
+`result.successful` and `result.failed` keep input order within each list and include the entry ID for reconciliation. Transport or protocol failures use a redacted Spring exception; cancellation is propagated and no automatic retry is attempted. FIFO group/deduplication values and external idempotency remain the caller's responsibility. The low-level Java SDK extensions pass raw SDK responses and exceptions through, while this Spring template provides the safe transport/protocol boundary.
 
 Existing `SnsOperations` implementations that do not override `publishBatch`
 use the additive default implementation. It invokes the existing single-message

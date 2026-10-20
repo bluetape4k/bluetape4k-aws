@@ -59,12 +59,12 @@ Ktor 3 HTTP 통합을 연결하되, 실제로 사용할 AWS SDK 모듈과 런타
 | `bluetape4k-aws-kotlin` | `io.github.bluetape4k.aws:bluetape4k-aws-kotlin` | AWS Kotlin SDK 래퍼. DynamoDB, DynamoDB Streams, S3, S3 Tables, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, EventBridge, EventBridge Scheduler, Step Functions, Lambda, Bedrock Runtime, STS, Secrets Manager, Parameter Store에 대한 네이티브 `suspend` 함수 + DSL 빌더 제공 |
 | `bluetape4k-aws-exposed` | `io.github.bluetape4k.aws:bluetape4k-aws-exposed` | AWS 기반 설정과 Exposed JDBC를 연결하는 공통 기반. 데이터베이스 프로퍼티, RDS IAM 인증 토큰, Secrets Manager/Parameter Store source descriptor, Hikari 기반 Exposed `Database` 생성, default/named database registry 제공 |
 | `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | AWS 서비스용 Spring Boot 4 자동설정. Coroutines 네이티브, awspring 미사용. S3 Transfer Manager(`S3TransferTemplate`), S3 Control 기반 선택적 S3 Access Grants, 선택적 S3 Vectors operations, EventBridge operations, SES sender와 JavaMail adapter, SNS HTTP(S) 엔드포인트 알림 파싱(`SnsHttpMessageParser`)과 MVC/WebFlux composed mapping, SQS listener, 선택적 Spring Modulith SNS/SQS event 외부화, Kinesis operations, 선택적 DAX를 포함한 DynamoDB, Micrometer 기준 데이터 전송을 포함한 CloudWatch/CloudWatch Logs, EC2 IMDS metadata operations, KMS, Secrets Manager, Parameter Store 지원 |
-| `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, KMS encryption header를 지원하는 coroutine 친화적 S3 REST client, 선택적 S3 Access Grants 및 S3 Vectors server plugin, EventBridge server plugin, Kinesis 및 STS server plugin, SES v2 및 SNS server plugin, SQS consumer runtime, DynamoDB server repository plugin, EC2 IMDS helper, AWS 기반 Exposed configuration, 선택적 Exposed JDBC health/readiness route, 공유 `bluetape4k-ktor-core` 기반 helper |
-| `aws-ktor-dynamodb-examples` | 배포 안 함 | Floci-first AWS emulator 테스트와 공유 `bluetape4k-ktor-*` helper 기반 Ktor 3 DynamoDB server repository 예제 |
-| `aws-ktor-s3-examples` | 배포 안 함 | object route, presigned URL, content-type 감지, config object, client-side encryption을 다루는 Ktor 3 `S3KtorClient` 예제 |
-| `aws-ktor-sqs-examples` | 배포 안 함 | Floci 기반 Ktor 3 SQS consumer/runtime 예제. Manual ack/nack, retry-once redelivery, interceptor, observer event 포함 |
+| `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | AWS SDK for Kotlin과 Smithy Kotlin 공개 API를 사용하는 Ktor 3 plugin, SigV4 client plugin, coroutine S3 REST client, S3 Access Grants/Vectors, EventBridge, Kinesis, STS, SES v2, SNS, SQS, DynamoDB, IMDS, AWS 기반 Exposed 설정, 선택적 JDBC health/readiness route |
+| `aws-ktor-dynamodb-examples` | 배포 안 함 | AWS Kotlin SDK plugin API, Floci-first 테스트, 공유 `bluetape4k-ktor-*` helper를 사용하는 Ktor 3 DynamoDB repository 예제 |
+| `aws-ktor-s3-examples` | 배포 안 함 | Smithy SigV4와 AWS Kotlin credentials를 사용하는 Ktor 3 `S3KtorClient` 예제. object route, presigned URL, config object, client-side encryption 포함 |
+| `aws-ktor-sqs-examples` | 배포 안 함 | AWS Kotlin `SqsClient`와 Floci 기반 Ktor 3 consumer/runtime 예제. Manual ack/nack, retry-once redelivery, interceptor, observer event 포함 |
 | `aws-ktor-exposed-examples` | 배포 안 함 | PostgreSQL Testcontainers, typed `ExposedCursorPage` 주문 pagination, 선택적 `/healthz/exposed`·`/readyz/exposed` JDBC probe를 사용하는 Ktor 3 `AwsExposedPlugin` 예제 |
-| `aws-ktor-service-coverage-examples` | 배포 안 함 | SES/v2, SNS, CloudWatch, CloudWatch Logs, Kinesis, STS plugin을 다루는 Ktor 3 service coverage 예제. Injected operations 기반 deterministic route test 포함 |
+| `aws-ktor-service-coverage-examples` | 배포 안 함 | AWS Kotlin service model을 사용하는 Ktor 3 SES/v2, SNS, CloudWatch, CloudWatch Logs, Kinesis, STS coverage 예제. Injected operations 기반 deterministic route test 포함 |
 | `aws-spring-boot-dynamodb-examples` | 배포 안 함 | Coroutine service flow용 Spring Boot 4 DynamoDB repository 예제 |
 | `aws-spring-boot-s3-examples` | 배포 안 함 | `S3Operations`/`S3CoroutinesTemplate`, presigned URL, 선택적 KMS 기반 client-side encryption을 다루는 Spring Boot 4 WebFlux 예제. 컴파일/테스트 및 Spring AOT 태스크 검증 |
 | `aws-spring-boot-sqs-examples` | 배포 안 함 | `SqsOperations`, typed/manual-ack `@SqsListener`, retry, interceptor event, Floci-first SNS subscription fanout을 다루는 Spring Boot 4 SQS/SNS 예제. 컴파일/테스트 및 Spring AOT 태스크 검증 |
@@ -394,8 +394,8 @@ token, credential, 설정 secret처럼 짧은 값은 `KmsOperations.encrypt`를 
 기본 `DataKeyCache`는 plaintext data key를 짧게 재사용할 수 있지만, 프로세스 메모리에
 민감한 key material을 보관하는 것이므로 TTL과 cache size를 작게 유지하세요.
 `generateDataKey`가 반환하는 `KmsDataKey`는 호출자 소유이므로 로컬 암호화가 끝나면 `use`로
-닫고, `plaintext` getter가 반환한 배열도 사용 후 직접 소거하세요. `DataKeyCache.put`은 독립
-snapshot을 저장하고 `get`은 호출자가 닫아야 하는 독립 snapshot을 반환합니다. 사용자 정의 cache도
+닫고, `plaintext` getter가 반환한 배열도 사용 후 직접 소거하세요. `DataKeyCache.put`은 독립된
+키 복사본을 저장하고 `get`은 호출자가 닫아야 하는 별도 키 복사본을 반환합니다. 사용자 정의 cache도
 이 소유권 계약을 지켜야 하며 평문 키를 보유한다면 애플리케이션 종료 시 `clear`를 호출해야 합니다.
 TTL 만료는 lazy 방식이므로 유휴 cache의 메모리 보존 상한을 보장하지 않습니다.
 Spring은 cache Bean 종료 시 `clear`를 호출하지만, 종료 시점에 진행 중인 KMS 작업이 그 뒤에

@@ -16,6 +16,8 @@
 
 ### 변경
 
+- `aws-ktor`의 public service/plugin API를 AWS Java SDK v2에서 AWS SDK for Kotlin과 Smithy Kotlin으로 이전했습니다. 소비자는 `AwsCredentialsProvider`와 Java SDK service client/model을 Kotlin `CredentialsProvider`, `SqsClient`, Kotlin service model 등으로 바꾸고 다시 컴파일해야 합니다. 공개 ABI 변경을 허용했으며, 이전 Java SDK model을 포함한 직렬화 bytes는 새 Kotlin SDK 표현과 호환되지 않습니다 ([#659](https://github.com/bluetape4k/bluetape4k-aws/issues/659)).
+- IMDS plugin 소유 HTTP transport는 EC2 link-local endpoint와 테스트용 명시적 loopback endpoint만 허용합니다. 원격 HTTP override는 거부하고 system proxy, redirect, connection retry를 사용하지 않습니다 ([#659](https://github.com/bluetape4k/bluetape4k-aws/issues/659)).
 - `1.0.0` 정식 배포 후 다음 minor 개발선을 `1.1.0-SNAPSHOT`으로 열었다.
 
 ## [1.0.0] - 2026-09-02

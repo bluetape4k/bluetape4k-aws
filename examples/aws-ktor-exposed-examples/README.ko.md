@@ -7,6 +7,12 @@
 
 ## 아키텍처
 
+AWS config-source 통합은 `aws-ktor`가 공개하는 AWS Kotlin client 계열을
+사용합니다. 이 예제의 로컬 PostgreSQL 설정과 Testcontainers 테스트에는 AWS
+credential이 필요하지 않습니다. IAM database authentication을 사용하지 않아
+선택적 Java RDS IAM adapter를 제외했습니다. Ktor runtime, serialization 선택과
+JDBC driver는 애플리케이션이 소유합니다.
+
 ![aws ktor exposed examples Architecture diagram](../../docs/images/readme-diagrams/examples-aws-ktor-exposed-examples-architecture-01.png)
 
 ## Routes

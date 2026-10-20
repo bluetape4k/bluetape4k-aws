@@ -7,6 +7,10 @@ Ktor 3 examples for the `aws-ktor` DynamoDB plugin. The module installs
 
 ## Architecture
 
+The plugin exposes AWS SDK for Kotlin DynamoDB clients and models through the
+`aws-ktor` API dependencies. Applications choose their Ktor server/runtime
+engine, serialization integration, and any database driver they use.
+
 ![aws ktor dynamodb examples Architecture diagram](../../docs/images/readme-diagrams/examples-aws-ktor-dynamodb-examples-architecture-01.png)
 
 ## DynamoDB Model

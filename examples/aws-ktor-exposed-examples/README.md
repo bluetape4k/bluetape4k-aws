@@ -7,6 +7,12 @@ Ktor 3 examples for `aws-ktor` and `bluetape4k-aws-exposed`. The module installs
 
 ## Architecture
 
+AWS config-source integrations use the AWS Kotlin client family exposed through
+`aws-ktor`; this example's local PostgreSQL setup and Testcontainers tests do
+not need AWS credentials. The example excludes the optional Java RDS IAM adapter
+because it does not use IAM database authentication. Applications own the Ktor
+runtime, serialization choices, and JDBC driver.
+
 ![aws ktor exposed examples Architecture diagram](../../docs/images/readme-diagrams/examples-aws-ktor-exposed-examples-architecture-01.png)
 
 ## Routes

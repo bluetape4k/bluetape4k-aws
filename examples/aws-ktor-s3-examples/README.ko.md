@@ -7,6 +7,12 @@
 
 ## 아키텍처
 
+`S3KtorClient`는 Ktor `HttpClient`로 S3 REST 요청을 보내고 AWS Kotlin
+credentials를 사용해 Smithy SigV4로 서명합니다. AWS S3 service client는 사용하지
+않습니다. Ktor HTTP engine과 server/serialization 통합은 애플리케이션이
+선택합니다. Client-side encryption provider는 애플리케이션 소유 KMS client를
+감쌀 수 있습니다.
+
 ![aws ktor s3 examples Architecture diagram](../../docs/images/readme-diagrams/examples-aws-ktor-s3-examples-architecture-01.png)
 
 ## 클라이언트 예제
