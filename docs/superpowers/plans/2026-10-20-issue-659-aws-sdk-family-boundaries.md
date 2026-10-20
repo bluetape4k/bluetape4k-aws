@@ -116,7 +116,7 @@
 - [x] **5단계: 직렬화 계약을 새로운 모델로 검증한다.** `SerializableContractTest`에서 값 DTO와 payload, SQS failure context 및 binary message attribute proxy를 왕복하고 byte array 방어 복사를 확인했다. callback-bearing `SqsConsumerRuntimeConfig`와 사용자 `Random`이 있는 linear strategy는 marker/UID만 검증하고 실행 객체 graph 왕복을 요구하지 않았다.
 - [x] **6단계: 임시 bridge가 필요한 호출부를 기록한다.** Kinesis/SQS production과 관련 테스트 디렉터리에서 Java AWS SDK 참조가 0개임을 검색했다. 전체 Ktor 검색에서는 `AwsKtorCore.kt`, 공통 테스트(`AwsKtorCoreTest.kt`, `AwsKtorDefaultsTest.kt`, `AwsKtorLifecycleEdgeCasesTest.kt`, `S3KtorClientFlociTest.kt`)와 Java `SqsConsumerFixture.java`만 남았다. 공통 테스트·fixture와 bridge 제거는 작업 7 범위로 남겨 두었다.
 - [x] **7단계: Kinesis와 SQS 테스트를 실행한다.** 집중 Kinesis/SQS/serialization 테스트 57개와 Floci `SqsConsumerRuntimeLocalStackTest` 4개가 통과했다(실패 0, 오류 0, skip 0). Floci 실행은 Test worker가 Colima `DOCKER_HOST`를 자동 상속하지 않는 점을 확인한 뒤 임시 Gradle init script로 `DOCKER_HOST`와 socket override를 전달해 `-Dbluetape4k.aws.emulator=floci`로 재실행했다. `git diff --check`도 통과했다. 전체 Ktor suite와 정적 분석은 작업 9에서 실행한다.
-- [ ] **8단계: 실행기 경계를 커밋한다.** at-least-once, timeout 뒤 진행 중 ack/nack, serial bytes 비호환을 한국어 Lore commit에 기록한다.
+- [x] **8단계: 실행기 경계를 커밋한다.** at-least-once, timeout 뒤 진행 중 ack/nack, serial bytes 비호환을 한국어 Lore commit `df8ca042`에 기록했다.
 
 #### 작업 6 계획 갱신 writer DoD (2026-10-21)
 
@@ -131,15 +131,24 @@
 **파일:**
 
 - 수정: `build.gradle.kts`, `aws-ktor/src/consumerFixture/java/io/bluetape4k/aws/ktor/consumerfixture/SqsConsumerFixture.java`(삭제), 신규 `aws-ktor/src/consumerFixture/kotlin/io/bluetape4k/aws/ktor/consumerfixture/AwsKtorConsumerFixture.kt`.
+- SNS HTTP envelope 정책: `aws-java/src/main/kotlin/io/bluetape4k/aws/sns/SnsHttpEnvelopePolicy.kt`, 공통 test fixture 및 policy test를 각각 `aws-kotlin/src/main`, `src/testFixtures`, `src/test`로 이동하고 Ktor parser/conformance test import를 갱신한다. 이 정책은 AWS SDK Java 타입을 쓰지 않지만 Ktor가 `aws-java` 모듈에 의존하게 하던 공통 Kotlin 코드다.
 - 예제: 다섯 디렉터리 각각의 `build.gradle.kts`, `src/main/kotlin`, `src/test/kotlin`, `README.md`, `README.ko.md`.
 
-- [ ] **1단계: Kotlin consumer fixture compile test를 추가한다.** 공개 service client/model/customizer, S3 REST, SQS consumer/converter, SigV4, IMDS 설정을 fixture에서 import하고 Java SDK 타입 없이 compile하도록 root verification task를 바꾼다.
-- [ ] **2단계: 공통 테스트와 consumer fixture를 Kotlin 경계로 옮긴다.** `AwsKtorCoreTest`, `AwsKtorDefaultsTest` 및 남은 Ktor 테스트에서 Java provider/customizer/SDK 모델 참조를 Kotlin API로 바꾼다. Java SQS fixture를 Kotlin fixture로 교체하고 `rg`로 `AwsKtorCore.kt` 외에 `aws-ktor/src/main`, `src/test`, `src/consumerFixture`의 Java SDK 참조가 없는지 확인한다. bridge가 남은 상태에서 `:bluetape4k-aws-ktor:compileTestKotlin`을 실행한다.
-- [ ] **3단계: 임시 Java API와 dependency bridge를 제거한다.** 위 검색에서 남은 참조가 `AwsKtorCore.kt`의 임시 public Java API뿐임을 확인한 다음 해당 API를 삭제한다. 이어 `aws-ktor/build.gradle.kts`에서 `api(project(":bluetape4k-aws-java"))`, `testFixtures(project(":bluetape4k-aws-java"))`, 나머지 `libs.aws2.*`를 제거하고 `:bluetape4k-aws-ktor:compileTestKotlin` 및 `compileAwsKtorSqsConsumerFixture`를 다시 실행한다. fixture compile/runtime configuration에도 `software.amazon.awssdk:*`와 `bluetape4k-aws-java`가 없어야 한다.
-- [ ] **4단계: 예제 build/source/test를 이전한다.** 다섯 Ktor 예제의 `libs.aws2.*` 직접 의존과 Java SDK import를 제거하고 Kotlin service SDK 모듈만 필요한 예제에 선언한다. SES, SNS, CloudWatch, Logs, Kinesis, STS coverage routes와 S3/SQS/DynamoDB tests의 request/model 사용을 새 타입에 맞춘다.
-- [ ] **5단계: 각 예제 classpath를 검증한다.** 각 프로젝트의 `compileClasspath`와 `runtimeClasspath` dependency report에서 Java SDK group과 `bluetape4k-aws-java`가 없는지 확인한다. `aws-ktor-exposed-examples`의 compileOnly Exposed 선택 통합도 published metadata에 노출되지 않는지 확인한다.
-- [ ] **6단계: fixture와 예제 컴파일·테스트를 실행한다.** `./gradlew compileAwsKtorSqsConsumerFixture`, 이어서 `:aws-ktor-dynamodb-examples:test`, `:aws-ktor-exposed-examples:test`, `:aws-ktor-s3-examples:test`, `:aws-ktor-service-coverage-examples:test`, `:aws-ktor-sqs-examples:test`를 실행한다. Docker 공유 emulator 테스트는 한 번에 하나씩 실행한다.
+- [x] **1단계: Kotlin consumer fixture compile test를 추가한다.** `AwsKtorConsumerFixture.kt`가 public service client/model/customizer, S3 REST, SQS consumer/converter, SigV4, IMDS 설정을 Java SDK 타입 없이 import한다. `compileAwsKtorSqsConsumerFixture`가 성공했다.
+- [x] **2단계: 공통 테스트와 consumer fixture를 Kotlin 경계로 옮긴다.** Ktor 공통 테스트와 fixture를 Kotlin API로 바꾸고 Java SQS fixture를 제거했다. `SnsHttpEnvelopePolicy`, conformance corpus, policy test를 AWS Java SDK를 참조하지 않는 `aws-kotlin`으로 이동했다. Ktor 및 다섯 예제의 `compileKotlin`/`compileTestKotlin`, consumer fixture compile이 성공했고 `rg -n 'software\.amazon\.awssdk|libs\.aws2\.' aws-ktor/src examples/aws-ktor-*` 결과는 0건이다.
+- [x] **3단계: 임시 Java API와 dependency bridge를 제거한다.** `AwsKtorCore.kt`의 Java customizer/provider API, `api(project(":bluetape4k-aws-java"))`, Java test fixture bridge, `libs.aws2.*` 의존성을 제거했다. `:bluetape4k-aws-ktor:compileTestKotlin`과 `compileAwsKtorSqsConsumerFixture`가 성공했고 fixture classpath에도 AWS Java 의존성이 없다.
+- [x] **4단계: 예제 build/source/test를 이전한다.** 다섯 예제의 AWS 서비스 SDK 직접 의존과 모델 호출을 AWS Kotlin SDK로 옮겼다. Exposed 예제는 공용 설정 클래스가 있는 `bluetape4k-aws-exposed`를 유지하고, 사용하지 않는 Java RDS IAM adapter 의존성만 제외했다. 제거 후 6개 테스트에서 `NoopAwsDatabaseSettingsResolver`가 없어짐을 확인해 모듈 자체는 복구했다.
+- [x] **5단계: 각 예제 classpath와 발행 metadata를 검증한다.** 다섯 예제의 main `compileClasspath`/`runtimeClasspath` 10개와 `awsKtorSqsConsumerFixtureClasspath`에서 `software.amazon.awssdk` 및 `bluetape4k-aws-java`가 0건이다. 생성 POM의 실제 top-level dependencies에도 AWS Java와 Exposed compileOnly가 없고, Gradle `apiElements`는 AWS Kotlin/Smithy API를 제공하면서 signer·OkHttp engine implementation을 포함하지 않는다. POM의 `dependencyManagement` 카탈로그는 발행 의존성으로 세지 않았다.
+- [x] **6단계: fixture와 예제 컴파일·테스트를 실행한다.** 통합 compile 명령이 `BUILD SUCCESSFUL`로 끝났다. 다섯 예제 테스트를 Docker 공유 emulator가 겹치지 않도록 개별 순차 실행해 DynamoDB 2개, Exposed 6개, S3 3개, 서비스 커버리지 6개, SQS 5개가 통과했다(총 22개, 실패/오류/skip 0). Floci 테스트는 셸의 managed `DOCKER_HOST`와 socket override를 상속해 실행했고 DynamoDB 테스트는 loopback HTTP를 명시적으로 허용했다.
 - [ ] **7단계: 예제 경계를 커밋한다.** 각 예제의 소비자 의존성과 검증 결과를 한국어 Lore commit에 기록한다.
+
+#### 작업 7 계획 갱신 writer DoD (2026-10-21)
+
+- [x] **SPW-01 — 독자·목적·근거 고정:** 독자는 이슈 #659 계획을 실행하는 유지보수자이며, 목적은 Kotlin consumer fixture·예제·발행 경계의 실행 결과를 기록하는 것이다. 근거는 `build.gradle.kts`, `aws-ktor/build.gradle.kts`, `aws-kotlin/build.gradle.kts`, 다섯 예제 Gradle/source/test 파일, 생성 POM/module metadata, Gradle compile/test 결과와 JUnit XML이다.
+- [x] **SPW-02 — 계획 계약 충족:** Task 7의 fixture 이동, Java bridge 제거, 예제 의존성, main classpath, 발행 metadata, 순차 테스트 및 미완료 commit을 순서대로 기록했다. PR·merge·sync·cleanup은 완료 범위에 넣지 않았다.
+- [x] **SPW-03 — 한국어 기술 문체:** `KO-01`–`KO-05` PASS(식별자·수치 보존, 검증 결과 중심 기술, 번역투와 불필요한 수식어 제거, 일관된 용어 사용, 비유 없음). `KO-06` N/A(계획은 단일 한국어 artifact이며 locale 페이지나 시각 자산을 변경하지 않음). `KO-07` PASS — `audit-korean-terms.mjs --rules .../terminology-rules.json` 결과 1 file, `series=clinic-appointment`, `findings=0`; 현재 rule set에 AWS 특화 규칙은 없다.
+- [x] **SPW-04 — 기술 의미·추적성 검증:** 컴파일 task, 다섯 예제 JUnit XML, 10개 main classpath와 consumer fixture classpath, 생성 POM 및 `apiElements`를 실행 결과와 대조했다. POM의 `dependencyManagement` 카탈로그와 실제 dependencies를 구분했다.
+- [x] **SPW-05 — 최종 읽기·DoD:** 계획의 Task 7 행과 writer DoD를 다시 읽고 `git diff --check`를 확인했다. Task 7 commit은 아직 수행 전이므로 7단계는 미완료 상태로 남겼다.
 
 ### 작업 8: 마이그레이션 문서와 과거 결정 연결
 

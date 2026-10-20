@@ -1,4 +1,4 @@
-package io.bluetape4k.aws.sns
+package io.bluetape4k.aws.kotlin.sns
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo

@@ -1,5 +1,9 @@
 package io.bluetape4k.aws.examples.ktor.sqs
 
+import aws.sdk.kotlin.services.sqs.SqsClient
+import aws.sdk.kotlin.services.sqs.getQueueAttributes
+import aws.sdk.kotlin.services.sqs.model.Message
+import aws.sdk.kotlin.services.sqs.model.QueueAttributeName
 import io.bluetape4k.aws.ktor.sqs.SqsConsumer
 import io.bluetape4k.aws.ktor.sqs.SqsConsumerInterceptor
 import io.bluetape4k.aws.ktor.sqs.SqsConsumerObservation
@@ -7,6 +11,8 @@ import io.bluetape4k.aws.ktor.sqs.SqsConversionFailurePolicy
 import io.bluetape4k.aws.ktor.sqs.SqsFixedFailureVisibilityStrategy
 import io.bluetape4k.aws.ktor.sqs.SqsMessageContext
 import io.bluetape4k.aws.ktor.sqs.sqsConsumer
+import io.bluetape4k.aws.kotlin.sqs.createQueue
+import io.bluetape4k.aws.kotlin.sqs.deleteQueue
 import io.bluetape4k.ktor.core.requiredPathParameter
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.jackson.jackson
@@ -20,10 +26,6 @@ import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
-import kotlinx.coroutines.future.await
-import software.amazon.awssdk.services.sqs.SqsAsyncClient
-import software.amazon.awssdk.services.sqs.model.Message
-import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import java.io.Serializable
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
@@ -38,7 +40,7 @@ import java.util.concurrent.CopyOnWriteArrayList
  * interceptor와 observer 흐름을 확인할 수 있습니다.
  */
 fun Application.sqsExampleModule(
-    sqsClient: SqsAsyncClient,
+    sqsClient: SqsClient,
     queueUrl: String,
 ) {
     val received = CopyOnWriteArrayList<String>()
@@ -49,7 +51,7 @@ fun Application.sqsExampleModule(
     install(ContentNegotiation) { jackson() }
 
     install(SqsConsumer) {
-        sqsAsyncClient = sqsClient
+        this.sqsClient = sqsClient
         this.queueUrl = queueUrl
         coroutines = 2
         maxMessages = 10
@@ -67,27 +69,27 @@ fun Application.sqsExampleModule(
             }
 
             override suspend fun beforeInvoke(context: SqsMessageContext) {
-                lifecycleEvents += SqsLifecycleEvent("beforeInvoke", context.message.messageId())
+                lifecycleEvents += SqsLifecycleEvent("beforeInvoke", context.message.messageId.orEmpty())
             }
 
             override suspend fun afterInvoke(context: SqsMessageContext) {
-                lifecycleEvents += SqsLifecycleEvent("afterInvoke", context.message.messageId())
+                lifecycleEvents += SqsLifecycleEvent("afterInvoke", context.message.messageId.orEmpty())
             }
 
             override suspend fun beforeAck(context: SqsMessageContext) {
-                lifecycleEvents += SqsLifecycleEvent("beforeAck", context.message.messageId())
+                lifecycleEvents += SqsLifecycleEvent("beforeAck", context.message.messageId.orEmpty())
             }
 
             override suspend fun afterAck(context: SqsMessageContext) {
-                lifecycleEvents += SqsLifecycleEvent("afterAck", context.message.messageId())
+                lifecycleEvents += SqsLifecycleEvent("afterAck", context.message.messageId.orEmpty())
             }
 
             override suspend fun beforeNack(context: SqsMessageContext, timeoutSeconds: Int) {
-                lifecycleEvents += SqsLifecycleEvent("beforeNack", context.message.messageId())
+                lifecycleEvents += SqsLifecycleEvent("beforeNack", context.message.messageId.orEmpty())
             }
 
             override suspend fun afterNack(context: SqsMessageContext, timeoutSeconds: Int) {
-                lifecycleEvents += SqsLifecycleEvent("afterNack", context.message.messageId())
+                lifecycleEvents += SqsLifecycleEvent("afterNack", context.message.messageId.orEmpty())
             }
         })
 
@@ -96,7 +98,7 @@ fun Application.sqsExampleModule(
         }
 
         onMessage<String> { body ->
-            val messageId = message.messageId().orEmpty()
+            val messageId = message.messageId.orEmpty()
             if (body.startsWith(RETRY_ONCE_PREFIX) && retriedMessageIds.add(messageId)) {
                 lifecycleEvents += SqsLifecycleEvent("retryOnce", messageId)
                 nack(timeoutSeconds = 0)
@@ -112,7 +114,7 @@ fun Application.sqsExampleModule(
         post("/sqs/messages") {
             val body = call.receiveText()
             val response = call.application.sqsConsumer().send(body, queueUrl)
-            call.respondText("""{"messageId":"${response.messageId()}"}""")
+            call.respondText("""{"messageId":"${response.messageId.orEmpty()}"}""")
         }
 
         get("/sqs/messages/received") {
@@ -129,22 +131,23 @@ fun Application.sqsExampleModule(
 
         post("/sqs/queues/{name}") {
             val name = call.requiredPathParameter("name")
-            val url = sqsClient.createQueue { it.queueName(name) }.await().queueUrl()
+            val url = sqsClient.createQueue(name).queueUrl.orEmpty()
             call.respondText("""{"queueUrl":"$url"}""")
         }
 
         delete("/sqs/queues") {
             val url = call.request.queryParameters["url"] ?: queueUrl
-            sqsClient.deleteQueue { it.queueUrl(url) }.await()
+            sqsClient.deleteQueue(url)
             call.respond(HttpStatusCode.NoContent)
         }
 
         get("/sqs/queues/attributes") {
             val url = call.request.queryParameters["url"] ?: queueUrl
             val attrs = sqsClient.getQueueAttributes {
-                it.queueUrl(url).attributeNames(QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES)
-            }.await().attributes()
-            val count = attrs[QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES] ?: "0"
+                this.queueUrl = url
+                this.attributeNames = listOf(QueueAttributeName.ApproximateNumberOfMessages)
+            }.attributes
+            val count = attrs?.get(QueueAttributeName.ApproximateNumberOfMessages) ?: "0"
             call.respondText("""{"approximateMessageCount":$count}""")
         }
     }

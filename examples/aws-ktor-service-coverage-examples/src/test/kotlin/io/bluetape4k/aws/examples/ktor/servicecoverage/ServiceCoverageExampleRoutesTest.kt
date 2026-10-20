@@ -32,14 +32,14 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
-import software.amazon.awssdk.services.cloudwatch.model.MetricDatum
-import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataResponse
-import software.amazon.awssdk.services.cloudwatchlogs.model.InputLogEvent
-import software.amazon.awssdk.services.cloudwatchlogs.model.PutLogEventsResponse
-import software.amazon.awssdk.services.kinesis.model.PutRecordResponse
-import software.amazon.awssdk.services.sesv2.model.SendEmailResponse
-import software.amazon.awssdk.services.sns.model.PublishResponse
-import software.amazon.awssdk.services.sts.model.GetCallerIdentityResponse
+import aws.sdk.kotlin.services.cloudwatch.model.MetricDatum
+import aws.sdk.kotlin.services.cloudwatch.model.PutMetricDataResponse
+import aws.sdk.kotlin.services.cloudwatchlogs.model.InputLogEvent
+import aws.sdk.kotlin.services.cloudwatchlogs.model.PutLogEventsResponse
+import aws.sdk.kotlin.services.kinesis.model.PutRecordResponse
+import aws.sdk.kotlin.services.sesv2.model.SendEmailResponse
+import aws.sdk.kotlin.services.sns.model.PublishResponse
+import aws.sdk.kotlin.services.sts.model.GetCallerIdentityResponse
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Execution(ExecutionMode.SAME_THREAD)
@@ -68,9 +68,7 @@ class ServiceCoverageExampleRoutesTest {
     fun `email route sends SES v2 email`() = testApplication {
         coEvery {
             sesOperations.sendEmail(any())
-        } returns SendEmailResponse.builder()
-            .messageId("ses-message-1")
-            .build()
+        } returns SendEmailResponse { messageId = "ses-message-1" }
 
         application { installServiceCoverageExamples() }
 
@@ -95,9 +93,7 @@ class ServiceCoverageExampleRoutesTest {
     fun `notification route publishes SNS message`() = testApplication {
         coEvery {
             snsOperations.publish(any())
-        } returns PublishResponse.builder()
-            .messageId("sns-message-1")
-            .build()
+        } returns PublishResponse { messageId = "sns-message-1" }
 
         application { installServiceCoverageExamples() }
 
@@ -122,7 +118,7 @@ class ServiceCoverageExampleRoutesTest {
     fun `metric route publishes CloudWatch metric`() = testApplication {
         coEvery {
             cloudWatchOperations.putMetricData(NAMESPACE, any())
-        } returns listOf(PutMetricDataResponse.builder().build())
+        } returns listOf(PutMetricDataResponse {})
 
         application { installServiceCoverageExamples() }
 
@@ -138,8 +134,8 @@ class ServiceCoverageExampleRoutesTest {
             cloudWatchOperations.putMetricData(
                 NAMESPACE,
                 match<List<MetricDatum>> { metrics ->
-                    metrics.single().metricName() == "ProcessedJobs" &&
-                            metrics.single().value() == 3.0
+                    metrics.single().metricName == "ProcessedJobs" &&
+                            metrics.single().value == 3.0
                 },
             )
         }
@@ -149,7 +145,7 @@ class ServiceCoverageExampleRoutesTest {
     fun `logs route writes CloudWatch Logs event`() = testApplication {
         coEvery {
             cloudWatchLogsOperations.putLogEvents(LOG_STREAM, any())
-        } returns listOf(PutLogEventsResponse.builder().build())
+        } returns listOf(PutLogEventsResponse {})
 
         application { installServiceCoverageExamples() }
 
@@ -165,7 +161,7 @@ class ServiceCoverageExampleRoutesTest {
         coVerify(exactly = 1) {
             cloudWatchLogsOperations.putLogEvents(
                 LOG_STREAM,
-                match<List<InputLogEvent>> { events -> events.single().message() == "example event" },
+                match<List<InputLogEvent>> { events -> events.single().message == "example event" },
             )
         }
     }
@@ -174,10 +170,10 @@ class ServiceCoverageExampleRoutesTest {
     fun `stream route writes Kinesis record`() = testApplication {
         coEvery {
             kinesisOperations.putRecord(any())
-        } returns PutRecordResponse.builder()
-            .sequenceNumber("sequence-1")
-            .shardId("shard-000")
-            .build()
+        } returns PutRecordResponse {
+            sequenceNumber = "sequence-1"
+            shardId = "shard-000"
+        }
 
         application { installServiceCoverageExamples() }
 
@@ -194,7 +190,7 @@ class ServiceCoverageExampleRoutesTest {
             kinesisOperations.putRecord(match<KinesisPutRecordRequest> { request ->
                 request.streamName == STREAM_NAME &&
                         request.partitionKey == "partition-a" &&
-                        request.data.asUtf8String() == "payload"
+                        request.data.decodeToString() == "payload"
             })
         }
     }
@@ -203,11 +199,11 @@ class ServiceCoverageExampleRoutesTest {
     fun `identity route returns STS caller identity`() = testApplication {
         coEvery {
             stsOperations.callerIdentity()
-        } returns GetCallerIdentityResponse.builder()
-            .account("123456789012")
-            .arn("arn:aws:sts::123456789012:assumed-role/example/session")
-            .userId("user-1")
-            .build()
+        } returns GetCallerIdentityResponse {
+            account = "123456789012"
+            arn = "arn:aws:sts::123456789012:assumed-role/example/session"
+            userId = "user-1"
+        }
 
         application { installServiceCoverageExamples() }
 

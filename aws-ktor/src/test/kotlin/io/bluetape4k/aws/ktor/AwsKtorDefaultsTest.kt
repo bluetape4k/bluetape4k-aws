@@ -16,16 +16,12 @@ import io.ktor.client.HttpClientConfig
 import io.ktor.http.Url
 import kotlinx.coroutines.Dispatchers
 import org.junit.jupiter.api.Test
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
-import software.amazon.awssdk.auth.credentials.AwsCredentials
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.CoroutineContext
 
 class AwsKtorDefaultsTest {
 
     private companion object: KLogging() {
-        const val JAVA_CREDENTIAL_SECRET = "java-credential-secret"
         const val KOTLIN_CREDENTIAL_SECRET = "kotlin-credential-secret"
         const val CUSTOMIZER_SECRET = "customizer-secret"
         const val HTTP_ENGINE_SECRET = "http-engine-secret"
@@ -57,7 +53,6 @@ class AwsKtorDefaultsTest {
         val text = fixture.defaults.toString()
 
         log.debug { "text=$text" }
-        text shouldNotContain JAVA_CREDENTIAL_SECRET
         text shouldNotContain KOTLIN_CREDENTIAL_SECRET
         text shouldNotContain CUSTOMIZER_SECRET
         text shouldNotContain HTTP_ENGINE_SECRET
@@ -75,7 +70,6 @@ class AwsKtorDefaultsTest {
         val text = fixture.defaults.toString(limit = 1)
 
         log.debug { "text=$text" }
-        text shouldNotContain JAVA_CREDENTIAL_SECRET
         text shouldNotContain KOTLIN_CREDENTIAL_SECRET
         text shouldNotContain CUSTOMIZER_SECRET
         text shouldNotContain HTTP_ENGINE_SECRET
@@ -84,13 +78,11 @@ class AwsKtorDefaultsTest {
     }
 
     private fun secretDefaults(): SecretDefaultsFixture {
-        val javaCredentialsProvider = SecretJavaCredentialsProvider()
         val kotlinCredentialsProvider = SecretKotlinCredentialsProvider()
         val customizer = SecretHttpClientCustomizer()
         val httpClientEngine = SecretHttpClientEngine()
 
         return SecretDefaultsFixture(
-            javaCredentialsProvider = javaCredentialsProvider,
             kotlinCredentialsProvider = kotlinCredentialsProvider,
             customizer = customizer,
             httpClientEngine = httpClientEngine,
@@ -98,14 +90,12 @@ class AwsKtorDefaultsTest {
     }
 
     private class SecretDefaultsFixture(
-        private val javaCredentialsProvider: SecretJavaCredentialsProvider,
         private val kotlinCredentialsProvider: SecretKotlinCredentialsProvider,
         private val customizer: SecretHttpClientCustomizer,
         private val httpClientEngine: SecretHttpClientEngine,
     ) {
         fun defaults(): AwsKtorDefaults = AwsKtorDefaults(
             region = "ap-northeast-2",
-            javaCredentialsProvider = javaCredentialsProvider,
             kotlinCredentialsProvider = kotlinCredentialsProvider,
             kotlinHttpClient = httpClientEngine,
             httpClientCustomizers = listOf(customizer),
@@ -115,22 +105,9 @@ class AwsKtorDefaultsTest {
             get() = defaults()
 
         fun assertNoCollaboratorToStringCalls() {
-            javaCredentialsProvider.toStringCalls.get() shouldBeEqualTo 0
             kotlinCredentialsProvider.toStringCalls.get() shouldBeEqualTo 0
             customizer.toStringCalls.get() shouldBeEqualTo 0
             httpClientEngine.toStringCalls.get() shouldBeEqualTo 0
-        }
-    }
-
-    private class SecretJavaCredentialsProvider: AwsCredentialsProvider {
-        val toStringCalls = AtomicInteger()
-
-        override fun resolveCredentials(): AwsCredentials =
-            AwsBasicCredentials.create("access-key", JAVA_CREDENTIAL_SECRET)
-
-        override fun toString(): String {
-            toStringCalls.incrementAndGet()
-            return JAVA_CREDENTIAL_SECRET
         }
     }
 

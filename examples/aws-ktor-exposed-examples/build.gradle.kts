@@ -12,7 +12,10 @@ exposed {
 }
 
 dependencies {
-    implementation(project(":bluetape4k-aws-exposed"))
+    implementation(project(":bluetape4k-aws-exposed")) {
+        // The example uses the shared database settings, not the optional AWS SDK v2 RDS IAM adapter.
+        exclude(module = "bluetape4k-aws-java")
+    }
     implementation(project(":bluetape4k-aws-ktor"))
 
     implementation(platform(bt4k.exposed.bom))

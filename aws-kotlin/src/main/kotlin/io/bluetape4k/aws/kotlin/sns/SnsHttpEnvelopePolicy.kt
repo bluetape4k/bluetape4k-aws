@@ -1,4 +1,4 @@
-package io.bluetape4k.aws.sns
+package io.bluetape4k.aws.kotlin.sns
 
 import java.io.Serializable
 import java.net.URI

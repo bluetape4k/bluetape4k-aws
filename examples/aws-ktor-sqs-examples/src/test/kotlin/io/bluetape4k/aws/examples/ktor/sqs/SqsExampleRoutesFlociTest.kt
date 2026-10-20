@@ -1,14 +1,18 @@
 package io.bluetape4k.aws.examples.ktor.sqs
 
+import aws.sdk.kotlin.services.sqs.SqsClient
+import aws.sdk.kotlin.runtime.auth.credentials.StaticCredentialsProvider
+import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.assertions.shouldContain
-import io.bluetape4k.aws.sqs.SqsClientFactory
+import io.bluetape4k.aws.kotlin.sqs.sqsClientOf
+import io.bluetape4k.aws.kotlin.sqs.createQueue
+import io.bluetape4k.aws.kotlin.sqs.deleteQueue
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.junit5.coroutines.SuspendedJobTester
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.ktor.testing.shouldHaveStatus
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.testcontainers.aws.FlociServer
-import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -18,7 +22,6 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.future.await
 import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -26,8 +29,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
-import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -38,11 +39,14 @@ class SqsExampleRoutesFlociTest {
     companion object: KLoggingChannel() {
         val floci: FlociServer by lazy { FlociServer.Launcher.floci }
 
-        val sqsClient: SqsAsyncClient by lazy {
-            SqsClientFactory.Async.create(
-                endpointOverride = floci.awsEndpoint,
-                region = Region.of(floci.regionName),
-                credentialsProvider = floci.getCredentialProvider(),
+        val sqsClient: SqsClient by lazy {
+            sqsClientOf(
+                endpointUrl = Url.parse(floci.awsEndpoint.toString()),
+                region = floci.regionName,
+                credentialsProvider = StaticCredentialsProvider {
+                    accessKeyId = floci.awsAccessKey
+                    secretAccessKey = floci.awsSecretKey
+                },
             )
         }
     }
@@ -51,13 +55,15 @@ class SqsExampleRoutesFlociTest {
 
     @BeforeAll
     fun setUp() = runSuspendIO {
-        queueUrl = sqsClient.createQueue { it.queueName("ktor-sqs-example-${Base58.randomString(8)}") }
-            .await().queueUrl()
+        queueUrl = requireNotNull(
+            sqsClient.createQueue("ktor-sqs-example-${Base58.randomString(8)}").queueUrl,
+        )
     }
 
     @AfterAll
     fun tearDown() = runSuspendIO {
-        sqsClient.deleteQueue { it.queueUrl(queueUrl) }.await()
+        val queueUrlToDelete = queueUrl
+        sqsClient.deleteQueue(queueUrlToDelete)
         sqsClient.close()
     }
 
@@ -110,9 +116,7 @@ class SqsExampleRoutesFlociTest {
 
     @Test
     fun `advanced consumer routes expose manual ack retry interceptor and observer events`() = testApplication {
-        val advancedQueueUrl = sqsClient.createQueue {
-            it.queueName("ktor-sqs-advanced-${Base58.randomString(8)}")
-        }.await().queueUrl()
+        val advancedQueueUrl = sqsClient.createQueue("ktor-sqs-advanced-${Base58.randomString(8)}").queueUrl.orEmpty()
 
         application { sqsExampleModule(sqsClient, advancedQueueUrl) }
 
@@ -148,7 +152,7 @@ class SqsExampleRoutesFlociTest {
                 }
             }
         } finally {
-            sqsClient.deleteQueue { it.queueUrl(advancedQueueUrl) }.await()
+            sqsClient.deleteQueue(advancedQueueUrl)
         }
     }
 }

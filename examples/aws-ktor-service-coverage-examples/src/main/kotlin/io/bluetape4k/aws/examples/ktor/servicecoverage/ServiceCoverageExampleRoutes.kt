@@ -35,10 +35,9 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
-import software.amazon.awssdk.core.SdkBytes
-import software.amazon.awssdk.services.cloudwatch.model.MetricDatum
-import software.amazon.awssdk.services.cloudwatch.model.StandardUnit
-import software.amazon.awssdk.services.cloudwatchlogs.model.InputLogEvent
+import aws.sdk.kotlin.services.cloudwatch.model.MetricDatum
+import aws.sdk.kotlin.services.cloudwatch.model.StandardUnit
+import aws.sdk.kotlin.services.cloudwatchlogs.model.InputLogEvent
 import java.io.Serializable
 
 /**
@@ -94,7 +93,7 @@ fun Application.serviceCoverageExampleModule(
                     body = SesEmailBody(text = request.text),
                 ),
             )
-            call.respond(SendEmailExampleResponse(response.messageId().orEmpty()))
+            call.respond(SendEmailExampleResponse(response.messageId.orEmpty()))
         }
 
         post("/coverage/notifications") {
@@ -106,7 +105,7 @@ fun Application.serviceCoverageExampleModule(
                     subject = request.subject,
                 ),
             )
-            call.respond(PublishNotificationExampleResponse(response.messageId().orEmpty()))
+            call.respond(PublishNotificationExampleResponse(response.messageId.orEmpty()))
         }
 
         post("/coverage/metrics") {
@@ -114,11 +113,11 @@ fun Application.serviceCoverageExampleModule(
             val response = call.application.cloudWatch().putMetricData(
                 options.namespace,
                 listOf(
-                    MetricDatum.builder()
-                        .metricName(request.metricName)
-                        .value(request.value)
-                        .unit(StandardUnit.COUNT)
-                        .build(),
+                    MetricDatum {
+                        metricName = request.metricName
+                        value = request.value
+                        unit = StandardUnit.Count
+                    },
                 ),
             )
             call.respond(MetricExampleResponse(options.namespace, response.size))
@@ -129,10 +128,10 @@ fun Application.serviceCoverageExampleModule(
             val response = call.application.cloudWatchLogs().putLogEvents(
                 options.logStream,
                 listOf(
-                    InputLogEvent.builder()
-                        .message(request.message)
-                        .timestamp(System.currentTimeMillis())
-                        .build(),
+                    InputLogEvent {
+                        message = request.message
+                        timestamp = System.currentTimeMillis()
+                    },
                 ),
             )
             call.respond(
@@ -150,13 +149,13 @@ fun Application.serviceCoverageExampleModule(
                 KinesisPutRecordRequest(
                     streamName = options.kinesisStreamName,
                     partitionKey = request.partitionKey,
-                    data = SdkBytes.fromUtf8String(request.data),
+                    data = request.data.encodeToByteArray(),
                 ),
             )
             call.respond(
                 StreamRecordExampleResponse(
-                    sequenceNumber = response.sequenceNumber().orEmpty(),
-                    shardId = response.shardId().orEmpty(),
+                    sequenceNumber = response.sequenceNumber.orEmpty(),
+                    shardId = response.shardId.orEmpty(),
                 ),
             )
         }
@@ -165,9 +164,9 @@ fun Application.serviceCoverageExampleModule(
             val response = call.application.sts().callerIdentity()
             call.respond(
                 CallerIdentityExampleResponse(
-                    account = response.account().orEmpty(),
-                    arn = response.arn().orEmpty(),
-                    userId = response.userId().orEmpty(),
+                    account = response.account.orEmpty(),
+                    arn = response.arn.orEmpty(),
+                    userId = response.userId.orEmpty(),
                 ),
             )
         }

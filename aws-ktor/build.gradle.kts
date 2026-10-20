@@ -4,7 +4,6 @@ configurations {
 
 dependencies {
     // bluetape4k-aws modules
-    api(project(":bluetape4k-aws-java"))
     api(project(":bluetape4k-aws-kotlin"))
     compileOnly(project(":bluetape4k-aws-exposed"))
 
@@ -19,25 +18,13 @@ dependencies {
     api(bt4k.bluetape4k.ktor.core)
     compileOnly(bt4k.bluetape4k.jackson3)
     testImplementation(bt4k.bluetape4k.junit5)
-    testImplementation(testFixtures(project(":bluetape4k-aws-java")))
+    testImplementation(testFixtures(project(":bluetape4k-aws-kotlin")))
     testImplementation(bt4k.bluetape4k.ktor.testing)
     testImplementation(bt4k.bluetape4k.testcontainers)
+    testImplementation(libs.aws.kotlin.s3)
 
     // Ktor client and optional runtime integrations. Keep direct dependencies
     // where aws-ktor exposes Ktor public types or needs a concrete engine.
-    api(libs.aws2.auth)
-    api(libs.aws2.cloudwatch)
-    api(libs.aws2.cloudwatchlogs)
-    api(libs.aws2.eventbridge)
-    api(libs.aws2.imds)
-    api(libs.aws2.kinesis)
-    compileOnly(libs.aws2.s3)
-    api(libs.aws2.s3control)
-    api(libs.aws2.s3vectors)
-    api(libs.aws2.sesv2)
-    api(libs.aws2.sns)
-    api(libs.aws2.sqs)
-    api(libs.aws2.sts)
     api(libs.aws.kotlin.cloudwatch)
     api(libs.aws.kotlin.cloudwatchlogs)
     api(libs.aws.kotlin.eventbridge)

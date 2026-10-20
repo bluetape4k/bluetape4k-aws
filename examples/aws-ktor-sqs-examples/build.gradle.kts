@@ -10,8 +10,7 @@ dependencies {
     implementation(libs.ktor.server.cio)
     implementation(libs.ktor.server.content.negotiation)
     implementation(libs.ktor.serialization.jackson)
-    implementation(libs.aws2.sqs)
-    implementation(libs.aws2.auth)
+    implementation(libs.aws.kotlin.sqs)
     implementation(libs.kotlinx.coroutines.core)
 
     testImplementation(bt4k.bluetape4k.junit5)
