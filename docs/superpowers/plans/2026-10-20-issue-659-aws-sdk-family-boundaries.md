@@ -176,10 +176,10 @@
 
 **검증 대상:** `aws-ktor`, `aws-spring-boot`, 다섯 Ktor 예제, consumer fixture, 발행 metadata, 전체 Kotlin 정적 분석.
 
-- [ ] **1단계: 소스 경계 검색을 수행한다.** `rg -n 'software\.amazon\.awssdk|libs\.aws2\.' aws-ktor/src examples/aws-ktor-*` 결과가 0건인지 확인한다. `rg -n 'bluetape4k-aws-kotlin|aws\.sdk\.kotlin' aws-spring-boot/src aws-spring-boot/build.gradle.kts` 결과가 0건인지 확인한다.
-- [ ] **2단계: compile/test와 정적 분석을 수행한다.** `./gradlew :bluetape4k-aws-ktor:test :bluetape4k-aws-spring-boot:test --no-daemon`, 다섯 예제의 `test`, `compileAwsKtorSqsConsumerFixture`, `./gradlew detekt`, `./gradlew build -x test --parallel`을 각각 실행한다. Floci/Testcontainers 작업은 Docker 사용 규칙대로 순차 실행한다.
-- [ ] **3단계: 외부 metadata를 검사한다.** `./gradlew :bluetape4k-aws-ktor:generatePomFileForBluetapeAwsPublication :bluetape4k-aws-ktor:generateMetadataFileForBluetapeAwsPublication --no-daemon` 후 `aws-ktor/build/publications/BluetapeAws/pom-default.xml`과 `module.json`에서 AWS Java group과 `bluetape4k-aws-java`가 없는지 확인한다. 공개 Smithy/AWS Kotlin type artifact가 API metadata에 있고 default signer/OkHttp engine 구현 artifact는 public API metadata에 없는지 확인한다.
-- [ ] **4단계: classpath report를 검증한다.** fixture configuration과 다섯 예제의 compile/runtime dependency report를 저장하고 forbidden module이 없는지 검사한다. Spring Boot runtime에 Java SDK가 유지되고 AWS Kotlin 의존은 없는지 확인한다.
+- [x] **1단계: 소스 경계 검색을 수행한다.** `aws-ktor/src`와 다섯 Ktor 예제에서 `software.amazon.awssdk|libs.aws2.` 검색 결과 0건을 확인했다. `aws-spring-boot/src`와 `aws-spring-boot/build.gradle.kts`에서 `bluetape4k-aws-kotlin|aws.sdk.kotlin` 검색 결과도 0건이다.
+- [ ] **2단계: compile/test와 정적 분석을 수행한다.** Ktor/Spring test, 다섯 예제 test(총 22건), consumer fixture compile, AWS Java/Kotlin test, `./gradlew build -x test --parallel --no-daemon`은 모두 `BUILD SUCCESSFUL`이다. 다섯 예제 테스트는 실패·오류·skip 0건이다. `./gradlew detekt --rerun-tasks --no-build-cache --no-daemon`은 소스 분석 전에 `detekt was compiled with Kotlin 2.4.10 but is currently running with 2.4.20`으로 실패해 정적 분석 증거가 없다. 따라서 이 통합 단계는 미완료다.
+- [x] **3단계: 외부 metadata를 검사한다.** 재생성한 POM의 top-level dependencies 27개에 `software.amazon.awssdk`, `bluetape4k-aws-java`, `com.squareup.okhttp3`가 없다. `apiElements`에는 AWS Kotlin/Smithy type artifact가 있고 signer/OkHttp engine은 없으며, `runtimeElements`에는 signer/OkHttp engine이 포함된다. POM의 `dependencyManagement`는 실제 발행 dependency와 분리해 확인했다.
+- [x] **4단계: classpath report를 검증한다.** 다섯 예제의 main compile/runtime classpath 10개와 SQS consumer fixture classpath에서 AWS Java SDK 및 `bluetape4k-aws-java`가 0건이다. Spring Boot compile/runtime classpath에는 AWS SDK v2와 `bluetape4k-aws-java`가 있고 AWS Kotlin은 없다.
 - [ ] **5단계: 전체 diff와 문서를 점검한다.** `git diff --check`, API type 검색, link/whitespace 검사, 명세 19개 인수 조건, serializable 타입 표, bilingual docs 목록을 대조한다. 생성물·임시 로그는 추적하지 않는다.
 - [ ] **6단계: 정확한 branch HEAD 독립 코드 리뷰를 받는다.** `$code-review`와 repository checklist를 사용해 API, architecture, callers, security, stability, performance, integration 관점을 확인한다. 로컬 소스 리뷰는 P0/P1=0이어야 한다. 아직 PR이 없으므로 PR review thread와 정확한 PR HEAD CI는 `N/A (PR 생성 전)` / `PENDING (후속 A-10)`으로 남긴다. Reviewer 호출이 사용량 제한으로 불가능하면 `PENDING`으로 기록하고 리뷰 통과라고 주장하지 않는다.
 - [ ] **7단계: 완료 보고를 작성한다.** 체크리스트의 DoD, 실제 실행 명령과 결과, 남은 emulator/metadata/manual 위험을 함께 보고한다. 상세 manual companion은 `bluetape4k.github.io` 별도 저장소의 승인된 후속 작업이며, 그 validator가 고정 release tag/peeled commit에서 통과하기 전 release를 만들지 않는다.
@@ -189,6 +189,14 @@
 - 이 계획 실행은 소스·테스트·문서 변경과 정확한 branch HEAD의 검증 및 독립 코드 리뷰 보고까지 포함한다.
 - Issue #659의 PR 생성·merge·develop 동기화·worktree 정리는 이 계획만으로 승인되지 않는다. 그 단계는 최신 HEAD CI/review read-back을 만든 뒤 별도 승인 게이트를 따른다.
 - ABI 호환성 확인은 요구하지 않는다. 공개 모델/API 교체와 기존 Java serialized bytes 비호환은 CHANGELOG에 기록한다.
+
+#### 작업 9 검증 기록 및 plan writer DoD (2026-10-21)
+
+- [x] **SPW-01 — 독자·목적·근거 고정:** 이 계획의 독자는 Issue #659 구현·검증을 이어받는 bluetape4k-aws 유지보수자이며, 목적은 통합 검증 결과와 제출 전 미완료 조건을 정확히 구분하는 것이다. 근거는 작업 9의 Ktor/Spring·예제·Java/Kotlin Gradle test 출력, consumer fixture compile, `build -x test`, Detekt 오류, 생성 POM·Gradle module metadata와 classpath reports다. Detekt의 baseline 동일성은 아직 확인하지 않았다.
+- [x] **SPW-02 — artifact 계약 충족:** 작업 9에서 통과한 소스 경계 검색, 테스트·빌드, publication metadata, classpath 검증과 실패한 정적 분석을 각각 기록했다. Detekt와 전체 diff/serializable acceptance audit, 독립 리뷰, 완료 보고는 미완료로 유지한다. PR 생성, merge, develop 동기화, worktree 정리는 이 계획 밖이다.
+- [x] **SPW-03 — 한국어 기술 문체:** `KO-01`–`KO-06`을 수치·명령·API 식별자와 불확실성 보존, 근거 중심 문장, 자연스러운 기술 register, 용어 일관성, 비유 여부, 수정한 제목·문단·목록의 최종 표면 확인으로 검토했다. locale 짝이나 시각 자산은 변경하지 않았다. `KO-07` audit는 `Terminology audit passed: 1 file(s), series=clinic-appointment, findings=0`으로 끝났다.
+- [x] **SPW-04 — 기술 의미·추적성 검증:** 테스트 결과와 test XML, build 출력, 생성 POM/module metadata, classpath reports 및 Detekt 오류를 대조했다. POM의 top-level dependency와 `dependencyManagement`를 구분했고, OkHttp compile-only 참조가 POM dependency로 노출되지 않는 사실을 보존했다. Detekt mismatch 원인이 코드 분석인지 확인되지 않았으므로 이를 제품 결함 또는 baseline 통과로 해석하지 않는다.
+- [x] **SPW-05 — 최종 읽기·DoD:** 수정한 작업 9와 DoD를 다시 읽고 `git diff --check`를 통과했다. Detekt, 전체 diff/serializable acceptance audit, 독립 리뷰, 완료 보고는 해당 단계의 unchecked 상태로 남겼다.
 
 ## 명세 추적성 자체 점검
 
