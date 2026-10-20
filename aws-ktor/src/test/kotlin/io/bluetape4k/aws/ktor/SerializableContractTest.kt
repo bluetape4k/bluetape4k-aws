@@ -1,0 +1,171 @@
+package io.bluetape4k.aws.ktor
+
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.aws.ktor.kinesis.KinesisKtorStream
+import io.bluetape4k.aws.ktor.kinesis.KinesisPutRecordRequest
+import io.bluetape4k.aws.ktor.kinesis.KinesisRecordFlowOptions
+import io.bluetape4k.aws.ktor.kinesis.KinesisRecordFlowRequest
+import io.bluetape4k.aws.ktor.kinesis.KinesisShardIteratorRequest
+import io.bluetape4k.aws.ktor.kinesis.KinesisStartingPosition
+import io.bluetape4k.aws.ktor.sqs.SqsConsumerFailureContext
+import io.bluetape4k.aws.ktor.sqs.SqsConsumerFailurePhase
+import io.bluetape4k.aws.ktor.sqs.SqsConsumerObservation
+import io.bluetape4k.aws.ktor.sqs.SqsConsumerRuntimeConfig
+import io.bluetape4k.aws.ktor.sqs.SqsFixedFailureVisibilityStrategy
+import io.bluetape4k.aws.ktor.sqs.SqsLinearFailureVisibilityStrategy
+import io.bluetape4k.aws.ktor.sqs.SqsPollBackoff
+import org.junit.jupiter.api.Test
+import software.amazon.awssdk.core.SdkBytes
+import software.amazon.awssdk.services.kinesis.model.ShardIteratorType
+import software.amazon.awssdk.services.sqs.model.Message
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.ObjectInputStream
+import java.io.ObjectOutputStream
+import java.io.Serializable
+import java.lang.reflect.Modifier
+import java.time.Duration
+import java.time.Instant
+
+class SerializableContractTest {
+
+    @Test
+    fun `current Kinesis value DTOs round trip through Java serialization`() {
+        val values = listOf<Serializable>(
+            KinesisShardIteratorRequest(
+                streamName = "orders",
+                shardId = "shardId-000000000000",
+                type = ShardIteratorType.AT_SEQUENCE_NUMBER,
+                startingSequenceNumber = "123",
+            ),
+            KinesisRecordFlowRequest(
+                streamName = "orders",
+                shardId = "shardId-000000000000",
+                position = KinesisStartingPosition.AtTimestamp(Instant.parse("2026-01-02T03:04:05Z")),
+                options = KinesisRecordFlowOptions(
+                    batchLimit = 25,
+                    pollInterval = Duration.ofMillis(150),
+                    emptyBackoff = Duration.ofMillis(350),
+                    maxIteratorRetries = 2,
+                    maxThrottleRetries = 4,
+                    initialThrottleBackoff = Duration.ofMillis(125),
+                    maxThrottleBackoff = Duration.ofSeconds(4),
+                    jitterRatio = 0.25,
+                ),
+            ),
+            KinesisKtorStream(shardCount = 2),
+            KinesisRecordFlowOptions(
+                batchLimit = 10,
+                pollInterval = Duration.ofMillis(100),
+                emptyBackoff = Duration.ofMillis(250),
+                maxIteratorRetries = 1,
+                maxThrottleRetries = 2,
+                initialThrottleBackoff = Duration.ofMillis(200),
+                maxThrottleBackoff = Duration.ofSeconds(3),
+                jitterRatio = 0.1,
+            ),
+            KinesisStartingPosition.TrimHorizon,
+            KinesisStartingPosition.Latest,
+            KinesisStartingPosition.AtSequenceNumber("123"),
+            KinesisStartingPosition.AfterSequenceNumber("122"),
+            KinesisStartingPosition.AtTimestamp(Instant.parse("2026-01-02T03:04:05Z")),
+        ).map { value -> value to roundTrip(value) }
+
+        values.forEach { (original, restored) ->
+            restored shouldBeEqualTo original
+        }
+    }
+
+    @Test
+    fun javaSdkBytesCurrentlyLoseRequestPayloadDuringSerialization() {
+        val original = KinesisPutRecordRequest(
+            streamName = "orders",
+            partitionKey = "customer-1",
+            data = SdkBytes.fromUtf8String("payload"),
+        )
+
+        val restored = roundTrip(original)
+
+        original.data.asUtf8String() shouldBeEqualTo "payload"
+        restored.streamName shouldBeEqualTo original.streamName
+        restored.partitionKey shouldBeEqualTo original.partitionKey
+        restored.data.asByteArray().isEmpty().shouldBeTrue()
+    }
+
+    @Test
+    fun `selected SQS value DTOs round trip through Java serialization`() {
+        val pollBackoff = SqsPollBackoff(
+            initialDelay = Duration.ofMillis(125),
+            maxDelay = Duration.ofSeconds(3),
+            multiplier = 1.5,
+        )
+        val visibilityStrategy = SqsFixedFailureVisibilityStrategy(timeoutSeconds = 42)
+        val observation = SqsConsumerObservation(
+            operation = "receive",
+            outcome = "success",
+            queueUrl = "https://sqs.local/orders",
+            messageId = "message-1",
+            duration = Duration.ofMillis(17),
+            tags = mapOf("message_count" to "1"),
+        )
+
+        roundTrip(pollBackoff) shouldBeEqualTo pollBackoff
+        roundTrip(visibilityStrategy) shouldBeEqualTo visibilityStrategy
+        roundTrip(observation) shouldBeEqualTo observation
+    }
+
+    @Test
+    fun `failure context round trips through Java serialization`() {
+        val original = SqsConsumerFailureContext(
+            queueUrl = "https://sqs.local/orders",
+            message = Message.builder()
+                .messageId("message-1")
+                .receiptHandle("receipt-1")
+                .body("payload")
+                .attributesWithStrings(mapOf("ApproximateReceiveCount" to "3"))
+                .build(),
+            cause = IllegalStateException("handler failed"),
+            phase = SqsConsumerFailurePhase.Handler,
+        )
+
+        val restored = roundTrip(original)
+
+        restored.queueUrl shouldBeEqualTo original.queueUrl
+        restored.message shouldBeEqualTo original.message
+        restored.cause::class shouldBeEqualTo original.cause::class
+        restored.cause.message shouldBeEqualTo original.cause.message
+        restored.phase shouldBeEqualTo original.phase
+        restored.approximateReceiveCount shouldBeEqualTo original.approximateReceiveCount
+    }
+
+    @Test
+    fun `non-value SQS types retain Serializable marker and explicit serialVersionUID`() {
+        assertSerializableContract(SqsLinearFailureVisibilityStrategy::class.java)
+        assertSerializableContract(SqsConsumerRuntimeConfig::class.java)
+    }
+
+    private fun assertSerializableContract(type: Class<*>) {
+        Serializable::class.java.isAssignableFrom(type).shouldBeTrue()
+
+        val serialVersionUid = type.getDeclaredField("serialVersionUID")
+        Modifier.isStatic(serialVersionUid.modifiers).shouldBeTrue()
+        Modifier.isFinal(serialVersionUid.modifiers).shouldBeTrue()
+        serialVersionUid.type shouldBeEqualTo Long::class.javaPrimitiveType
+
+        serialVersionUid.isAccessible = true
+        serialVersionUid.getLong(null) shouldBeEqualTo 1L
+    }
+
+    private fun <T : Serializable> roundTrip(value: T): T {
+        val bytes = ByteArrayOutputStream()
+        ObjectOutputStream(bytes).use { output ->
+            output.writeObject(value)
+        }
+
+        return ObjectInputStream(ByteArrayInputStream(bytes.toByteArray())).use { input ->
+            @Suppress("UNCHECKED_CAST")
+            input.readObject() as T
+        }
+    }
+}
