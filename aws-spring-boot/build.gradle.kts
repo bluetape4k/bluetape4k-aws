@@ -176,7 +176,6 @@ dependencies {
     // bluetape4k-aws modules
     api(project(":bluetape4k-aws-java"))
     compileOnly(project(":bluetape4k-aws-exposed"))
-    //compileOnly(project(":bluetape4k-aws-kotlin"))
     compileOnly(bt4k.aws.dax.client)
     compileOnly(libs.aws2.cloudwatch)
     compileOnly(libs.aws2.cloudwatchlogs)

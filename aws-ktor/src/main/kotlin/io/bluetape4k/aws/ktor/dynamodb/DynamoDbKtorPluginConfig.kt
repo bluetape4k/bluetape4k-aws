@@ -10,6 +10,7 @@ import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.aws.kotlin.dynamodb.dynamoDbClientOf
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
+import io.bluetape4k.aws.ktor.validateAwsKotlinServiceEndpoint
 import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.requireNotEmpty
 import kotlin.time.Duration
@@ -20,6 +21,7 @@ import kotlin.time.Duration.Companion.seconds
  *
  * 계약:
  * - 주입된 [dynamoDbClient] 인스턴스는 애플리케이션이 계속 소유하며 플러그인은 닫지 않습니다.
+ *   주입 client에는 플러그인의 builder endpoint 검사가 적용되지 않으므로 호출자가 전송 endpoint를 보호해야 합니다.
  * - 클라이언트를 주입하지 않으면 [region]이 필요하고 플러그인이 AWS Kotlin SDK [DynamoDbClient]를 생성합니다.
  * - [httpClient] 또는 공유 [AwsKtorDefaults.kotlinHttpClient]를 지정하면 호출자가 엔진을 소유합니다.
  *   DynamoDB 클라이언트를
@@ -38,7 +40,7 @@ class DynamoDbKtorPluginConfig {
     /** 플러그인이 클라이언트를 생성할 때 사용하는 AWS 리전입니다. */
     var region: String? = null
 
-    /** 플러그인이 클라이언트를 생성할 때 사용하는 선택적인 자격 증명 공급자입니다. */
+    /** 플러그인이 생성한 client에 전달할 호출자 소유 자격 증명 공급자입니다. */
     var credentialsProvider: CredentialsProvider? = null
 
     /**
@@ -105,6 +107,11 @@ class DynamoDbKtorPluginConfig {
             builder = {
                 defaults.dynamoDbClientCustomizers.forEach { it.customize(this) }
                 clientBuilder()
+                validateAwsKotlinServiceEndpoint(
+                    endpoint = this.endpointUrl?.toString(),
+                    region = this.region,
+                    allowInsecureLocalHttpEndpoint = defaults.allowInsecureLocalHttpEndpoint,
+                )
             },
         )
 

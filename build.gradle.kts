@@ -1528,7 +1528,11 @@ subprojects {
 
             dependency("aws.sdk.kotlin:s3:${bt4kVersion("aws-kotlin")}")
 
+            dependency("aws.sdk.kotlin:s3control:${bt4kVersion("aws-kotlin")}")
+
             dependency("aws.sdk.kotlin:s3tables:${bt4kVersion("aws-kotlin")}")
+
+            dependency("aws.sdk.kotlin:s3vectors:${bt4kVersion("aws-kotlin")}")
 
             dependency("aws.sdk.kotlin:scheduler:${bt4kVersion("aws-kotlin")}")
 

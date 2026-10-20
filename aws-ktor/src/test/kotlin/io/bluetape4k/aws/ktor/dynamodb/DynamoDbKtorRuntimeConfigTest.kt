@@ -4,9 +4,12 @@ import aws.sdk.kotlin.services.dynamodb.DynamoDbClient
 import aws.sdk.kotlin.services.dynamodb.model.AttributeDefinition
 import aws.sdk.kotlin.services.dynamodb.model.CreateTableRequest
 import aws.sdk.kotlin.services.dynamodb.model.KeySchemaElement
+import aws.smithy.kotlin.runtime.auth.awscredentials.CloseableCredentialsProvider
+import aws.smithy.kotlin.runtime.http.engine.CloseableHttpClientEngine
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.aws.kotlin.dynamodb.model.partitionKeyOf
 import io.bluetape4k.aws.kotlin.dynamodb.model.stringAttrDefinitionOf
@@ -214,6 +217,27 @@ class DynamoDbKtorRuntimeConfigTest {
     }
 
     @Test
+    fun `plugin client close preserves caller owned credentials provider and HTTP engine`() = runSuspendIO {
+        val credentialsProvider = mockk<CloseableCredentialsProvider>(relaxed = true)
+        val httpClient = mockk<CloseableHttpClientEngine>(relaxed = true)
+        val runtimeConfig = DynamoDbKtorPluginConfig().toRuntimeConfig(
+            AwsKtorDefaults(
+                region = "ap-northeast-2",
+                kotlinCredentialsProvider = credentialsProvider,
+                kotlinHttpClient = httpClient,
+            ),
+        )
+
+        runtimeConfig.dynamoDbClient.config.credentialsProvider shouldBeSameInstanceAs credentialsProvider
+        runtimeConfig.dynamoDbClient.config.httpClient shouldBeSameInstanceAs httpClient
+
+        DynamoDbKtorRuntime(runtimeConfig).stop()
+
+        verify(exactly = 0) { credentialsProvider.close() }
+        verify(exactly = 0) { httpClient.close() }
+    }
+
+    @Test
     fun `service DynamoDB customizer runs after shared customizer`() {
         val order = mutableListOf<String>()
         val runtimeConfig = DynamoDbKtorPluginConfig().apply {
@@ -226,6 +250,46 @@ class DynamoDbKtorRuntimeConfigTest {
         )
 
         order shouldBeEqualTo listOf("shared", "service")
+
+        runtimeConfig.dynamoDbClient.close()
+    }
+
+    @Test
+    fun `validates final endpoint after shared and service customizers`() {
+        val defaults = AwsKtorDefaults(
+            region = "ap-northeast-2",
+            dynamoDbClientCustomizers = listOf(
+                AwsKtorDynamoDbClientCustomizer { builder ->
+                    builder.endpointUrl = aws.smithy.kotlin.runtime.net.url.Url.parse("https://service.example.com")
+                },
+            ),
+        )
+
+        assertFailsWith<IllegalArgumentException> {
+            DynamoDbKtorPluginConfig()
+                .apply {
+                    client {
+                        endpointUrl = aws.smithy.kotlin.runtime.net.url.Url.parse("http://169.254.169.254")
+                    }
+                }
+                .toRuntimeConfig(defaults)
+        }
+    }
+
+    @Test
+    fun `allows loopback HTTP endpoint only with shared opt in`() {
+        val runtimeConfig = DynamoDbKtorPluginConfig()
+            .apply {
+                client {
+                    endpointUrl = aws.smithy.kotlin.runtime.net.url.Url.parse("http://localhost:4566")
+                }
+            }
+            .toRuntimeConfig(
+                AwsKtorDefaults(
+                    region = "ap-northeast-2",
+                    allowInsecureLocalHttpEndpoint = true,
+                ),
+            )
 
         runtimeConfig.dynamoDbClient.close()
     }
