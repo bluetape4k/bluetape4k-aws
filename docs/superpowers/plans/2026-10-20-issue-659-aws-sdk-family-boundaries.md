@@ -75,13 +75,14 @@
 
 - 수정: `aws-ktor/src/main/kotlin/io/bluetape4k/aws/ktor/client/AwsSigV4AuthLocation.kt`, `AwsSigV4Plugin.kt`, `AwsSigV4PluginConfig.kt`, `aws-ktor/src/main/kotlin/io/bluetape4k/aws/ktor/s3/S3KtorClient.kt`, `S3KtorException.kt`, `S3KtorModels.kt`, `S3KtorAdvancedModels.kt`, `S3KtorClientSideEncryption.kt`, `MicrometerS3KtorClient.kt`.
 - 테스트: `aws-ktor/src/test/kotlin/io/bluetape4k/aws/ktor/client/AwsSigV4PluginTest.kt`, `aws-ktor/src/test/kotlin/io/bluetape4k/aws/ktor/s3/S3KtorClientTest.kt`, `aws-ktor/src/test/kotlin/io/bluetape4k/aws/ktor/s3/S3KtorClientFlociTest.kt`, `aws-ktor/src/test/kotlin/io/bluetape4k/aws/ktor/s3/MicrometerS3KtorClientTest.kt`.
+- downstream 예제와 문서: `aws-ktor/README.md`, `README.ko.md`, `examples/aws-ktor-s3-examples/src/main/kotlin/io/bluetape4k/aws/examples/ktor/s3/S3KtorExamples.kt`, 관련 예제 테스트 두 파일, bilingual 예제 README. suspend presign과 Kotlin 자격 증명으로 바뀐 API 때문에 예제 모듈 컴파일 오류가 확인되어 이 소비 경계를 Task 4에 포함했다.
 
-- [ ] **1단계: 서명 벡터와 전송 캡처 테스트를 추가한다.** 고정 시간, 회전 자격 증명, session token, 원시 URI authority/path, `%2F`/`%20`, 중복·빈 query/header, payload hash/unsigned payload를 확인한다. 공개 `AwsSigner.sign()` 기반 query-signing 경로의 컴파일 검증과 고정 presign vector를 포함한다. 캡처한 최종 전송 URI·헤더·본문과 서명 입력이 동일해야 한다.
-- [ ] **2단계: Ktor→Smithy 요청 변환을 구현한다.** `CredentialsProvider.resolve()`를 요청마다 사용하고, 공개 `AwsSigner.sign()` 및 `DefaultAwsSigner`를 사용한다. 사전 서명은 별도 공개 `Presigner` 타입이나 Smithy `@InternalApi` 함수에 의존하지 않고 `AwsSigningConfig`의 `AwsSignatureType.HTTP_REQUEST_VIA_QUERY_PARAMS`, 만료 시간, `UnsignedPayload`, URI 정규화 설정으로 구현한다. endpoint 정책을 resolve 전에 적용하고, 서명 결과가 실제 요청과 표현상 다르면 정규화 결과를 전송에 적용하거나 전송 전 거부한다.
-- [ ] **3단계: payload 규칙과 자원 소유권을 구현한다.** 서명 없는 스트리밍 본문은 버퍼링 없이 전달하고, 서명 본문은 재생 가능한 byte array만 받는다. 재생 불가 본문은 요청 전 거부한다. standalone plugin은 caller-owned provider를 필수 주입받고, S3 factory가 만든 default provider/HttpClient는 정상 종료와 초기화 rollback에서 한 번씩 닫는다.
-- [ ] **4단계: 민감 로그 차단과 presign 정책을 검증한다.** Authorization, token, signature-bearing query, body, secret이 로그에 없고, presigned URL도 HTTPS/local HTTP 정책과 고정 만료 조건을 지켜야 한다.
-- [ ] **5단계: SigV4/S3 테스트를 실행한다.** `./gradlew :bluetape4k-aws-ktor:test --tests 'io.bluetape4k.aws.ktor.client.AwsSigV4PluginTest' --tests 'io.bluetape4k.aws.ktor.s3.*' --no-daemon`을 실행한다. Floci-backed 검증은 단독 순서로 실행한다.
-- [ ] **6단계: 서명 경계를 커밋한다.** 바이트 buffering과 URI 재작성 제한을 한국어 Lore commit에 기록한다.
+- [x] **1단계: 서명 벡터와 전송 캡처 테스트를 추가한다.** 고정 시간, 회전 자격 증명, session token, 원시 URI authority/path, `%2F`/`%20`, 중복·빈 query/header, payload hash/unsigned payload를 확인한다. 공개 `AwsSigner.sign()` 기반 query-signing 경로의 컴파일 검증과 고정 presign vector를 포함한다. 캡처한 최종 전송 URI·헤더·본문과 서명 입력이 동일해야 한다. 실제 MockEngine 전송 캡처에서 최종 요청을 검증했다.
+- [x] **2단계: Ktor→Smithy 요청 변환을 구현한다.** `CredentialsProvider.resolve()`를 요청마다 사용하고, 공개 `AwsSigner.sign()` 및 `DefaultAwsSigner`를 사용한다. 사전 서명은 별도 공개 `Presigner` 타입이나 Smithy `@InternalApi` 함수에 의존하지 않고 `AwsSigningConfig`의 `AwsSignatureType.HTTP_REQUEST_VIA_QUERY_PARAMS`, 만료 시간, `UnsignedPayload`, URI 정규화 설정으로 구현한다. endpoint 정책을 resolve 전에 적용하고, 서명 결과가 실제 요청과 표현상 다르면 정규화 결과를 전송에 적용하거나 전송 전 거부한다. 고정 SigV4 vector와 URI round-trip 검사가 통과했다.
+- [x] **3단계: payload 규칙과 자원 소유권을 구현한다.** 서명 없는 스트리밍 본문은 버퍼링 없이 전달하고, 서명 본문은 재생 가능한 byte array만 받는다. 재생 불가 본문은 요청 전 거부한다. standalone plugin은 caller-owned provider를 필수 주입받고, S3 factory가 만든 default provider/HttpClient는 정상 종료와 초기화 rollback에서 한 번씩 닫는다. 회전 provider, pre-resolve 거부, streaming, idempotent close와 close failure 억제를 검증했다.
+- [x] **4단계: 민감 로그 차단과 presign 정책을 검증한다.** Authorization, token, signature-bearing query, body, secret이 로그에 없고, presigned URL도 HTTPS/local HTTP 정책과 고정 만료 조건을 지켜야 한다. 로그 redaction, loopback opt-in, 원격 HTTP 선검사와 만료 범위를 검증했다.
+- [x] **5단계: SigV4/S3 테스트를 실행한다.** 집중 명령은 Floci Docker 환경을 명시해 실행했고, 초기화 rollback close 테스트를 포함한 최신 실행에서 55개 테스트가 모두 통과했다. 별도 `:aws-ktor-s3-examples:test`도 통과했다. `detekt`는 변경 코드 분석 전 Kotlin `2.4.20`/Detekt 번들 Kotlin `2.4.10` 불일치로 중단되어 A-07의 정적 분석 증거에는 사용할 수 없다.
+- [x] **6단계: 서명 경계를 커밋한다.** 바이트 buffering과 URI 재작성 제한, 확인된 검증 및 정적 분석 공백을 한국어 Lore commit에 기록한다.
 
 ### 작업 5: IMDS Kotlin 전용 adapter와 전송 정책
 

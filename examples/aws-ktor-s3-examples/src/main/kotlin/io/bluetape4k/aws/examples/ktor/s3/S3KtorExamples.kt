@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.examples.ktor.s3
 
+import aws.sdk.kotlin.runtime.auth.credentials.StaticCredentialsProvider
 import io.bluetape4k.aws.ktor.s3.S3KtorAddressingStyle
 import io.bluetape4k.aws.ktor.s3.S3KtorClient
 import io.bluetape4k.aws.ktor.s3.S3KtorClientSideEncryption
@@ -9,8 +10,6 @@ import io.bluetape4k.aws.ktor.s3.S3KtorDataKeyProvider
 import io.bluetape4k.aws.ktor.s3.S3KtorPresignedRequest
 import io.bluetape4k.aws.ktor.s3.s3KtorClientOf
 import io.ktor.http.Url
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import java.time.Clock
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
@@ -20,12 +19,14 @@ object S3KtorExamples {
     fun localStackClient(signingClock: Clock? = null): S3KtorClient =
         s3KtorClientOf(
             region = "ap-northeast-2",
-            credentialsProvider = StaticCredentialsProvider.create(
-                AwsBasicCredentials.create("test", "test")
-            ),
+            credentialsProvider = StaticCredentialsProvider {
+                accessKeyId = "test"
+                secretAccessKey = "test"
+            },
             endpointOverride = Url("http://localhost:4566"),
             addressingStyle = S3KtorAddressingStyle.Path,
             signingClock = signingClock,
+            allowInsecureLocalHttpEndpoint = true,
         )
 
     suspend fun uploadAndDownloadText(
@@ -97,7 +98,7 @@ object S3KtorExamples {
         return encryption.getEncryptedObjectBytes(s3, bucket, key).decodeToString()
     }
 
-    fun presignDownload(
+    suspend fun presignDownload(
         s3: S3KtorClient,
         bucket: String,
         key: String,
