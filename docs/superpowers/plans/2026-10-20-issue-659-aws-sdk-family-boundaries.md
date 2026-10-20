@@ -162,7 +162,7 @@
 - [x] **2단계: README를 갱신한다.** `aws-ktor`의 English/한국어 안내와 코드 예제를 AWS Kotlin/Smithy API에 맞추고, `aws-spring-boot`의 SNS sibling-module 절을 Java SDK v2 전용으로 정리했다. 루트 README와 다섯 예제 README 쌍에 plugin 공개 model/client와 애플리케이션 선택 의존성 경계를 기록했다.
 - [x] **3단계: CHANGELOG와 역사 문서를 갱신한다.** `CHANGELOG.md`의 `[미출시]` / `변경` 아래에 Java API 대체, consumer migration, ABI·직렬화 bytes 비호환, IMDS remote HTTP/proxy 제한을 한국어로 기록했다. Issue #85의 기존 기록은 보존하고 #659 후속 결과를 추가했다.
 - [x] **4단계: 문서 계약을 확인한다.** Ktor README 및 다섯 예제 README에서 Java SDK v2 클래스·모듈 참조와 오래된 generated-model 호출을 검색해 결과 0건을 확인했다. Spring Boot README에는 AWS Kotlin SDK 참조가 없다. 19개 Markdown 파일의 상대 경로 링크와 내부 heading anchor가 모두 확인됐고, 8개 bilingual README 쌍의 heading·code fence 수가 일치한다. 영어·한국어 코드 예제는 Kotlin service client/model과 Gradle dependency scope에 맞는다. 11개 한국어 문서의 용어 감사 결과는 `findings=0`이며 `git diff --check`가 통과했다.
-- [ ] **5단계: 문서를 커밋한다.** 사용자-facing prose는 한국어로 쓰고 API·command·identifier는 원문을 유지한다.
+- [x] **5단계: 문서를 커밋한다.** 한국어 사용자 문구와 기술 식별자를 보존해 문서 19개 경로를 `c0a2cc73`에 한국어 Lore 형식으로 커밋했다. PR 생성은 이 계획의 범위에 포함하지 않는다.
 
 #### 작업 8 문서·기술 artifact writer DoD (2026-10-21)
 
@@ -170,7 +170,7 @@
 - [x] **SPW-02 — artifact 계약 충족:** 계획은 문서 파일 목록, 사실 assertion, 완료된 편집·검증과 아직 실행하지 않은 통합 검증·commit을 분리한다. Issue #85 기록은 기존 결론을 수정하지 않고 #659 구현 결과를 새 섹션으로 추가한다.
 - [x] **SPW-03 — 한국어 기술 문체:** 두 문서의 `KO-01`–`KO-05`를 사실·식별자 보존, 구체적인 동사와 상태, 기술 register, 용어 일관성, 비유 여부로 재검토했다. `KO-06`은 두 문서가 단일 한국어 계획/설계 artifact여서 N/A다. `KO-07`은 11개 한국어 변경 문서 감사 결과 `findings=0`으로 통과했다.
 - [x] **SPW-04 — 기술 의미·추적성 검증:** README의 Kotlin client/model과 dependency 설명을 현재 Ktor source 및 POM/Gradle 경계와 대조했다. Task 5의 OkHttp `5.5.0` compile-only 참조는 전이 runtime에 이미 존재하고 게시 POM에서는 제외됨을 기록했으며, 2026-10-21 사용자가 이 파일 범위를 선택했다. IMDS 전송 정책과 ABI/직렬화 비호환은 CHANGELOG와 구현 계약에 맞는다.
-- [x] **SPW-05 — 최종 읽기·DoD:** 계획과 Issue #85 설계 문서, bilingual README, CHANGELOG를 다시 읽었다. 19개 상대 링크, 오래된 SDK API 참조, 용어 감사, whitespace를 확인했다. 문서 commit은 다음 단계로 남긴다.
+- [x] **SPW-05 — 최종 읽기·DoD:** 계획과 Issue #85 설계 문서, bilingual README, CHANGELOG를 다시 읽었다. 19개 상대 링크와 heading anchor, 오래된 SDK API 참조, 용어 감사, whitespace를 확인했다. 문서 19개 경로는 `c0a2cc73`에 커밋했다.
 
 ### 작업 9: 통합 검증 및 제출 전 독립 리뷰
 
