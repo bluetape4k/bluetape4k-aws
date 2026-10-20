@@ -3,8 +3,8 @@ package io.bluetape4k.aws.ktor.ses
 import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.support.hashOf
 import io.bluetape4k.support.requireNotBlank
-import software.amazon.awssdk.services.sesv2.model.AttachmentContentDisposition
-import software.amazon.awssdk.services.sesv2.model.AttachmentContentTransferEncoding
+import aws.sdk.kotlin.services.sesv2.model.AttachmentContentDisposition
+import aws.sdk.kotlin.services.sesv2.model.AttachmentContentTransferEncoding
 import java.io.Serializable
 import java.nio.charset.Charset
 
@@ -75,8 +75,8 @@ class SesEmailAttachment(
     val fileName: String,
     content: ByteArray,
     val contentType: String,
-    val contentDisposition: AttachmentContentDisposition = AttachmentContentDisposition.ATTACHMENT,
-    val contentTransferEncoding: AttachmentContentTransferEncoding = AttachmentContentTransferEncoding.BASE64,
+    val contentDisposition: AttachmentContentDisposition = AttachmentContentDisposition.Attachment,
+    val contentTransferEncoding: AttachmentContentTransferEncoding = AttachmentContentTransferEncoding.Base64,
     val contentDescription: String? = null,
     val contentId: String? = null,
 ): Serializable {

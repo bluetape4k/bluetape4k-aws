@@ -2,18 +2,18 @@ package io.bluetape4k.aws.ktor.s3.accessgrants
 
 import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.ktor.core.ApplicationResourceRegistry
+import aws.sdk.kotlin.services.s3control.S3ControlClient
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.runInterruptible
-import software.amazon.awssdk.services.s3control.S3ControlAsyncClient
 
 /**
  * Ktor S3 Access Grants 작업과 플러그인이 소유한 클라이언트 수명 주기를 보관하는 런타임입니다.
  */
 class S3AccessGrantsKtorRuntime(
     val operations: S3AccessGrantsKtorOperations,
-    private val ownedClient: S3ControlAsyncClient? = null,
+    private val ownedClient: S3ControlClient? = null,
 ) {
 
     private val closed = atomic(false)

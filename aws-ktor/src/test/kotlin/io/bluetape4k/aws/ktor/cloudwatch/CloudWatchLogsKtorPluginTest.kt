@@ -7,21 +7,22 @@ import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.aws.ktor.AwsKtorCore
 import io.bluetape4k.junit5.coroutines.runSuspendIO
-import io.ktor.http.Url
+import aws.smithy.kotlin.runtime.net.url.Url as SmithyUrl
+import io.ktor.http.Url as KtorUrl
 import io.ktor.server.application.install
 import io.ktor.server.testing.testApplication
 import io.mockk.clearMocks
 import io.mockk.mockk
 import io.mockk.verify
+import aws.sdk.kotlin.services.cloudwatchlogs.CloudWatchLogsClient
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClient
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CloudWatchLogsKtorPluginTest {
 
-    private val client = mockk<CloudWatchLogsAsyncClient>(relaxed = true)
+    private val client = mockk<CloudWatchLogsClient>(relaxed = true)
     private val operations = mockk<CloudWatchLogsKtorOperations>(relaxed = true)
 
     @BeforeEach
@@ -71,7 +72,7 @@ class CloudWatchLogsKtorPluginTest {
     fun `injected operations bypass client only validation`() {
         val runtime = CloudWatchLogsKtorPluginConfig().apply {
             cloudWatchLogsOperations = operations
-            endpointOverride = java.net.URI.create("http://localhost:4566")
+            endpointOverride = SmithyUrl.parse("http://localhost:4566")
         }.toRuntime()
         requireNotNull(runtime)
 
@@ -108,7 +109,7 @@ class CloudWatchLogsKtorPluginTest {
     @Test
     fun `injected client remains application owned`() = runSuspendIO {
         val runtime = CloudWatchLogsKtorPluginConfig().apply {
-            cloudWatchLogsAsyncClient = client
+            cloudWatchLogsClient = client
         }.toRuntime()
         requireNotNull(runtime)
 
@@ -121,13 +122,13 @@ class CloudWatchLogsKtorPluginTest {
     fun `service customizer runs after shared customizer`() = runSuspendIO {
         val order = mutableListOf<String>()
         val runtime = CloudWatchLogsKtorPluginConfig().apply {
-            cloudWatchLogsAsyncClient { order += "service" }
+            cloudWatchLogsClient { order += "service" }
         }.toRuntime(
             io.bluetape4k.aws.ktor.AwsKtorDefaults(
                 region = "ap-northeast-2",
-                endpointOverride = Url("http://localhost:4566"),
-                cloudWatchLogsAsyncClientCustomizers = listOf(
-                    io.bluetape4k.aws.ktor.AwsKtorCloudWatchLogsAsyncClientCustomizer { order += "shared" }
+                endpointOverride = KtorUrl("http://localhost:4566"),
+                cloudWatchLogsClientCustomizers = listOf(
+                    io.bluetape4k.aws.ktor.AwsKtorCloudWatchLogsClientCustomizer { order += "shared" }
                 ),
             )
         )

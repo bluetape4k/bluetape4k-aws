@@ -1,9 +1,9 @@
 package io.bluetape4k.aws.ktor.cloudwatch
 
-import software.amazon.awssdk.services.cloudwatch.model.DimensionFilter
-import software.amazon.awssdk.services.cloudwatch.model.ListMetricsResponse
-import software.amazon.awssdk.services.cloudwatch.model.MetricDatum
-import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataResponse
+import aws.sdk.kotlin.services.cloudwatch.model.DimensionFilter
+import aws.sdk.kotlin.services.cloudwatch.model.ListMetricsResponse
+import aws.sdk.kotlin.services.cloudwatch.model.MetricDatum
+import aws.sdk.kotlin.services.cloudwatch.model.PutMetricDataResponse
 
 /**
  * Ktor 애플리케이션을 위한 코루틴 CloudWatch 메트릭 작업입니다.

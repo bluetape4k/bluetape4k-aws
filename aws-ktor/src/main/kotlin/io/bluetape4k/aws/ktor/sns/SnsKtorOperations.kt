@@ -1,7 +1,7 @@
 package io.bluetape4k.aws.ktor.sns
 
-import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionResponse
-import software.amazon.awssdk.services.sns.model.PublishResponse
+import aws.sdk.kotlin.services.sns.model.ConfirmSubscriptionResponse
+import aws.sdk.kotlin.services.sns.model.PublishResponse
 
 /**
  * Ktor 애플리케이션을 위한 코루틴 기반 SNS 작업입니다.

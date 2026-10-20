@@ -1,23 +1,25 @@
 package io.bluetape4k.aws.ktor.sns
 
-import io.bluetape4k.aws.sns.createFIFOTopic
-import io.bluetape4k.aws.sns.createTopic
+import aws.sdk.kotlin.services.sns.SnsClient
+import aws.sdk.kotlin.services.sns.model.ConfirmSubscriptionRequest
+import aws.sdk.kotlin.services.sns.model.ConfirmSubscriptionResponse
+import aws.sdk.kotlin.services.sns.model.CreateTopicRequest
+import aws.sdk.kotlin.services.sns.model.ListTopicsRequest
+import aws.sdk.kotlin.services.sns.model.PublishRequest
+import aws.sdk.kotlin.services.sns.model.PublishResponse
+import aws.sdk.kotlin.services.sns.model.MessageAttributeValue
 import io.bluetape4k.support.requireNotBlank
-import kotlinx.coroutines.future.await
-import software.amazon.awssdk.services.sns.SnsAsyncClient
-import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionResponse
-import software.amazon.awssdk.services.sns.model.PublishResponse
 
 /**
- * [SnsAsyncClient]를 사용하는 코루틴 친화적인 [SnsKtorOperations] 구현입니다.
+ * [SnsClient]를 사용하는 코루틴 중심 [SnsKtorOperations] 구현입니다.
  *
  * ## 계약
  *
- * 주제 생성에는 기존 `aws-java` 코루틴 도우미를 재사용합니다. 게시, 목록, 확인 경로의
- * Ktor 요청 및 신뢰 계약은 이 모듈에 속하므로 `CompletableFuture.await()`를 직접 사용합니다.
+ * SNS 요청과 응답은 AWS Kotlin SDK 모델을 사용합니다. SMS 옵션은 사용자 속성보다 우선하여
+ * 동일한 이름의 표준 SMS 속성을 덮어씁니다.
  */
 class SnsKtorTemplate(
-    private val snsAsyncClient: SnsAsyncClient,
+    private val snsClient: SnsClient,
     private val topics: Map<String, SnsKtorTopic> = emptyMap(),
 ): SnsKtorOperations {
 
@@ -26,7 +28,12 @@ class SnsKtorTemplate(
         attributes: Map<String, String>,
     ): String {
         topicName.requireTopicName()
-        return snsAsyncClient.createTopic(topicName, attributes).topicArn()
+        return snsClient.createTopic(
+            CreateTopicRequest {
+                name = topicName
+                this.attributes = attributes
+            }
+        ).topicArn ?: error("SNS createTopic returned no topic ARN.")
     }
 
     override suspend fun createFifoTopic(
@@ -46,7 +53,12 @@ class SnsKtorTemplate(
             put("ContentBasedDeduplication", contentBasedDeduplication.toString())
             fifoThroughputScope?.let { put("FifoThroughputScope", it.attributeValue) }
         }
-        return snsAsyncClient.createFIFOTopic(topicName, fifoAttributes).topicArn()
+        return snsClient.createTopic(
+            CreateTopicRequest {
+                name = topicName
+                this.attributes = fifoAttributes
+            }
+        ).topicArn ?: error("SNS createTopic returned no topic ARN.")
     }
 
     override suspend fun createConfiguredTopic(topicName: String): String {
@@ -71,48 +83,42 @@ class SnsKtorTemplate(
         val suffix = ":$topicName"
         var nextToken: String? = null
         do {
-            val response = snsAsyncClient
-                .listTopics {
-                    nextToken?.let(it::nextToken)
-                }
-                .await()
+            val response = snsClient.listTopics(
+                ListTopicsRequest { this.nextToken = nextToken }
+            )
 
-            response.topics().orEmpty()
-                .mapNotNull { it.topicArn() }
-                .firstOrNull { it.endsWith(suffix) }
+            response.topics.orEmpty()
+                .firstNotNullOfOrNull { topic -> topic.topicArn?.takeIf { it.endsWith(suffix) } }
                 ?.let { return it }
 
-            nextToken = response.nextToken()
+            nextToken = response.nextToken
         } while (!nextToken.isNullOrBlank())
 
         return null
     }
 
     override suspend fun publish(request: SnsPublishRequest): PublishResponse =
-        snsAsyncClient
-            .publish {
-                it.topicArn(request.topicArn)
-                it.message(request.message)
-                request.subject?.let(it::subject)
-                if (request.messageAttributes.isNotEmpty()) {
-                    it.messageAttributes(request.messageAttributes)
-                }
-                request.messageGroupId?.let(it::messageGroupId)
-                request.messageDeduplicationId?.let(it::messageDeduplicationId)
+        snsClient.publish(
+            PublishRequest {
+                topicArn = request.topicArn
+                message = request.message
+                subject = request.subject
+                messageAttributes = request.messageAttributes.toSdkMessageAttributes().takeIf { it.isNotEmpty() }
+                messageGroupId = request.messageGroupId
+                messageDeduplicationId = request.messageDeduplicationId
             }
-            .await()
+        )
 
     override suspend fun publishSms(request: SnsSmsRequest): PublishResponse =
-        snsAsyncClient
-            .publish {
-                it.phoneNumber(request.phoneNumber)
-                it.message(request.message)
-                val attributes = request.toMessageAttributes()
-                if (attributes.isNotEmpty()) {
-                    it.messageAttributes(attributes)
-                }
+        snsClient.publish(
+            PublishRequest {
+                phoneNumber = request.phoneNumber
+                message = request.message
+                messageAttributes = request.toMessageAttributes()
+                    .toSdkMessageAttributes()
+                    .takeIf { it.isNotEmpty() }
             }
-            .await()
+        )
 
     override suspend fun confirmSubscription(
         topicArn: String,
@@ -122,13 +128,13 @@ class SnsKtorTemplate(
         topicArn.requireTopicArn()
         token.requireNotBlank("token")
 
-        return snsAsyncClient
-            .confirmSubscription {
-                it.topicArn(topicArn)
-                it.token(token)
-                it.authenticateOnUnsubscribe(authenticateOnUnsubscribe.toString())
+        return snsClient.confirmSubscription(
+            ConfirmSubscriptionRequest {
+                this.topicArn = topicArn
+                this.token = token
+                this.authenticateOnUnsubscribe = authenticateOnUnsubscribe.toString()
             }
-            .await()
+        )
     }
 
     override suspend fun confirmSubscription(
@@ -140,4 +146,13 @@ class SnsKtorTemplate(
             token = message.message.requireConfirmationToken(),
             authenticateOnUnsubscribe = authenticateOnUnsubscribe,
         )
+
+    private fun Map<String, SnsMessageAttribute>.toSdkMessageAttributes(): Map<String, MessageAttributeValue> =
+        mapValues { (_, attribute) ->
+            MessageAttributeValue {
+                dataType = attribute.dataType
+                stringValue = attribute.stringValue
+                binaryValue = attribute.binaryValueForSdk
+            }
+        }
 }

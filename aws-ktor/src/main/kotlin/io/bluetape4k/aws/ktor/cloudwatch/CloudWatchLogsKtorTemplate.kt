@@ -1,25 +1,25 @@
 package io.bluetape4k.aws.ktor.cloudwatch
 
-import io.bluetape4k.aws.cloudwatch.createLogGroup
-import io.bluetape4k.aws.cloudwatch.createLogStream
-import io.bluetape4k.aws.cloudwatch.describeLogGroups
-import io.bluetape4k.aws.cloudwatch.describeLogStreams
-import io.bluetape4k.aws.cloudwatch.putLogEvents
+import aws.sdk.kotlin.services.cloudwatchlogs.CloudWatchLogsClient
+import aws.sdk.kotlin.services.cloudwatchlogs.model.CreateLogGroupResponse
+import aws.sdk.kotlin.services.cloudwatchlogs.model.CreateLogStreamResponse
+import aws.sdk.kotlin.services.cloudwatchlogs.model.DescribeLogGroupsResponse
+import aws.sdk.kotlin.services.cloudwatchlogs.model.DescribeLogStreamsResponse
+import aws.sdk.kotlin.services.cloudwatchlogs.model.InputLogEvent
+import aws.sdk.kotlin.services.cloudwatchlogs.model.PutLogEventsResponse
+import io.bluetape4k.aws.kotlin.cloudwatch.createLogGroup
+import io.bluetape4k.aws.kotlin.cloudwatch.createLogStream
+import io.bluetape4k.aws.kotlin.cloudwatch.describeLogGroups
+import io.bluetape4k.aws.kotlin.cloudwatch.describeLogStreams
+import io.bluetape4k.aws.kotlin.cloudwatch.putLogEvents
 import io.bluetape4k.support.requireInRange
 import io.bluetape4k.support.requireNotBlank
-import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClient
-import software.amazon.awssdk.services.cloudwatchlogs.model.CreateLogGroupResponse
-import software.amazon.awssdk.services.cloudwatchlogs.model.CreateLogStreamResponse
-import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeLogGroupsResponse
-import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeLogStreamsResponse
-import software.amazon.awssdk.services.cloudwatchlogs.model.InputLogEvent
-import software.amazon.awssdk.services.cloudwatchlogs.model.PutLogEventsResponse
 
 internal const val CLOUDWATCH_LOGS_MIN_BATCH_SIZE = 1
 internal const val CLOUDWATCH_LOGS_MAX_BATCH_SIZE = 10000
 
 /**
- * [CloudWatchLogsAsyncClient]를 사용하는 기본 [CloudWatchLogsKtorOperations] 구현입니다.
+ * AWS Kotlin SDK [CloudWatchLogsClient]를 사용하는 기본 [CloudWatchLogsKtorOperations] 구현입니다.
  *
  * ## 계약
  *
@@ -27,7 +27,7 @@ internal const val CLOUDWATCH_LOGS_MAX_BATCH_SIZE = 10000
  * AWS를 호출하지 않습니다.
  */
 class CloudWatchLogsKtorTemplate(
-    private val cloudWatchLogsAsyncClient: CloudWatchLogsAsyncClient,
+    private val cloudWatchLogsClient: CloudWatchLogsClient,
     private val logStream: CloudWatchLogStream? = null,
     private val batchSize: Int = CLOUDWATCH_LOGS_MAX_BATCH_SIZE,
 ): CloudWatchLogsKtorOperations {
@@ -38,11 +38,11 @@ class CloudWatchLogsKtorTemplate(
 
     override suspend fun createLogGroup(logGroupName: String): CreateLogGroupResponse {
         logGroupName.requireNotBlank("logGroupName")
-        return cloudWatchLogsAsyncClient.createLogGroup(logGroupName)
+        return cloudWatchLogsClient.createLogGroup(logGroupName)
     }
 
     override suspend fun createLogStream(logStream: CloudWatchLogStream): CreateLogStreamResponse =
-        cloudWatchLogsAsyncClient.createLogStream(logStream.logGroupName, logStream.logStreamName)
+        cloudWatchLogsClient.createLogStream(logStream.logGroupName, logStream.logStreamName)
 
     override suspend fun putLogEvents(logEvents: List<InputLogEvent>): List<PutLogEventsResponse> =
         putLogEvents(defaultLogStream(), logEvents)
@@ -56,19 +56,19 @@ class CloudWatchLogsKtorTemplate(
         }
 
         return logEvents.chunked(batchSize).map { batch ->
-            cloudWatchLogsAsyncClient.putLogEvents(logStream.logGroupName, logStream.logStreamName, batch)
+            cloudWatchLogsClient.putLogEvents(logStream.logGroupName, logStream.logStreamName, batch)
         }
     }
 
     override suspend fun describeLogGroups(logGroupNamePrefix: String?): DescribeLogGroupsResponse =
-        cloudWatchLogsAsyncClient.describeLogGroups(logGroupNamePrefix)
+        cloudWatchLogsClient.describeLogGroups(logGroupNamePrefix)
 
     override suspend fun describeLogStreams(
         logGroupName: String,
         logStreamNamePrefix: String?,
     ): DescribeLogStreamsResponse {
         logGroupName.requireNotBlank("logGroupName")
-        return cloudWatchLogsAsyncClient.describeLogStreams(logGroupName, logStreamNamePrefix)
+        return cloudWatchLogsClient.describeLogStreams(logGroupName, logStreamNamePrefix)
     }
 
     private fun defaultLogStream(): CloudWatchLogStream =

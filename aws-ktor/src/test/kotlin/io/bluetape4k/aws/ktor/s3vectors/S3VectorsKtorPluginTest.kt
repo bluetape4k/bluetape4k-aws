@@ -8,8 +8,7 @@ import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.ktor.AwsKtorCore
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
-import io.bluetape4k.aws.ktor.AwsKtorS3VectorsAsyncClientCustomizer
-import io.bluetape4k.aws.s3vectors.S3VectorsOperations
+import io.bluetape4k.aws.ktor.AwsKtorS3VectorsClientCustomizer
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.ktor.testing.shouldHaveStatus
 import io.bluetape4k.logging.KLogging
@@ -28,18 +27,16 @@ import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
-import software.amazon.awssdk.services.s3vectors.S3VectorsAsyncClient
-import java.net.URI
+import aws.sdk.kotlin.services.s3vectors.S3VectorsClient
+import aws.smithy.kotlin.runtime.net.url.Url as SmithyUrl
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class S3VectorsKtorPluginTest {
 
     companion object: KLogging()
 
-    private val sdkClient = mockk<S3VectorsAsyncClient>(relaxed = true)
-    private val operations = mockk<S3VectorsOperations>(relaxed = true)
+    private val sdkClient = mockk<S3VectorsClient>(relaxed = true)
+    private val operations = mockk<S3VectorsKtorOperations>(relaxed = true)
 
     @BeforeEach
     fun resetMocks() {
@@ -110,7 +107,7 @@ class S3VectorsKtorPluginTest {
         val runtime = S3VectorsKtorPluginConfig()
             .apply {
                 s3VectorsOperations = operations
-                endpointOverride = URI.create("http://localhost:4566")
+                endpointOverride = SmithyUrl.parse("http://localhost:4566")
             }
             .toRuntime()
             .shouldNotBeNull()
@@ -122,7 +119,7 @@ class S3VectorsKtorPluginTest {
     fun `injected client remains application owned`() = runSuspendIO {
         val runtime = S3VectorsKtorPluginConfig()
             .apply {
-                s3VectorsAsyncClient = sdkClient
+                s3VectorsClient = sdkClient
             }
             .toRuntime()
             .shouldNotBeNull()
@@ -150,7 +147,7 @@ class S3VectorsKtorPluginTest {
         val error = assertFailsWith<IllegalArgumentException> {
             S3VectorsKtorPluginConfig()
                 .apply {
-                    endpointOverride = URI.create("http://localhost:4566")
+                    endpointOverride = SmithyUrl.parse("http://localhost:4566")
                 }
                 .toRuntime()
         }
@@ -161,18 +158,16 @@ class S3VectorsKtorPluginTest {
     @Test
     fun `service customizer runs after shared customizer`() = runSuspendIO {
         val order = mutableListOf<String>()
-        val credentials = StaticCredentialsProvider.create(AwsBasicCredentials.create("ak", "sk"))
         val runtime = S3VectorsKtorPluginConfig()
             .apply {
-                s3VectorsAsyncClient { order += "service" }
+                s3VectorsClient { order += "service" }
             }
             .toRuntime(
                 AwsKtorDefaults(
                     region = "ap-northeast-2",
                     endpointOverride = Url("http://localhost:4566"),
-                    javaCredentialsProvider = credentials,
-                    s3VectorsAsyncClientCustomizers = listOf(
-                        AwsKtorS3VectorsAsyncClientCustomizer { order += "shared" }
+                    s3VectorsClientCustomizers = listOf(
+                        AwsKtorS3VectorsClientCustomizer { order += "shared" }
                     ),
                 )
             )

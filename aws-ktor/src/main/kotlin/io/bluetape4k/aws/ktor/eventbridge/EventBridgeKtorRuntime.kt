@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.ktor.eventbridge
 
+import aws.sdk.kotlin.services.eventbridge.EventBridgeClient
 import io.bluetape4k.ktor.core.ApplicationResourceRegistry
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
@@ -7,14 +8,13 @@ import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.runInterruptible
-import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient
 
 /**
  * EventBridge Ktor 작업과 플러그인이 소유한 클라이언트 수명 주기를 보관하는 런타임입니다.
  */
 class EventBridgeKtorRuntime(
     val operations: EventBridgeKtorOperations,
-    private val ownedClient: EventBridgeAsyncClient? = null,
+    private val ownedClient: EventBridgeClient? = null,
 ) {
     companion object: KLoggingChannel()
 

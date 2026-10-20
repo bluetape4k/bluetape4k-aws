@@ -1,21 +1,21 @@
 package io.bluetape4k.aws.ktor.cloudwatch
 
-import io.bluetape4k.aws.cloudwatch.listMetrics
-import io.bluetape4k.aws.cloudwatch.putMetricData
+import aws.sdk.kotlin.services.cloudwatch.CloudWatchClient
+import aws.sdk.kotlin.services.cloudwatch.model.DimensionFilter
+import aws.sdk.kotlin.services.cloudwatch.model.ListMetricsResponse
+import aws.sdk.kotlin.services.cloudwatch.model.MetricDatum
+import aws.sdk.kotlin.services.cloudwatch.model.PutMetricDataResponse
+import io.bluetape4k.aws.kotlin.cloudwatch.listMetrics
+import io.bluetape4k.aws.kotlin.cloudwatch.putMetricData
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.support.requireInRange
 import io.bluetape4k.support.requireNotBlank
-import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient
-import software.amazon.awssdk.services.cloudwatch.model.DimensionFilter
-import software.amazon.awssdk.services.cloudwatch.model.ListMetricsResponse
-import software.amazon.awssdk.services.cloudwatch.model.MetricDatum
-import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataResponse
 
 internal const val CLOUDWATCH_MIN_BATCH_SIZE = 1
 internal const val CLOUDWATCH_MAX_BATCH_SIZE = 1000
 
 /**
- * [CloudWatchAsyncClient]를 사용하는 기본 [CloudWatchKtorOperations] 구현입니다.
+ * AWS Kotlin SDK [CloudWatchClient]를 사용하는 기본 [CloudWatchKtorOperations] 구현입니다.
  *
  * ## 계약
  *
@@ -23,7 +23,7 @@ internal const val CLOUDWATCH_MAX_BATCH_SIZE = 1000
  * AWS를 호출하지 않습니다.
  */
 class CloudWatchKtorTemplate(
-    private val cloudWatchAsyncClient: CloudWatchAsyncClient,
+    private val cloudWatchClient: CloudWatchClient,
     private val namespace: String? = null,
     private val batchSize: Int = CLOUDWATCH_MAX_BATCH_SIZE,
 ): CloudWatchKtorOperations {
@@ -47,7 +47,7 @@ class CloudWatchKtorTemplate(
         }
 
         return metricData.chunked(batchSize).map { batch ->
-            cloudWatchAsyncClient.putMetricData(namespace, batch)
+            cloudWatchClient.putMetricData(namespace, batch)
         }
     }
 
@@ -56,7 +56,7 @@ class CloudWatchKtorTemplate(
         metricName: String?,
         dimensions: List<DimensionFilter>?,
     ): ListMetricsResponse =
-        cloudWatchAsyncClient.listMetrics(namespace, metricName, dimensions)
+        cloudWatchClient.listMetrics(namespace, metricName, dimensions)
 
     private fun defaultNamespace(): String =
         namespace?.takeIf { it.isNotBlank() } ?: throw IllegalArgumentException("namespace must be configured.")

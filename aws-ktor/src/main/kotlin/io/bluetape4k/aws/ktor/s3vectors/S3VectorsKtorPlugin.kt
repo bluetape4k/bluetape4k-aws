@@ -1,7 +1,6 @@
 package io.bluetape4k.aws.ktor.s3vectors
 
 import io.bluetape4k.aws.ktor.awsKtorDefaults
-import io.bluetape4k.aws.s3vectors.S3VectorsOperations
 import io.bluetape4k.ktor.core.installApplicationResourceLifecycle
 import io.bluetape4k.support.checkNotNull
 import io.ktor.server.application.Application
@@ -16,9 +15,9 @@ val S3VectorsKtorRuntimeKey: AttributeKey<S3VectorsKtorRuntime> =
     AttributeKey("S3VectorsKtorRuntime")
 
 /**
- * 설치된 [S3VectorsOperations]를 저장하는 애플리케이션 속성 키입니다.
+ * 설치된 [S3VectorsKtorOperations]를 저장하는 애플리케이션 속성 키입니다.
  */
-val S3VectorsOperationsKey: AttributeKey<S3VectorsOperations> =
+val S3VectorsOperationsKey: AttributeKey<S3VectorsKtorOperations> =
     AttributeKey("S3VectorsOperations")
 
 /**
@@ -27,7 +26,7 @@ val S3VectorsOperationsKey: AttributeKey<S3VectorsOperations> =
  * ## 계약
  *
  * 플러그인을 설치해도 AWS를 호출하지 않습니다. S3 Vectors 호출은
- * [S3VectorsOperations] 메서드를 통해서만 발생합니다.
+ * [S3VectorsKtorOperations] 메서드를 통해서만 발생합니다.
  */
 val S3VectorsKtorPlugin: ApplicationPlugin<S3VectorsKtorPluginConfig> = createApplicationPlugin(
     name = "S3VectorsKtorPlugin",
@@ -46,7 +45,7 @@ val S3VectorsKtorPlugin: ApplicationPlugin<S3VectorsKtorPluginConfig> = createAp
  *
  * @throws IllegalStateException [S3VectorsKtorPlugin]이 없거나 비활성화된 경우
  */
-fun Application.s3Vectors(): S3VectorsOperations =
+fun Application.s3Vectors(): S3VectorsKtorOperations =
     s3VectorsOrNull().checkNotNull {
         "S3VectorsKtorPlugin is not installed or is disabled."
     }
@@ -54,5 +53,5 @@ fun Application.s3Vectors(): S3VectorsOperations =
 /**
  * [S3VectorsKtorPlugin]이 설치한 S3 Vectors 작업을 반환합니다. 플러그인이 없거나 비활성화되었으면 null을 반환합니다.
  */
-fun Application.s3VectorsOrNull(): S3VectorsOperations? =
+fun Application.s3VectorsOrNull(): S3VectorsKtorOperations? =
     attributes.getOrNull(S3VectorsOperationsKey)

@@ -1,12 +1,12 @@
 package io.bluetape4k.aws.ktor.s3.accessgrants
 
+import aws.sdk.kotlin.services.s3control.S3ControlClient
+import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
+import aws.smithy.kotlin.runtime.http.engine.HttpClientEngine
+import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
-import io.bluetape4k.aws.ktor.AwsKtorS3ControlAsyncClientCustomizer
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
-import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.s3control.S3ControlAsyncClient
-import java.net.URI
+import io.bluetape4k.aws.ktor.AwsKtorS3ControlClientCustomizer
 
 /**
  * [S3AccessGrantsKtorPlugin] 구성입니다.
@@ -21,8 +21,8 @@ class S3AccessGrantsKtorPluginConfig {
     /** Ktor S3 Access Grants 런타임 등록을 활성화합니다. */
     var enabled: Boolean = true
 
-    /** 애플리케이션이 소유하는 선택적인 AWS SDK v2 S3 Control 비동기 클라이언트입니다. */
-    var s3ControlAsyncClient: S3ControlAsyncClient? = null
+    /** 애플리케이션이 소유하는 선택적인 AWS Kotlin SDK S3 Control 클라이언트입니다. */
+    var s3ControlClient: S3ControlClient? = null
 
     /** 애플리케이션이 소유하는 선택적인 작업 파사드입니다. */
     var s3AccessGrantsOperations: S3AccessGrantsKtorOperations? = null
@@ -31,17 +31,18 @@ class S3AccessGrantsKtorPluginConfig {
     var region: String? = null
 
     /** 플러그인이 클라이언트를 생성할 때 사용하는 선택적인 S3 Control 엔드포인트 재정의입니다. */
-    var endpointOverride: URI? = null
+    var endpointOverride: Url? = null
 
     /** 플러그인이 클라이언트를 생성할 때 사용하는 선택적인 자격 증명 공급자입니다. */
-    var credentialsProvider: AwsCredentialsProvider? = null
+    var credentialsProvider: CredentialsProvider? = null
 
-    private val clientCustomizers = mutableListOf<AwsKtorS3ControlAsyncClientCustomizer>()
+    /** 플러그인이 생성할 클라이언트에 전달할 호출자 소유 Smithy HTTP 엔진입니다. */
+    var httpClient: HttpClientEngine? = null
 
-    /**
-     * 플러그인이 생성한 클라이언트에 S3 Control 비동기 클라이언트 빌더 사용자 정의 설정을 추가합니다.
-     */
-    fun s3ControlAsyncClient(customizer: AwsKtorS3ControlAsyncClientCustomizer) {
+    private val clientCustomizers = mutableListOf<AwsKtorS3ControlClientCustomizer>()
+
+    /** 플러그인이 생성한 클라이언트에 S3 Control builder 사용자 정의 설정을 추가합니다. */
+    fun s3ControlClient(customizer: AwsKtorS3ControlClientCustomizer) {
         clientCustomizers += customizer
     }
 
@@ -52,8 +53,8 @@ class S3AccessGrantsKtorPluginConfig {
 
         s3AccessGrantsOperations?.let { return S3AccessGrantsKtorRuntime(it) }
 
-        val injectedClient = s3ControlAsyncClient
-        val client = injectedClient ?: createS3ControlAsyncClient(defaults)
+        val injectedClient = s3ControlClient
+        val client = injectedClient ?: createS3ControlClient(defaults)
         val operations = S3AccessGrantsKtorTemplate(client)
 
         return S3AccessGrantsKtorRuntime(
@@ -62,28 +63,29 @@ class S3AccessGrantsKtorPluginConfig {
         )
     }
 
-    private fun createS3ControlAsyncClient(defaults: AwsKtorDefaults): S3ControlAsyncClient {
+    private fun createS3ControlClient(defaults: AwsKtorDefaults): S3ControlClient {
         val effectiveRegion = region?.takeIf { it.isNotBlank() } ?: defaults.region?.takeIf { it.isNotBlank() }
-        val effectiveEndpoint = endpointOverride ?: defaults.javaEndpointOverride
+        val effectiveEndpoint = endpointOverride ?: defaults.endpointOverride?.let { Url.parse(it.toString()) }
         require(effectiveEndpoint == null || !effectiveRegion.isNullOrBlank()) {
             "region must be configured when endpointOverride is configured."
         }
 
-        val builder = S3ControlAsyncClient.builder()
-        effectiveRegion?.let { builder.region(Region.of(it)) }
-        (credentialsProvider ?: defaults.javaCredentialsProvider)?.let(builder::credentialsProvider)
-        effectiveEndpoint?.let(builder::endpointOverride)
-        defaults.s3ControlAsyncClientCustomizers.forEach { it.customize(builder) }
-        clientCustomizers.forEach { it.customize(builder) }
-
-        return builder.build()
+        return S3ControlClient {
+            effectiveRegion?.let { region = it }
+            effectiveEndpoint?.let { endpointUrl = it }
+            (credentialsProvider ?: defaults.kotlinCredentialsProvider)?.let { credentialsProvider = it }
+            (httpClient ?: defaults.kotlinHttpClient)?.let { httpClient = it }
+            defaults.s3ControlClientCustomizers.forEach { it.customize(this) }
+            clientCustomizers.forEach { it.customize(this) }
+        }
     }
 
     override fun toString(): String =
         ToStringBuilder(this)
             .add("enabled", enabled)
-            .add("s3ControlAsyncClientConfigured", s3ControlAsyncClient != null)
+            .add("s3ControlClientConfigured", s3ControlClient != null)
             .add("s3AccessGrantsOperationsConfigured", s3AccessGrantsOperations != null)
+            .add("clientCustomizersCount", clientCustomizers.size)
             .add("region", region)
             .add("endpointConfigured", endpointOverride != null)
             .add("credentialsProviderConfigured", credentialsProvider != null)

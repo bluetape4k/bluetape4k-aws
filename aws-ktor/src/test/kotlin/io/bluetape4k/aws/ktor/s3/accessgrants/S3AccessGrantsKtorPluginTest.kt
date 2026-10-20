@@ -9,7 +9,7 @@ import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.ktor.AwsKtorCore
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
-import io.bluetape4k.aws.ktor.AwsKtorS3ControlAsyncClientCustomizer
+import io.bluetape4k.aws.ktor.AwsKtorS3ControlClientCustomizer
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.ktor.testing.shouldHaveStatus
 import io.bluetape4k.logging.KLogging
@@ -29,23 +29,21 @@ import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
-import software.amazon.awssdk.services.s3control.S3ControlAsyncClient
-import java.net.URI
+import aws.sdk.kotlin.services.s3control.S3ControlClient
+import aws.smithy.kotlin.runtime.net.url.Url as SmithyUrl
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class S3AccessGrantsKtorPluginTest {
 
     companion object: KLogging()
 
-    private val client = mockk<S3ControlAsyncClient>(relaxed = true)
+    private val client = mockk<S3ControlClient>(relaxed = true)
     private val operations = mockk<S3AccessGrantsKtorOperations>(relaxed = true)
 
     @Test
     fun `runtime toString does not invoke injected operations or client toString`() {
         val injectedOperations = mockk<S3AccessGrantsKtorOperations>()
-        val ownedClient = mockk<S3ControlAsyncClient>()
+        val ownedClient = mockk<S3ControlClient>()
         every { injectedOperations.toString() } returns "operations-secret"
         every { ownedClient.toString() } returns "client-secret"
 
@@ -127,7 +125,7 @@ class S3AccessGrantsKtorPluginTest {
         val runtime = S3AccessGrantsKtorPluginConfig()
             .apply {
                 s3AccessGrantsOperations = operations
-                endpointOverride = URI.create("http://localhost:4566")
+                endpointOverride = SmithyUrl.parse("http://localhost:4566")
             }
             .toRuntime()
             .shouldNotBeNull()
@@ -139,7 +137,7 @@ class S3AccessGrantsKtorPluginTest {
     fun `injected client remains application owned`() = runSuspendIO {
         val runtime = S3AccessGrantsKtorPluginConfig()
             .apply {
-                s3ControlAsyncClient = client
+                s3ControlClient = client
             }
             .toRuntime()
             .shouldNotBeNull()
@@ -167,7 +165,7 @@ class S3AccessGrantsKtorPluginTest {
         val error = assertFailsWith<IllegalArgumentException> {
             S3AccessGrantsKtorPluginConfig()
                 .apply {
-                    endpointOverride = URI.create("http://localhost:4566")
+                endpointOverride = SmithyUrl.parse("http://localhost:4566")
                 }
                 .toRuntime()
         }
@@ -179,17 +177,15 @@ class S3AccessGrantsKtorPluginTest {
     @Test
     fun `service customizer runs after shared customizer`() = runSuspendIO {
         val order = mutableListOf<String>()
-        val credentials = StaticCredentialsProvider.create(AwsBasicCredentials.create("ak", "sk"))
 
         val runtime = S3AccessGrantsKtorPluginConfig()
-            .apply { s3ControlAsyncClient { order += "service" } }
+            .apply { s3ControlClient { order += "service" } }
             .toRuntime(
                 AwsKtorDefaults(
                     region = "ap-northeast-2",
                     endpointOverride = Url("http://localhost:4566"),
-                    javaCredentialsProvider = credentials,
-                    s3ControlAsyncClientCustomizers = listOf(
-                        AwsKtorS3ControlAsyncClientCustomizer { order += "shared" }
+                    s3ControlClientCustomizers = listOf(
+                        AwsKtorS3ControlClientCustomizer { order += "shared" }
                     ),
                 )
             )

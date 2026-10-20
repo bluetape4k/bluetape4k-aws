@@ -7,14 +7,14 @@ import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.runInterruptible
-import software.amazon.awssdk.services.sts.StsAsyncClient
+import aws.sdk.kotlin.services.sts.StsClient
 
 /**
  * STS Ktor 작업과 플러그인이 소유한 클라이언트 수명 주기를 보관하는 런타임입니다.
  */
 class StsKtorRuntime(
     val operations: StsKtorOperations,
-    private val ownedClient: StsAsyncClient? = null,
+    private val ownedClient: StsClient? = null,
 ) {
     companion object: KLoggingChannel()
 
@@ -35,7 +35,7 @@ class StsKtorRuntime(
     }
 
     /**
-     * 플러그인이 생성한 STS 클라이언트를 한 번 닫습니다. 주입된 클라이언트는 닫지 않습니다.
+     * 플러그인이 생성한 AWS Kotlin STS 클라이언트를 한 번 닫습니다. 주입된 클라이언트는 닫지 않습니다.
      */
     suspend fun stop() {
         if (closed.compareAndSet(expect = false, update = true)) {

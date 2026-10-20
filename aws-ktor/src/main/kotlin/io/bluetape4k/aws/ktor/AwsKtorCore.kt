@@ -25,8 +25,6 @@ import io.ktor.server.application.createApplicationPlugin
 import io.ktor.util.AttributeKey
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClientBuilder
-import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClientBuilder
 import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClientBuilder
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClientBuilder
 import software.amazon.awssdk.services.s3control.S3ControlAsyncClientBuilder
@@ -70,8 +68,6 @@ class AwsKtorDefaults(
     stsClientCustomizers: List<AwsKtorStsClientCustomizer> = emptyList(),
     httpClientCustomizers: List<AwsKtorHttpClientCustomizer> = emptyList(),
     sqsAsyncClientCustomizers: List<AwsKtorSqsAsyncClientCustomizer> = emptyList(),
-    cloudWatchAsyncClientCustomizers: List<AwsKtorCloudWatchAsyncClientCustomizer> = emptyList(),
-    cloudWatchLogsAsyncClientCustomizers: List<AwsKtorCloudWatchLogsAsyncClientCustomizer> = emptyList(),
     eventBridgeAsyncClientCustomizers: List<AwsKtorEventBridgeAsyncClientCustomizer> = emptyList(),
     kinesisAsyncClientCustomizers: List<AwsKtorKinesisAsyncClientCustomizer> = emptyList(),
     s3ControlAsyncClientCustomizers: List<AwsKtorS3ControlAsyncClientCustomizer> = emptyList(),
@@ -121,14 +117,6 @@ class AwsKtorDefaults(
 
     @Transient
     private val sqsAsyncClientCustomizersValue: List<AwsKtorSqsAsyncClientCustomizer>? = sqsAsyncClientCustomizers
-
-    @Transient
-    private val cloudWatchAsyncClientCustomizersValue: List<AwsKtorCloudWatchAsyncClientCustomizer>? =
-        cloudWatchAsyncClientCustomizers
-
-    @Transient
-    private val cloudWatchLogsAsyncClientCustomizersValue: List<AwsKtorCloudWatchLogsAsyncClientCustomizer>? =
-        cloudWatchLogsAsyncClientCustomizers
 
     @Transient
     private val eventBridgeAsyncClientCustomizersValue: List<AwsKtorEventBridgeAsyncClientCustomizer>? =
@@ -218,14 +206,6 @@ class AwsKtorDefaults(
     val sqsAsyncClientCustomizers: List<AwsKtorSqsAsyncClientCustomizer>
         get() = sqsAsyncClientCustomizersValue ?: emptyList()
 
-    /** 플러그인이 생성한 AWS SDK Java v2 CloudWatch 비동기 클라이언트의 공유 사용자 정의 설정입니다. */
-    val cloudWatchAsyncClientCustomizers: List<AwsKtorCloudWatchAsyncClientCustomizer>
-        get() = cloudWatchAsyncClientCustomizersValue ?: emptyList()
-
-    /** 플러그인이 생성한 AWS SDK Java v2 CloudWatch Logs 비동기 클라이언트의 공유 사용자 정의 설정입니다. */
-    val cloudWatchLogsAsyncClientCustomizers: List<AwsKtorCloudWatchLogsAsyncClientCustomizer>
-        get() = cloudWatchLogsAsyncClientCustomizersValue ?: emptyList()
-
     /** 플러그인이 생성한 AWS SDK Java v2 EventBridge 비동기 클라이언트의 공유 사용자 정의 설정입니다. */
     val eventBridgeAsyncClientCustomizers: List<AwsKtorEventBridgeAsyncClientCustomizer>
         get() = eventBridgeAsyncClientCustomizersValue ?: emptyList()
@@ -285,8 +265,6 @@ class AwsKtorDefaults(
                 stsClientCustomizers == other.stsClientCustomizers &&
                 httpClientCustomizers == other.httpClientCustomizers &&
                 sqsAsyncClientCustomizers == other.sqsAsyncClientCustomizers &&
-                cloudWatchAsyncClientCustomizers == other.cloudWatchAsyncClientCustomizers &&
-                cloudWatchLogsAsyncClientCustomizers == other.cloudWatchLogsAsyncClientCustomizers &&
                 eventBridgeAsyncClientCustomizers == other.eventBridgeAsyncClientCustomizers &&
                 kinesisAsyncClientCustomizers == other.kinesisAsyncClientCustomizers &&
                 s3ControlAsyncClientCustomizers == other.s3ControlAsyncClientCustomizers &&
@@ -318,8 +296,6 @@ class AwsKtorDefaults(
         stsClientCustomizers,
         httpClientCustomizers,
         sqsAsyncClientCustomizers,
-        cloudWatchAsyncClientCustomizers,
-        cloudWatchLogsAsyncClientCustomizers,
         eventBridgeAsyncClientCustomizers,
         kinesisAsyncClientCustomizers,
         s3ControlAsyncClientCustomizers,
@@ -351,8 +327,6 @@ class AwsKtorDefaults(
             .add("stsClientCustomizersCount", stsClientCustomizers.size)
             .add("httpClientCustomizersCount", httpClientCustomizers.size)
             .add("sqsAsyncClientCustomizersCount", sqsAsyncClientCustomizers.size)
-            .add("cloudWatchAsyncClientCustomizersCount", cloudWatchAsyncClientCustomizers.size)
-            .add("cloudWatchLogsAsyncClientCustomizersCount", cloudWatchLogsAsyncClientCustomizers.size)
             .add("eventBridgeAsyncClientCustomizersCount", eventBridgeAsyncClientCustomizers.size)
             .add("kinesisAsyncClientCustomizersCount", kinesisAsyncClientCustomizers.size)
             .add("s3ControlAsyncClientCustomizersCount", s3ControlAsyncClientCustomizers.size)
@@ -422,8 +396,6 @@ class AwsKtorCoreConfig {
 
     private val httpClientCustomizers = mutableListOf<AwsKtorHttpClientCustomizer>()
     private val sqsAsyncClientCustomizers = mutableListOf<AwsKtorSqsAsyncClientCustomizer>()
-    private val cloudWatchAsyncClientCustomizers = mutableListOf<AwsKtorCloudWatchAsyncClientCustomizer>()
-    private val cloudWatchLogsAsyncClientCustomizers = mutableListOf<AwsKtorCloudWatchLogsAsyncClientCustomizer>()
     private val eventBridgeAsyncClientCustomizers = mutableListOf<AwsKtorEventBridgeAsyncClientCustomizer>()
     private val kinesisAsyncClientCustomizers = mutableListOf<AwsKtorKinesisAsyncClientCustomizer>()
     private val s3ControlAsyncClientCustomizers = mutableListOf<AwsKtorS3ControlAsyncClientCustomizer>()
@@ -521,20 +493,6 @@ class AwsKtorCoreConfig {
     }
 
     /**
-     * 전역 CloudWatch 비동기 클라이언트 빌더 사용자 정의 설정을 추가합니다.
-     */
-    fun cloudWatchAsyncClient(customizer: AwsKtorCloudWatchAsyncClientCustomizer) {
-        cloudWatchAsyncClientCustomizers += customizer
-    }
-
-    /**
-     * 전역 CloudWatch Logs 비동기 클라이언트 빌더 사용자 정의 설정을 추가합니다.
-     */
-    fun cloudWatchLogsAsyncClient(customizer: AwsKtorCloudWatchLogsAsyncClientCustomizer) {
-        cloudWatchLogsAsyncClientCustomizers += customizer
-    }
-
-    /**
      * 전역 EventBridge 비동기 클라이언트 빌더 사용자 정의 설정을 추가합니다.
      */
     fun eventBridgeAsyncClient(customizer: AwsKtorEventBridgeAsyncClientCustomizer) {
@@ -610,8 +568,6 @@ class AwsKtorCoreConfig {
             stsClientCustomizers = stsClientCustomizers.toList(),
             httpClientCustomizers = httpClientCustomizers.toList(),
             sqsAsyncClientCustomizers = sqsAsyncClientCustomizers.toList(),
-            cloudWatchAsyncClientCustomizers = cloudWatchAsyncClientCustomizers.toList(),
-            cloudWatchLogsAsyncClientCustomizers = cloudWatchLogsAsyncClientCustomizers.toList(),
             eventBridgeAsyncClientCustomizers = eventBridgeAsyncClientCustomizers.toList(),
             kinesisAsyncClientCustomizers = kinesisAsyncClientCustomizers.toList(),
             s3ControlAsyncClientCustomizers = s3ControlAsyncClientCustomizers.toList(),
@@ -697,20 +653,6 @@ fun interface AwsKtorStsClientCustomizer {
  */
 fun interface AwsKtorSqsAsyncClientCustomizer {
     fun customize(builder: SqsAsyncClientBuilder)
-}
-
-/**
- * 플러그인이 생성할 AWS SDK Java v2 CloudWatch 비동기 클라이언트 빌더를 사용자 정의합니다.
- */
-fun interface AwsKtorCloudWatchAsyncClientCustomizer {
-    fun customize(builder: CloudWatchAsyncClientBuilder)
-}
-
-/**
- * 플러그인이 생성할 AWS SDK Java v2 CloudWatch Logs 비동기 클라이언트 빌더를 사용자 정의합니다.
- */
-fun interface AwsKtorCloudWatchLogsAsyncClientCustomizer {
-    fun customize(builder: CloudWatchLogsAsyncClientBuilder)
 }
 
 /**

@@ -2,9 +2,45 @@ package io.bluetape4k.aws.ktor.sns
 
 import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.requireNotNull
-import software.amazon.awssdk.services.sns.model.MessageAttributeValue
 import java.io.Serializable
 import java.net.URI
+
+/** SNS 메시지 속성의 SDK 독립 표현입니다. */
+class SnsMessageAttribute(
+    val dataType: String,
+    val stringValue: String? = null,
+    binaryValue: ByteArray? = null,
+): Serializable {
+
+    private val binaryValueValue: ByteArray? = binaryValue?.copyOf()
+
+    /** 바이너리 속성 값의 방어적 복사본입니다. */
+    val binaryValue: ByteArray?
+        get() = binaryValueValue?.copyOf()
+
+    internal val binaryValueForSdk: ByteArray?
+        get() = binaryValueValue?.copyOf()
+
+    override fun equals(other: Any?): Boolean =
+        this === other || (other is SnsMessageAttribute &&
+                dataType == other.dataType &&
+                stringValue == other.stringValue &&
+                when {
+                    binaryValueValue == null -> other.binaryValueValue == null
+                    other.binaryValueValue == null -> false
+                    else -> binaryValueValue.contentEquals(other.binaryValueValue)
+                })
+
+    override fun hashCode(): Int = 31 * (31 * dataType.hashCode() + (stringValue?.hashCode() ?: 0)) +
+            (binaryValueValue?.contentHashCode() ?: 0)
+
+    override fun toString(): String =
+        "SnsMessageAttribute(dataType=$dataType, stringValueConfigured=${stringValue != null}, binarySize=${binaryValueValue?.size ?: 0})"
+
+    companion object {
+        private const val serialVersionUID: Long = 814525389208956207L
+    }
+}
 
 /**
  * SNS FIFO 주제의 처리량 범위입니다.
@@ -40,7 +76,7 @@ data class SnsPublishRequest(
     val topicArn: String,
     val message: String,
     val subject: String? = null,
-    val messageAttributes: Map<String, MessageAttributeValue> = emptyMap(),
+    val messageAttributes: Map<String, SnsMessageAttribute> = emptyMap(),
     val messageGroupId: String? = null,
     val messageDeduplicationId: String? = null,
 ): Serializable {
@@ -83,7 +119,7 @@ data class SnsSmsRequest(
     val originationNumber: String? = null,
     val entityId: String? = null,
     val templateId: String? = null,
-    val messageAttributes: Map<String, MessageAttributeValue> = emptyMap(),
+    val messageAttributes: Map<String, SnsMessageAttribute> = emptyMap(),
 ): Serializable {
 
     init {
@@ -96,7 +132,7 @@ data class SnsSmsRequest(
         templateId?.requireNotBlank("templateId")
     }
 
-    internal fun toMessageAttributes(): Map<String, MessageAttributeValue> =
+    internal fun toMessageAttributes(): Map<String, SnsMessageAttribute> =
         buildMap {
             putAll(messageAttributes)
             smsType?.let { put(SMS_TYPE_ATTRIBUTE, stringAttribute(it.attributeValue)) }
@@ -117,11 +153,10 @@ data class SnsSmsRequest(
         const val ENTITY_ID_ATTRIBUTE: String = "AWS.MM.SMS.EntityId"
         const val TEMPLATE_ID_ATTRIBUTE: String = "AWS.MM.SMS.TemplateId"
 
-        private fun stringAttribute(value: String): MessageAttributeValue =
-            MessageAttributeValue.builder()
-                .dataType("String")
-                .stringValue(value)
-                .build()
+        private fun stringAttribute(value: String): SnsMessageAttribute = SnsMessageAttribute(
+            dataType = "String",
+            stringValue = value,
+        )
     }
 }
 
