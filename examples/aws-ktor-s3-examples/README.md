@@ -47,6 +47,7 @@ val s3 = s3KtorClientOf(
     region = "ap-northeast-2",
     endpointOverride = Url("http://localhost:4566"),
     addressingStyle = S3KtorAddressingStyle.Path,
+    allowInsecureLocalHttpEndpoint = true,
 )
 ```
 

@@ -1,5 +1,10 @@
 package io.bluetape4k.aws.ktor.s3
 
+import aws.sdk.kotlin.runtime.auth.credentials.DefaultChainCredentialsProvider
+import aws.smithy.kotlin.runtime.auth.awscredentials.CloseableCredentialsProvider
+import aws.smithy.kotlin.runtime.auth.awscredentials.Credentials
+import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
+import aws.smithy.kotlin.runtime.collections.Attributes
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
 import ch.qos.logback.core.read.ListAppender
@@ -7,9 +12,9 @@ import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldContain
-import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.assertions.shouldNotBeEqualTo
 import io.bluetape4k.assertions.shouldNotContain
+import io.bluetape4k.aws.ktor.AwsKtorHttpClientCustomizer
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.client.AwsSigV4AuthLocation
 import io.bluetape4k.aws.ktor.client.AwsSigV4Plugin
@@ -37,13 +42,11 @@ import io.ktor.http.content.OutgoingContent
 import io.ktor.http.headersOf
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkConstructor
+import io.mockk.unmockkConstructor
 import io.mockk.verify
 import org.junit.jupiter.api.Test
 import org.slf4j.LoggerFactory
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
-import software.amazon.awssdk.auth.credentials.AwsCredentials
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -413,7 +416,7 @@ class S3KtorClientTest {
     }
 
     @Test
-    fun `Presign은 S3 query auth와 slash 보존 path를 생성한다`() {
+    fun `Presign은 고정 SigV4 vector와 원래 path encoding을 보존한다`() = runSuspendIO {
         val s3 = s3Client(endpointOverride = null)
 
         val presigned = s3.presignGetObject(
@@ -422,13 +425,14 @@ class S3KtorClientTest {
             expires = Duration.ofMinutes(15),
         )
 
-        log.debug { "presigned=$presigned" }
         presigned.method shouldBeEqualTo "GET"
         presigned.url.host shouldBeEqualTo "s3.ap-northeast-2.amazonaws.com"
         presigned.url.encodedPath shouldBeEqualTo "/demo.bucket/logs/2026/app%20log.txt"
         presigned.url.parameters["X-Amz-Algorithm"] shouldBeEqualTo "AWS4-HMAC-SHA256"
         presigned.url.parameters["X-Amz-Expires"] shouldBeEqualTo "900"
-        presigned.url.parameters["X-Amz-Signature"].shouldNotBeEmpty()
+        presigned.url.parameters["X-Amz-SignedHeaders"] shouldBeEqualTo "host"
+        presigned.url.parameters["X-Amz-Signature"] shouldBeEqualTo
+            "3db75a0ad67e1d88633145f9c3ffca7556f32c68680f5071e6e2933738adfcbd"
 
         s3.close()
     }
@@ -492,7 +496,7 @@ class S3KtorClientTest {
     }
 
     @Test
-    fun `Presign 만료 시간은 S3 SigV4 허용 범위를 검증한다`() {
+    fun `Presign 만료 시간은 S3 SigV4 허용 범위를 검증한다`() = runSuspendIO {
         val s3 = s3Client(endpointOverride = null)
 
         assertFailsWith<IllegalArgumentException> {
@@ -506,21 +510,67 @@ class S3KtorClientTest {
     }
 
     @Test
-    fun `shared AWS defaults provide S3 region endpoint credentials and signing clock`() {
-        val credentialsProvider = StaticCredentialsProvider.create(AwsBasicCredentials.create("akid", "secret"))
+    fun `presign은 원격 HTTP endpoint를 credentials resolve 전에 거부한다`() = runSuspendIO {
+        var resolves = 0
+        val credentialsProvider = object: CredentialsProvider {
+            override suspend fun resolve(attributes: Attributes): Credentials {
+                resolves += 1
+                return Credentials("akid", "secret")
+            }
+        }
+        assertFailsWith<IllegalArgumentException> {
+            s3KtorClientOf(
+                region = "ap-northeast-2",
+                credentialsProvider = credentialsProvider,
+                endpointOverride = Url("http://s3.example.com:4566"),
+                addressingStyle = S3KtorAddressingStyle.Path,
+                allowInsecureLocalHttpEndpoint = false,
+            )
+        }
+
+        resolves shouldBeEqualTo 0
+    }
+
+    @Test
+    fun `presign은 session token을 포함하고 signature를 로그에 쓰지 않는다`() = runSuspendIO {
+        val logger = LoggerFactory.getLogger(S3KtorClient::class.java) as Logger
+        val appender = ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>().apply { start() }
+        val previousLevel = logger.level
+        logger.addAppender(appender)
+        logger.level = Level.DEBUG
+        val s3 = s3Client(credentialsProvider = testCredentialsProvider(sessionToken = "session-token"))
+
+        try {
+            val presigned = s3.presignGetObject("demo-bucket", "logs/app.txt", 15.minutes())
+            presigned.url.parameters["X-Amz-Security-Token"] shouldBeEqualTo "session-token"
+        } finally {
+            s3.close()
+            logger.detachAppender(appender)
+            logger.level = previousLevel
+        }
+
+        val diagnostics = appender.list.joinToString("\n") { it.formattedMessage }
+        diagnostics shouldNotContain "X-Amz-Signature"
+        diagnostics shouldNotContain "session-token"
+        diagnostics shouldNotContain "X-Amz-Credential"
+    }
+
+    @Test
+    fun `shared AWS defaults provide S3 region endpoint credentials and signing clock`() = runSuspendIO {
+        val credentialsProvider = testCredentialsProvider()
         val s3 = s3KtorClientOf(
             defaults = AwsKtorDefaults(
                 region = "ap-northeast-2",
                 endpointOverride = Url("http://localhost:4566"),
-                javaCredentialsProvider = credentialsProvider,
+                kotlinCredentialsProvider = credentialsProvider,
                 signingClock = FIXED_CLOCK,
+                allowInsecureLocalHttpEndpoint = true,
             ),
             addressingStyle = S3KtorAddressingStyle.Path,
         )
 
         val presigned = s3.presignGetObject("demo-bucket", "logs/app.txt", 15.minutes())
 
-        log.debug { "presigned=$presigned" }
         presigned.url.host shouldBeEqualTo "localhost"
         presigned.url.encodedPath shouldBeEqualTo "/demo-bucket/logs/app.txt"
         presigned.url.parameters["X-Amz-Date"] shouldBeEqualTo "20260510T010203Z"
@@ -533,17 +583,19 @@ class S3KtorClientTest {
         val httpClient = mockk<HttpClient>()
         val clientFailure = IllegalStateException("http client close failed")
         val providerFailure = IllegalStateException("credentials provider close failed")
+        val credentialsProvider = CloseThrowingCredentialsProvider(providerFailure)
         every { httpClient.close() } throws clientFailure
 
         val s3 = S3KtorClient(
             httpClient = httpClient,
             region = "ap-northeast-2",
-            credentialsProvider = CloseThrowingCredentialsProvider(providerFailure),
+            credentialsProvider = credentialsProvider,
             endpointOverride = Url("http://localhost:4566"),
             addressingStyle = S3KtorAddressingStyle.Path,
             signingClock = FIXED_CLOCK,
             closeClient = true,
             closeCredentialsProvider = true,
+            allowInsecureLocalHttpEndpoint = true,
         )
 
         val error = assertFailsWith<IllegalStateException> {
@@ -552,7 +604,30 @@ class S3KtorClientTest {
 
         error shouldBeSameInstanceAs clientFailure
         error.suppressed.single() shouldBeSameInstanceAs providerFailure
+        s3.close()
         verify(exactly = 1) { httpClient.close() }
+        credentialsProvider.closeCount shouldBeEqualTo 1
+    }
+
+    @Test
+    fun `factory closes owned default credentials provider when client initialization fails`() {
+        mockkConstructor(DefaultChainCredentialsProvider::class)
+        every { anyConstructed<DefaultChainCredentialsProvider>().close() } returns Unit
+
+        try {
+            assertFailsWith<IllegalStateException> {
+                s3KtorClientOf(
+                    region = "ap-northeast-2",
+                    httpClientCustomizers = listOf(
+                        AwsKtorHttpClientCustomizer { error("customizer initialization failed") }
+                    ),
+                )
+            }
+
+            verify(exactly = 1) { anyConstructed<DefaultChainCredentialsProvider>().close() }
+        } finally {
+            unmockkConstructor(DefaultChainCredentialsProvider::class)
+        }
     }
 
     private fun s3Client(
@@ -560,8 +635,9 @@ class S3KtorClientTest {
         response: suspend MockRequestHandleScope.(HttpRequestData) -> HttpResponseData = { respond("") },
         endpointOverride: Url? = Url("http://localhost:4566"),
         addressingStyle: S3KtorAddressingStyle = S3KtorAddressingStyle.VirtualHosted,
+        credentialsProvider: CredentialsProvider = testCredentialsProvider(),
+        allowInsecureLocalHttpEndpoint: Boolean = true,
     ): S3KtorClient {
-        val credentialsProvider = StaticCredentialsProvider.create(AwsBasicCredentials.create("akid", "secret"))
         val client = HttpClient(MockEngine) {
             engine {
                 addHandler { request ->
@@ -578,6 +654,7 @@ class S3KtorClientTest {
                 normalizePath = false
                 payloadSigningEnabled = false
                 signingClock = FIXED_CLOCK
+                this.allowInsecureLocalHttpEndpoint = allowInsecureLocalHttpEndpoint
             }
         }
 
@@ -589,6 +666,7 @@ class S3KtorClientTest {
             addressingStyle = addressingStyle,
             signingClock = FIXED_CLOCK,
             closeClient = true,
+            allowInsecureLocalHttpEndpoint = allowInsecureLocalHttpEndpoint,
         )
     }
 
@@ -680,12 +758,25 @@ private class InMemoryDataKeyProvider: S3KtorDataKeyProvider {
 
 private class CloseThrowingCredentialsProvider(
     private val closeFailure: RuntimeException,
-): AwsCredentialsProvider, AutoCloseable {
+): CloseableCredentialsProvider {
 
-    override fun resolveCredentials(): AwsCredentials =
-        AwsBasicCredentials.create("akid", "secret")
+    var closeCount = 0
+        private set
+
+    override suspend fun resolve(attributes: Attributes): Credentials =
+        Credentials("akid", "secret")
 
     override fun close() {
+        closeCount += 1
         throw closeFailure
     }
+}
+
+private fun testCredentialsProvider(
+    accessKeyId: String = "akid",
+    secretAccessKey: String = "secret",
+    sessionToken: String? = null,
+): CredentialsProvider = object: CredentialsProvider {
+    override suspend fun resolve(attributes: Attributes): Credentials =
+        Credentials(accessKeyId, secretAccessKey, sessionToken)
 }

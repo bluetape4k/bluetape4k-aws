@@ -175,20 +175,19 @@ install(AwsSigV4Plugin) {
 
 ## S3 Client
 
-`S3KtorClient` uses the same SigV4 plugin with S3-specific signing flags:
-`doubleUrlEncode=false`, `normalizePath=false`, and unsigned payloads. It supports path-style endpoints for LocalStack and virtual-hosted AWS S3 endpoints when the bucket name is DNS-safe. If `endpointOverride` is set, the client uses path-style URLs.
+`S3KtorClient` uses the AWS Kotlin SDK credential provider and Smithy SigV4 signer with S3-specific signing flags:
+`doubleUrlEncode=false`, `normalizePath=false`, and unsigned payloads. The factory uses `DefaultChainCredentialsProvider` when no provider is supplied. It supports path-style endpoints for local emulators and virtual-hosted AWS S3 endpoints when the bucket name is DNS-safe. If `endpointOverride` is set, the client uses path-style URLs. HTTPS is required except for literal loopback HTTP endpoints when `allowInsecureLocalHttpEndpoint = true` is explicitly set.
 
 ```kotlin
 import io.bluetape4k.aws.ktor.s3.s3KtorClientOf
 import io.bluetape4k.aws.ktor.s3.S3KtorAddressingStyle
 import io.ktor.http.Url
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 
 val s3 = s3KtorClientOf(
     region = "ap-northeast-2",
-    credentialsProvider = DefaultCredentialsProvider.builder().build(),
     endpointOverride = Url("http://localhost:4566"), // optional, for LocalStack
     addressingStyle = S3KtorAddressingStyle.Path,
+    allowInsecureLocalHttpEndpoint = true,
 )
 
 suspend fun roundTrip(bucket: String, key: String): String {
@@ -201,10 +200,11 @@ suspend fun roundTrip(bucket: String, key: String): String {
     return s3.getObjectBytes(bucket, key).decodeToString()
 }
 
-val download = s3.presignGetObject(bucket = "demo-bucket", key = "hello.txt", expires = java.time.Duration.ofMinutes(15))
+suspend fun createDownloadUrl() =
+    s3.presignGetObject(bucket = "demo-bucket", key = "hello.txt", expires = java.time.Duration.ofMinutes(15))
 ```
 
-`s3KtorClientOf` owns the internally created `HttpClient`; call `close()` or use Kotlin `use { ... }` when the client is short-lived. Presigned URL expiry must be between 1 second and 7 days.
+`s3KtorClientOf` owns the internally created `HttpClient` and any default credential provider it creates; call `close()` or use Kotlin `use { ... }` when the client is short-lived. A caller-supplied provider remains caller-owned. Presigned URL generation is suspending, and expiry must be between 1 second and 7 days.
 
 To inherit application defaults outside a server plugin, pass the installed defaults explicitly:
 

@@ -342,7 +342,7 @@ data class S3KtorCompleteMultipartUploadResponse(
  * ```kotlin
  * import java.time.Duration
  *
- * fun createDownloadUrl(s3: S3KtorClient): S3KtorPresignedRequest {
+ * suspend fun createDownloadUrl(s3: S3KtorClient): S3KtorPresignedRequest {
  *     val presigned = s3.presignGetObject("demo-bucket", "docs/hello.txt", Duration.ofMinutes(15))
  *     check(presigned.method == "GET")
  *     return presigned

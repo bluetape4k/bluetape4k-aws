@@ -66,4 +66,27 @@
 - Task 3 검증: `./gradlew :bluetape4k-aws-ktor:test --tests 'io.bluetape4k.aws.ktor.cloudwatch.*' --tests 'io.bluetape4k.aws.ktor.eventbridge.*' --tests 'io.bluetape4k.aws.ktor.s3.accessgrants.*' --tests 'io.bluetape4k.aws.ktor.s3vectors.*' --tests 'io.bluetape4k.aws.ktor.ses.*' --tests 'io.bluetape4k.aws.ktor.sns.*' --tests 'io.bluetape4k.aws.ktor.sts.*' --tests 'io.bluetape4k.aws.ktor.AwsKtorApplicationResourceLifecycleTest' --tests 'io.bluetape4k.aws.ktor.AwsKtorLifecycleEdgeCasesTest' --no-daemon` 성공. 최신 JUnit XML: 23 suites, 148 tests, 0 failures, 0 skipped. `git diff --check` 성공; CloudWatch/Logs, EventBridge, Access Grants/Vectors, SES/SNS/STS의 `aws-ktor` source/test에서 AWS SDK v2 service package import 0건.
 - 제출 전 독립 리뷰: `$code-review`가 요구하는 `code-reviewer` 및 `architect` lanes를 usage limit 때문에 현재 실행할 수 없다. human review는 N/A (single-developer lane)이지만 독립 코드 리뷰는 대체하지 않았으며 A-08은 `PENDING`; merge-ready 또는 review approval로 표기하지 않는다.
 - Task 3 implementation과 검증 결과는 로컬 한국어 Lore commit으로 기록했다. 독립 최종 리뷰 A-08은 미완료이므로 merge-ready verdict가 아니다.
-- 다음 작업: 승인된 계획의 Task 4(SigV4 adapter와 S3 REST client)로 진행한다. 전체 영향 모듈 검증과 독립 최종 리뷰는 A-07/A-08에서 계속한다. PR 생성·merge·동기화·정리는 별도 승인 절차를 따른다.
+- 다음 작업: Task 4 Lore 커밋을 완료하고 Task 5(IMDS Kotlin adapter와 전송 정책)로 진행한다. 전체 영향 모듈 검증과 독립 최종 리뷰는 A-07/A-08에서 계속한다. PR 생성·merge·동기화·정리는 별도 승인 절차를 따른다.
+
+### Task 4 실행 증거
+
+- Task 4 승인 계획의 범위에서 `AwsSigV4Plugin`과 S3 REST/presign 구현을 Smithy/AWS Kotlin 자격 증명 provider로 옮겼다. ABI 호환성은 유지하지 않는다. 요청마다 provider를 resolve하고, endpoint 정책을 resolve보다 먼저 적용한다. replay 가능한 byte array만 payload 서명하며, unsigned streaming body는 버퍼링하지 않는다.
+- 고정 presign vector 서명은 `3db75a0ad67e1d88633145f9c3ffca7556f32c68680f5071e6e2933738adfcbd`이다. 실제 MockEngine 캡처가 signed URL, headers, body와 일치한다. presigned URL round-trip에서 표현할 수 없는 URI는 전송 전에 거부한다.
+- 새 suspend presign과 AWS Kotlin credentials provider에 맞게 `aws-ktor` README/KDoc 및 S3 examples source, tests, bilingual README를 갱신했다. 예제 모듈의 첫 컴파일에서 두 소비 경계 오류가 확인되어 이 파일들을 Task 4 구현 범위에 추가한 뒤 `:aws-ktor-s3-examples:test`를 통과시켰다.
+- SigV4/S3 focused Gradle 실행: 55 tests, 0 failures, 0 skipped; Floci S3 및 owned default provider rollback-close 테스트 포함. Testcontainers가 Docker CLI context를 읽지 못해 확인된 Colima endpoint를 `DOCKER_HOST`와 `TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock`로 해당 테스트 프로세스에만 지정했다. `colima status`, `docker context show`, `docker info` 모두 정상이다.
+- `detekt` 실행은 실패했다: 플러그인은 Kotlin `2.4.10`으로 컴파일됐으나 실행 중인 Kotlin Gradle plugin은 `2.4.20`이다. 정적 분석 결과는 미확인으로 남긴다. `git diff --check`는 통과했다.
+- 한국어 문서 작성자 게이트: plan, checklist, AWS Ktor README와 S3 examples README의 독자·목적·근거를 고정했고 코드/API 토큰과 명령을 보존했다. 한국어 자연스러움 및 용어 검토를 거쳐 각 artifact를 다시 읽었다. 용어 감사는 4개 대상 파일에서 `series=clinic-appointment`, `findings=0`을 반환했다. 해당 ruleset은 clinic 경로 전용이라 AWS prose에 적용되는 용어 규칙은 없다.
+- Task 4 구현·테스트·문서 변경은 한국어 Lore 커밋에 포함한다. A-08 독립 최종 리뷰와 A-07 전체 영향 모듈 검증은 PENDING이며, 이 작업을 merge-ready로 간주하지 않는다.
+
+### Task 4 Superpowers 작성자 게이트
+
+- 승인 계획 SPW-01 — 독자(이슈 구현자·검토자), 목적(SigV4/S3 경계 및 인수 조건 계획), 근거(승인 Task 4 요구사항, 구현 소스·테스트, Gradle 결과), 보존 토큰(`AwsSigner`, Smithy 버전, API·명령)을 고정했다.
+- 승인 계획 SPW-02 — 영향 파일에 downstream README/example/test를 추가했다. API 변경 후 예제 테스트 compile error 두 건을 근거로 소비자 적응 파일을 포함하고, 검증 결과와 정적 분석 실패를 별도로 기록했다.
+- 승인 계획 SPW-03 — 한국어 기술 문장을 자연스러움 체크리스트로 다시 읽었다. 4개 대상 파일 용어 audit은 `series=clinic-appointment`, `findings=0`이며, 해당 경로 전용 규칙은 AWS 문서에 적용되지 않는다.
+- 승인 계획 SPW-04 — 승인 요구사항과 구현·테스트 결과를 대조했고 최신 55개 집중 테스트와 examples 테스트 결과를 확인했다. detekt 버전 불일치는 PASS로 치환하지 않았다.
+- 승인 계획 SPW-05 — 계획의 Task 4 파일·명령·상태를 최종 read-back했다. 이 커밋으로 Task 4를 기록하며 A-07, A-08은 미완료로 남긴다.
+- 실행 체크리스트 SPW-01 — 독자(저장소 구현자), 목적(Task 4 진행 상태·검증·미결 게이트 기록), 근거(작업 계획, 소스, JUnit 및 Gradle 출력)를 고정했다.
+- 실행 체크리스트 SPW-02 — 테스트·구현·검증·문서화·커밋 단계를 의존 순서대로 두고, 정적 분석 실패와 독립 리뷰 보류를 분리했다.
+- 실행 체크리스트 SPW-03 — 한국어 기술 문장과 같은 표현의 일관성을 확인했고, 4개 대상 파일 용어 audit 결과 findings=0을 기록했다. clinic 전용 규칙은 AWS prose에 적용하지 않았다.
+- 실행 체크리스트 SPW-04 — 상태 및 55개 테스트 수치를 최신 Gradle 출력과 대조했다. 코드 리뷰나 전체 A-07 완료를 주장하지 않는다.
+- 실행 체크리스트 SPW-05 — 수정된 plan/checklist Markdown을 다시 읽고 상대 링크·공백·개행을 검사했다. 한국어 용어 감사 findings=0과 최종 `git diff --check`를 확인했다.

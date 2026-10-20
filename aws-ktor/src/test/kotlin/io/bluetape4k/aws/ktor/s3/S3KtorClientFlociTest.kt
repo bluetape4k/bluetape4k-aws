@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.ktor.s3
 
+import aws.sdk.kotlin.runtime.auth.credentials.StaticCredentialsProvider
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.codec.Base58
@@ -31,9 +32,13 @@ class S3KtorClientFlociTest {
 
             s3KtorClientOf(
                 region = floci.regionName,
-                credentialsProvider = floci.getCredentialProvider(),
+                credentialsProvider = StaticCredentialsProvider {
+                    accessKeyId = floci.awsAccessKey
+                    secretAccessKey = floci.awsSecretKey
+                },
                 endpointOverride = Url(floci.awsEndpoint.toString()),
                 addressingStyle = S3KtorAddressingStyle.Path,
+                allowInsecureLocalHttpEndpoint = true,
             ).use { s3 ->
                 s3.putConfigObject(
                     bucket = bucket,
@@ -48,7 +53,6 @@ class S3KtorClientFlociTest {
 
                 val presigned = s3.presignGetObject(bucket, key, 10.minutes())
 
-                log.debug { "presigned url=${presigned.url}" }
                 presigned.url.toString() shouldContain bucket
                 presigned.url.toString() shouldContain "X-Amz-Signature"
             }

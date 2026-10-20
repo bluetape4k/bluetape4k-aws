@@ -1,15 +1,32 @@
 package io.bluetape4k.aws.ktor.s3
 
+import aws.sdk.kotlin.runtime.auth.credentials.DefaultChainCredentialsProvider
+import aws.smithy.kotlin.runtime.auth.awssigning.AwsSignatureType
+import aws.smithy.kotlin.runtime.auth.awssigning.AwsSignedBodyHeader
+import aws.smithy.kotlin.runtime.auth.awssigning.AwsSigner
+import aws.smithy.kotlin.runtime.auth.awssigning.AwsSigningConfig
+import aws.smithy.kotlin.runtime.auth.awssigning.DefaultAwsSigner
+import aws.smithy.kotlin.runtime.auth.awssigning.HashSpecification
+import aws.smithy.kotlin.runtime.auth.awscredentials.CloseableCredentialsProvider
+import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
+import aws.smithy.kotlin.runtime.collections.emptyAttributes
+import aws.smithy.kotlin.runtime.http.HttpMethod as SmithyHttpMethod
+import aws.smithy.kotlin.runtime.http.request.HttpRequest as SmithyHttpRequest
+import aws.smithy.kotlin.runtime.http.request.headers
+import aws.smithy.kotlin.runtime.http.request.url
+import aws.smithy.kotlin.runtime.net.url.Url as SmithyUrl
+import aws.smithy.kotlin.runtime.time.Instant as SmithyInstant
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.AwsKtorHttpClientCustomizer
+import io.bluetape4k.aws.ktor.validateAwsKotlinServiceEndpoint
 import io.bluetape4k.aws.ktor.client.AwsSigV4AuthLocation
 import io.bluetape4k.aws.ktor.client.AwsSigV4Plugin
 import io.bluetape4k.javatimes.days
 import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
-import io.bluetape4k.support.requireGt
 import io.bluetape4k.support.requireGe
+import io.bluetape4k.support.requireGt
 import io.bluetape4k.support.requireInRange
 import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.requireNotEmpty
@@ -40,22 +57,14 @@ import io.ktor.http.content.TextContent
 import io.ktor.http.contentType
 import io.ktor.http.encodeURLPathPart
 import io.ktor.http.takeFrom
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
-import software.amazon.awssdk.http.SdkHttpFullRequest
-import software.amazon.awssdk.http.SdkHttpMethod
-import software.amazon.awssdk.http.auth.aws.signer.AwsV4FamilyHttpSigner
-import software.amazon.awssdk.http.auth.aws.signer.AwsV4HttpSigner
-import software.amazon.awssdk.http.auth.spi.signer.HttpSigner
-import software.amazon.awssdk.http.auth.spi.signer.SignedRequest
-import java.net.URI
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
 import java.time.Clock
 import java.time.Duration
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val S3_SERVICE = "s3"
-private const val UNSIGNED_PAYLOAD = "UNSIGNED-PAYLOAD"
 private const val S3_METADATA_PREFIX = "x-amz-meta-"
 private val MIN_PRESIGN_EXPIRY: Duration = 1.seconds()
 private val MAX_PRESIGN_EXPIRY: Duration = 7.days()
@@ -72,7 +81,7 @@ private val MAX_PRESIGN_EXPIRY: Duration = 7.days()
  *
  * **소유권 의미**: 외부에서 주입한 `HttpClient`는 이 클라이언트가 닫지 않습니다.
  * [s3KtorClientOf]가 생성한 `HttpClient`는 `closeClient = true`일 때 닫습니다. 마찬가지로
- * 호출자가 `credentialsProvider`를 생략해 [s3KtorClientOf]가 생성한 `AwsCredentialsProvider`는
+ * 호출자가 `credentialsProvider`를 생략해 [s3KtorClientOf]가 생성한 `CredentialsProvider`는
  * `AutoCloseable`을 구현한 경우 [close]에서 닫습니다. 호출자가 제공한 공급자는 닫지 않습니다.
  *
  * ```kotlin
@@ -90,14 +99,17 @@ private val MAX_PRESIGN_EXPIRY: Duration = 7.days()
 class S3KtorClient(
     private val httpClient: HttpClient,
     private val region: String,
-    private val credentialsProvider: AwsCredentialsProvider,
+    private val credentialsProvider: CredentialsProvider,
     private val endpointOverride: Url? = null,
     private val addressingStyle: S3KtorAddressingStyle = S3KtorAddressingStyle.VirtualHosted,
     private val signingClock: Clock? = null,
     private val closeClient: Boolean = false,
     private val closeCredentialsProvider: Boolean = false,
-    private val signer: AwsV4HttpSigner = AwsV4HttpSigner.create(),
+    private val signer: AwsSigner = DefaultAwsSigner,
+    private val allowInsecureLocalHttpEndpoint: Boolean = false,
 ): AutoCloseable {
+
+    private val closed = AtomicBoolean()
 
     companion object: KLoggingChannel() {
         const val X_AMZ_VERSION_ID = "x-amz-version-id"
@@ -106,6 +118,11 @@ class S3KtorClient(
 
     init {
         region.requireNotBlank("region")
+        validateAwsKotlinServiceEndpoint(
+            endpoint = endpointOverride?.toString(),
+            region = region,
+            allowInsecureLocalHttpEndpoint = allowInsecureLocalHttpEndpoint,
+        )
     }
 
     /**
@@ -412,7 +429,7 @@ class S3KtorClient(
      *
      * [expires]는 S3 SigV4 제약에 맞춰 1초 이상 7일 이하여야 합니다.
      */
-    fun presignGetObject(bucket: String, key: String, expires: Duration): S3KtorPresignedRequest =
+    suspend fun presignGetObject(bucket: String, key: String, expires: Duration): S3KtorPresignedRequest =
         presign(HttpMethod.Get, objectUrl(bucket, key), expires)
 
     /**
@@ -420,7 +437,7 @@ class S3KtorClient(
      *
      * [expires]는 S3 SigV4 제약에 맞춰 1초 이상 7일 이하여야 합니다.
      */
-    fun presignPutObject(bucket: String, key: String, expires: Duration): S3KtorPresignedRequest =
+    suspend fun presignPutObject(bucket: String, key: String, expires: Duration): S3KtorPresignedRequest =
         presign(HttpMethod.Put, objectUrl(bucket, key), expires)
 
     /**
@@ -472,6 +489,8 @@ class S3KtorClient(
     }
 
     override fun close() {
+        if (!closed.compareAndSet(false, true)) return
+
         var failure: Throwable? = null
 
         fun closeOwned(close: () -> Unit) {
@@ -483,8 +502,8 @@ class S3KtorClient(
         }
 
         if (closeClient) closeOwned { httpClient.close() }
-        if (closeCredentialsProvider && credentialsProvider is AutoCloseable) {
-            closeOwned { (credentialsProvider as AutoCloseable).close() }
+        if (closeCredentialsProvider && credentialsProvider is CloseableCredentialsProvider) {
+            closeOwned { credentialsProvider.close() }
         }
 
         failure?.let { throw it }
@@ -523,32 +542,45 @@ class S3KtorClient(
         return URLBuilder().applyS3Endpoint(bucket = bucket, key = key).build()
     }
 
-    private fun presign(method: HttpMethod, url: Url, expires: Duration): S3KtorPresignedRequest {
+    private suspend fun presign(method: HttpMethod, url: Url, expires: Duration): S3KtorPresignedRequest {
         expires.requireGt(Duration.ZERO, "expires")
         expires.requireInRange(MIN_PRESIGN_EXPIRY, MAX_PRESIGN_EXPIRY, "expires")
 
-        val sdkRequest = SdkHttpFullRequest.builder()
-            .uri(URI(url.toString()))
-            .method(SdkHttpMethod.fromValue(method.value))
-            .putHeader("x-amz-content-sha256", UNSIGNED_PAYLOAD)
-            .build()
-
-        val signed = signer.sign { builder ->
-            builder.identity(credentialsProvider.resolveCredentials()).request(sdkRequest)
-                .putProperty(AwsV4HttpSigner.REGION_NAME, region)
-                .putProperty(AwsV4HttpSigner.SERVICE_SIGNING_NAME, S3_SERVICE)
-                .putProperty(AwsV4HttpSigner.DOUBLE_URL_ENCODE, false)
-                .putProperty(AwsV4HttpSigner.NORMALIZE_PATH, false)
-                .putProperty(AwsV4HttpSigner.AUTH_LOCATION, AwsV4FamilyHttpSigner.AuthLocation.QUERY_STRING)
-                .putProperty(AwsV4HttpSigner.PAYLOAD_SIGNING_ENABLED, false)
-                .putProperty(AwsV4HttpSigner.EXPIRATION_DURATION, expires)
-
-            if (signingClock != null) {
-                builder.putProperty(HttpSigner.SIGNING_CLOCK, signingClock)
-            }
+        validateAwsKotlinServiceEndpoint(
+            endpoint = url.toString(),
+            region = region,
+            allowInsecureLocalHttpEndpoint = allowInsecureLocalHttpEndpoint,
+        )
+        val smithyUrl = SmithyUrl.parse(url.toString())
+        val signingRequest = SmithyHttpRequest {
+            this.method = SmithyHttpMethod.parse(method.value)
+            url(smithyUrl)
+            headers { append(HttpHeaders.Host, smithyUrl.hostAndPort) }
         }
+        val credentials = credentialsProvider.resolve(emptyAttributes())
+        val signingRegion = region
+        val result = signer.sign(
+            signingRequest,
+            AwsSigningConfig {
+                this.credentials = credentials
+                this.region = signingRegion
+                service = S3_SERVICE
+                signingClock?.let { signingDate = SmithyInstant.fromIso8601(it.instant().toString()) }
+                signatureType = AwsSignatureType.HTTP_REQUEST_VIA_QUERY_PARAMS
+                expiresAfter = expires.toMillis().milliseconds
+                hashSpecification = HashSpecification.UnsignedPayload
+                signedBodyHeader = AwsSignedBodyHeader.NONE
+                useDoubleUriEncode = false
+                normalizeUriPath = false
+            },
+        )
 
-        return S3KtorPresignedRequest(method.value, signed.toUrl())
+        val signedUrl = result.output.url.toString()
+        val finalUrl = Url(signedUrl)
+        check(finalUrl.toString() == signedUrl) {
+            "S3KtorClient cannot represent the presigned URI exactly."
+        }
+        return S3KtorPresignedRequest(method.value, finalUrl)
     }
 }
 
@@ -562,9 +594,10 @@ class S3KtorClient(
  * [S3KtorClient]를 닫으면 내부 `HttpClient`도 닫힙니다.
  *
  * **자격 증명 공급자 소유권**: `credentialsProvider`가 기본값인 `null`이면 이 팩토리가
- * [DefaultCredentialsProvider]를 생성하고 반환된 클라이언트가 소유합니다. 이 공급자는
+ * [DefaultChainCredentialsProvider]를 생성하고 반환된 클라이언트가 소유합니다. 이 공급자는
  * [S3KtorClient.close]를 호출할 때 닫힙니다. 호출자가 공급자를 제공하면 클라이언트는
  * 닫지 않으며 호출자가 소유권을 유지합니다.
+ * 로컬 emulator에서 HTTP endpoint를 사용하려면 `allowInsecureLocalHttpEndpoint = true`를 명시해야 합니다.
  *
  * ```kotlin
  * import io.bluetape4k.aws.ktor.s3.S3KtorAddressingStyle
@@ -576,6 +609,7 @@ class S3KtorClient(
  *         region = "ap-northeast-2",
  *         endpointOverride = Url("http://localhost:4566"),
  *         addressingStyle = S3KtorAddressingStyle.Path,
+ *         allowInsecureLocalHttpEndpoint = true,
  *     ).use { s3 ->
  *         s3.putObject("demo-bucket", "hello.txt", "hello".encodeToByteArray())
  *     }
@@ -584,17 +618,25 @@ class S3KtorClient(
  */
 fun s3KtorClientOf(
     region: String,
-    credentialsProvider: AwsCredentialsProvider? = null,
+    credentialsProvider: CredentialsProvider? = null,
     endpointOverride: Url? = null,
     addressingStyle: S3KtorAddressingStyle = S3KtorAddressingStyle.VirtualHosted,
     signingClock: Clock? = null,
     httpClientCustomizers: Iterable<AwsKtorHttpClientCustomizer> = emptyList(),
+    allowInsecureLocalHttpEndpoint: Boolean = false,
 ): S3KtorClient {
+    region.requireNotBlank("region")
+    validateAwsKotlinServiceEndpoint(
+        endpoint = endpointOverride?.toString(),
+        region = region,
+        allowInsecureLocalHttpEndpoint = allowInsecureLocalHttpEndpoint,
+    )
     val ownsProvider = credentialsProvider == null
-    val effectiveProvider = credentialsProvider ?: DefaultCredentialsProvider.builder().build()
+    val effectiveProvider = credentialsProvider ?: DefaultChainCredentialsProvider(region = region)
+    var client: HttpClient? = null
 
     try {
-        val client = HttpClient(CIO) {
+        val builtClient = HttpClient(CIO) {
             install(AwsSigV4Plugin) {
                 this.region = region
                 service = S3_SERVICE
@@ -604,12 +646,14 @@ fun s3KtorClientOf(
                 normalizePath = false
                 payloadSigningEnabled = false
                 this.signingClock = signingClock
+                this.allowInsecureLocalHttpEndpoint = allowInsecureLocalHttpEndpoint
             }
             httpClientCustomizers.forEach { it.customize(this) }
         }
+        client = builtClient
 
         return S3KtorClient(
-            httpClient = client,
+            httpClient = builtClient,
             region = region,
             credentialsProvider = effectiveProvider,
             endpointOverride = endpointOverride,
@@ -617,16 +661,24 @@ fun s3KtorClientOf(
             signingClock = signingClock,
             closeClient = true,
             closeCredentialsProvider = ownsProvider,
+            allowInsecureLocalHttpEndpoint = allowInsecureLocalHttpEndpoint,
         )
-    } catch (e: Throwable) {
-        if (ownsProvider && effectiveProvider is AutoCloseable) {
+    } catch (failure: Throwable) {
+        client?.let {
+            try {
+                it.close()
+            } catch (closeFailure: Throwable) {
+                failure.addSuppressed(closeFailure)
+            }
+        }
+        if (ownsProvider && effectiveProvider is CloseableCredentialsProvider) {
             try {
                 effectiveProvider.close()
             } catch (closeFailure: Throwable) {
-                e.addSuppressed(closeFailure)
+                failure.addSuppressed(closeFailure)
             }
         }
-        throw e
+        throw failure
     }
 }
 
@@ -639,19 +691,21 @@ fun s3KtorClientOf(
 fun s3KtorClientOf(
     defaults: AwsKtorDefaults,
     region: String? = null,
-    credentialsProvider: AwsCredentialsProvider? = null,
+    credentialsProvider: CredentialsProvider? = null,
     endpointOverride: Url? = null,
     addressingStyle: S3KtorAddressingStyle = S3KtorAddressingStyle.VirtualHosted,
     signingClock: Clock? = null,
     httpClientCustomizers: Iterable<AwsKtorHttpClientCustomizer> = emptyList(),
+    allowInsecureLocalHttpEndpoint: Boolean? = null,
 ): S3KtorClient = s3KtorClientOf(
     region = region?.takeIf { it.isNotBlank() }
         ?: defaults.region?.takeIf { it.isNotBlank() }.requireNotNull("region"),
-    credentialsProvider = credentialsProvider ?: defaults.javaCredentialsProvider,
+    credentialsProvider = credentialsProvider ?: defaults.kotlinCredentialsProvider,
     endpointOverride = endpointOverride ?: defaults.endpointOverride,
     addressingStyle = addressingStyle,
     signingClock = signingClock ?: defaults.signingClock,
     httpClientCustomizers = defaults.httpClientCustomizers + httpClientCustomizers,
+    allowInsecureLocalHttpEndpoint = allowInsecureLocalHttpEndpoint ?: defaults.allowInsecureLocalHttpEndpoint,
 )
 
 private fun HttpRequestBuilder.applyPutHeaders(request: S3KtorPutObjectRequest) {
@@ -697,9 +751,4 @@ private fun String.isVirtualHostedSafeBucket(): Boolean {
     if (!matches("^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$".toRegex())) return false
     if (".." in this || ".-" in this || "-." in this) return false
     return true
-}
-
-private fun SignedRequest.toUrl(): Url {
-    val request = request()
-    return URLBuilder(request.getUri().toString()).build()
 }

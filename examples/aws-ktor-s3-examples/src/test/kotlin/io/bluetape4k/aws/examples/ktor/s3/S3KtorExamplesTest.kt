@@ -2,8 +2,6 @@ package io.bluetape4k.aws.examples.ktor.s3
 
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.junit5.coroutines.runSuspendIO
-import io.bluetape4k.logging.coroutines.KLoggingChannel
-import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import java.time.Clock
 import java.time.Duration
@@ -12,15 +10,13 @@ import java.time.ZoneOffset
 
 class S3KtorExamplesTest {
 
-    companion object: KLoggingChannel()
-
     @Test
-    fun `LocalStack client example can create presigned download URL`() {
+    fun `LocalStack client example can create presigned download URL`() = runSuspendIO {
         val s3 = S3KtorExamples.localStackClient(
             signingClock = Clock.fixed(Instant.parse("2026-05-10T01:02:03Z"), ZoneOffset.UTC)
         )
 
-        try {
+        s3.use {
             val presigned = S3KtorExamples.presignDownload(
                 s3 = s3,
                 bucket = "demo-bucket",
@@ -28,14 +24,11 @@ class S3KtorExamplesTest {
                 expires = Duration.ofMinutes(15),
             )
 
-            log.debug { "presigned=$presigned" }
             presigned.method shouldBeEqualTo "GET"
             presigned.url.host shouldBeEqualTo "localhost"
             presigned.url.encodedPath shouldBeEqualTo "/demo-bucket/logs/2026/app.log"
             presigned.url.parameters["X-Amz-Algorithm"] shouldBeEqualTo "AWS4-HMAC-SHA256"
             presigned.url.parameters["X-Amz-Expires"] shouldBeEqualTo "900"
-        } finally {
-            s3.close()
         }
     }
 

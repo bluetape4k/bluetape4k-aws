@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.examples.ktor.s3
 
+import aws.sdk.kotlin.runtime.auth.credentials.StaticCredentialsProvider
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.aws.ktor.s3.S3KtorAddressingStyle
@@ -20,8 +21,6 @@ import io.ktor.http.Url
 import io.ktor.http.headersOf
 import io.ktor.server.testing.testApplication
 import org.junit.jupiter.api.Test
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 
 class S3KtorServerExamplesTest {
 
@@ -111,9 +110,13 @@ class S3KtorServerExamplesTest {
         return S3KtorClient(
             httpClient = HttpClient(engine),
             region = "ap-northeast-2",
-            credentialsProvider = StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test")),
+            credentialsProvider = StaticCredentialsProvider {
+                accessKeyId = "test"
+                secretAccessKey = "test"
+            },
             endpointOverride = Url("http://localhost:4566"),
             addressingStyle = S3KtorAddressingStyle.Path,
+            allowInsecureLocalHttpEndpoint = true,
         )
     }
 }

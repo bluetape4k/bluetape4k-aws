@@ -187,19 +187,18 @@ install(AwsSigV4Plugin) {
 
 ## S3 Client
 
-`S3KtorClient`는 동일한 SigV4 플러그인을 사용하며 S3 전용 signing flag (`doubleUrlEncode=false`, `normalizePath=false`, unsigned payload)를 적용합니다. LocalStack 같은 path-style endpoint와 DNS-safe bucket의 virtual-hosted AWS S3 endpoint를 모두 지원합니다. `endpointOverride` 를 지정하면 path-style URL을 사용합니다.
+`S3KtorClient`는 AWS Kotlin SDK 자격 증명 공급자와 Smithy SigV4 서명기를 사용하며 S3 전용 signing flag (`doubleUrlEncode=false`, `normalizePath=false`, unsigned payload)를 적용합니다. 자격 증명 공급자를 생략하면 factory가 `DefaultChainCredentialsProvider`를 생성합니다. 로컬 emulator의 path-style endpoint와 DNS-safe bucket의 virtual-hosted AWS S3 endpoint를 지원합니다. `endpointOverride`를 지정하면 path-style URL을 사용합니다. 기본적으로 HTTPS가 필요하며, literal loopback HTTP endpoint는 `allowInsecureLocalHttpEndpoint = true`를 명시한 경우에만 허용됩니다.
 
 ```kotlin
 import io.bluetape4k.aws.ktor.s3.s3KtorClientOf
 import io.bluetape4k.aws.ktor.s3.S3KtorAddressingStyle
 import io.ktor.http.Url
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 
 val s3 = s3KtorClientOf(
     region = "ap-northeast-2",
-    credentialsProvider = DefaultCredentialsProvider.builder().build(),
     endpointOverride = Url("http://localhost:4566"), // LocalStack 사용 시
     addressingStyle = S3KtorAddressingStyle.Path,
+    allowInsecureLocalHttpEndpoint = true,
 )
 
 suspend fun roundTrip(bucket: String, key: String): String {
@@ -212,11 +211,12 @@ suspend fun roundTrip(bucket: String, key: String): String {
     return s3.getObjectBytes(bucket, key).decodeToString()
 }
 
-val download = s3.presignGetObject(bucket = "demo-bucket", key = "hello.txt", expires = java.time.Duration.ofMinutes(15))
+suspend fun createDownloadUrl() =
+    s3.presignGetObject(bucket = "demo-bucket", key = "hello.txt", expires = java.time.Duration.ofMinutes(15))
 ```
 
-`s3KtorClientOf` 는 내부에서 만든 `HttpClient` 를 소유하므로 짧게 쓰는 client는
-`close()` 또는 Kotlin `use { ... }` 로 닫습니다. Presigned URL 만료 시간은 1초 이상 7일 이하여야 합니다.
+`s3KtorClientOf`는 내부에서 만든 `HttpClient`와 기본 자격 증명 공급자를 소유합니다. 짧게 쓰는 client는
+`close()` 또는 Kotlin `use { ... }`로 닫으세요. 직접 전달한 자격 증명 공급자는 호출자가 소유합니다. Presigned URL 생성은 suspend 함수이며 만료 시간은 1초 이상 7일 이하여야 합니다.
 
 Server plugin 밖에서 애플리케이션 기본값을 상속하려면 설치된 defaults를 명시적으로 전달합니다.
 

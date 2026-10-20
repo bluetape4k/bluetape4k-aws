@@ -68,13 +68,13 @@ class MicrometerS3KtorClient(
             delegate.listObjectsV2(request)
         }
 
-    fun presignGetObject(bucket: String, key: String, expires: Duration): S3KtorPresignedRequest =
-        presignGetObjectRecord(bucket) {
+    suspend fun presignGetObject(bucket: String, key: String, expires: Duration): S3KtorPresignedRequest =
+        record(OPERATION_PRESIGN_GET_OBJECT, bucket) {
             delegate.presignGetObject(bucket, key, expires)
         }
 
-    fun presignPutObject(bucket: String, key: String, expires: Duration): S3KtorPresignedRequest =
-        presignPutObjectRecord(bucket) {
+    suspend fun presignPutObject(bucket: String, key: String, expires: Duration): S3KtorPresignedRequest =
+        record(OPERATION_PRESIGN_PUT_OBJECT, bucket) {
             delegate.presignPutObject(bucket, key, expires)
         }
 
@@ -98,17 +98,6 @@ class MicrometerS3KtorClient(
 
     private suspend fun <T> listObjectsV2Record(bucket: String, block: suspend () -> T): T =
         record(OPERATION_LIST_OBJECTS_V2, bucket, block)
-
-    private fun <T> recordBlocking(operation: String, bucket: String, block: () -> T): T =
-        KtorMicrometerSupport.record(meterRegistry, meterName, { outcome, exception ->
-            tags(operation, outcome, bucket, exception)
-        }, block)
-
-    private fun <T> presignGetObjectRecord(bucket: String, block: () -> T): T =
-        recordBlocking(OPERATION_PRESIGN_GET_OBJECT, bucket, block)
-
-    private fun <T> presignPutObjectRecord(bucket: String, block: () -> T): T =
-        recordBlocking(OPERATION_PRESIGN_PUT_OBJECT, bucket, block)
 
     private fun tags(operation: String, outcome: String, bucket: String, exception: String): Tags =
         KtorMicrometerSupport.tags(
