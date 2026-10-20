@@ -1,9 +1,9 @@
 package io.bluetape4k.aws.ktor.imds
 
+import aws.smithy.kotlin.runtime.http.engine.CloseableHttpClientEngine
 import io.bluetape4k.ktor.core.ApplicationResourceRegistry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
-import software.amazon.awssdk.imds.Ec2MetadataAsyncClient
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 class ImdsKtorRuntime(
     val operations: ImdsKtorOperations,
-    private val ownedClient: Ec2MetadataAsyncClient? = null,
+    private val ownedEngine: CloseableHttpClientEngine? = null,
 ) {
 
     private val closed = AtomicBoolean(false)
@@ -22,7 +22,7 @@ class ImdsKtorRuntime(
 
     /** 플러그인이 소유한 클라이언트를 공통 애플리케이션 lifecycle registry에 등록합니다. */
     internal fun registerApplicationResources(registry: ApplicationResourceRegistry) {
-        if (ownedClient != null && resourceRegistrationInstalled.compareAndSet(false, true)) {
+        if (ownedEngine != null && resourceRegistrationInstalled.compareAndSet(false, true)) {
             registry.register(ownedClientResource)
         }
     }
@@ -32,7 +32,7 @@ class ImdsKtorRuntime(
      */
     fun stop() {
         if (closed.compareAndSet(false, true)) {
-            ownedClient?.close()
+            ownedEngine?.close()
         }
     }
 }

@@ -35,8 +35,8 @@ import aws.sdk.kotlin.services.s3vectors.S3VectorsClient
 import aws.sdk.kotlin.services.sesv2.SesV2Client
 import aws.sdk.kotlin.services.sns.SnsClient
 import aws.sdk.kotlin.services.sts.StsClient
+import aws.smithy.kotlin.runtime.http.engine.CloseableHttpClientEngine
 import org.junit.jupiter.api.Test
-import software.amazon.awssdk.imds.Ec2MetadataAsyncClient
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -77,7 +77,7 @@ class AwsKtorApplicationResourceLifecycleTest {
         val kinesisClient = mockk<KinesisAsyncClient>(relaxed = true)
         val s3VectorsClient = mockk<S3VectorsClient>(relaxed = true)
         val cloudWatchClient = mockk<CloudWatchClient>(relaxed = true)
-        val imdsClient = mockk<Ec2MetadataAsyncClient>(relaxed = true)
+        val imdsEngine = mockk<CloseableHttpClientEngine>(relaxed = true)
         val s3ControlClient = mockk<S3ControlClient>(relaxed = true)
 
         StsKtorRuntime(mockk(relaxed = true), stsClient).also {
@@ -102,7 +102,7 @@ class AwsKtorApplicationResourceLifecycleTest {
         CloudWatchKtorRuntime(mockk(relaxed = true), cloudWatchClient).also {
             it.registerApplicationResources(registry)
         }
-        ImdsKtorRuntime(mockk(relaxed = true), imdsClient).also {
+        ImdsKtorRuntime(mockk(relaxed = true), ownedEngine = imdsEngine).also {
             it.registerApplicationResources(registry)
         }
         S3AccessGrantsKtorRuntime(mockk(relaxed = true), s3ControlClient).also {
@@ -119,7 +119,7 @@ class AwsKtorApplicationResourceLifecycleTest {
         verify(exactly = 1) { kinesisClient.close() }
         verify(exactly = 1) { s3VectorsClient.close() }
         verify(exactly = 1) { cloudWatchClient.close() }
-        verify(exactly = 1) { imdsClient.close() }
+        verify(exactly = 1) { imdsEngine.close() }
         verify(exactly = 1) { s3ControlClient.close() }
     }
 
@@ -133,7 +133,6 @@ class AwsKtorApplicationResourceLifecycleTest {
         val kinesisClient = mockk<KinesisAsyncClient>(relaxed = true)
         val s3VectorsClient = mockk<S3VectorsClient>(relaxed = true)
         val cloudWatchClient = mockk<CloudWatchClient>(relaxed = true)
-        val imdsClient = mockk<Ec2MetadataAsyncClient>(relaxed = true)
         val s3ControlClient = mockk<S3ControlClient>(relaxed = true)
 
         requireNotNull(StsKtorPluginConfig().apply { this.stsClient = stsClient }.toRuntime())
@@ -150,7 +149,7 @@ class AwsKtorApplicationResourceLifecycleTest {
             .registerApplicationResources(registry)
         requireNotNull(CloudWatchKtorPluginConfig().apply { this.cloudWatchClient = cloudWatchClient }.toRuntime())
             .registerApplicationResources(registry)
-        requireNotNull(ImdsKtorPluginConfig().apply { ec2MetadataAsyncClient = imdsClient }.toRuntime())
+        requireNotNull(ImdsKtorPluginConfig().apply { imdsOperations = mockk(relaxed = true) }.toRuntime())
             .registerApplicationResources(registry)
         requireNotNull(S3AccessGrantsKtorPluginConfig().apply { this.s3ControlClient = s3ControlClient }.toRuntime())
             .registerApplicationResources(registry)
@@ -164,7 +163,6 @@ class AwsKtorApplicationResourceLifecycleTest {
         verify(exactly = 0) { kinesisClient.close() }
         verify(exactly = 0) { s3VectorsClient.close() }
         verify(exactly = 0) { cloudWatchClient.close() }
-        verify(exactly = 0) { imdsClient.close() }
         verify(exactly = 0) { s3ControlClient.close() }
     }
 }

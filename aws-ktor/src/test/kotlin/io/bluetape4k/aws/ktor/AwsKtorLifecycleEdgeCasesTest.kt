@@ -5,6 +5,7 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.aws.ktor.imds.ImdsKtorPlugin
+import io.bluetape4k.aws.ktor.imds.ImdsHttpClientFactory
 import io.bluetape4k.aws.ktor.kinesis.KinesisKtorPlugin
 import io.bluetape4k.aws.ktor.sts.StsKtorRuntime
 import io.bluetape4k.concurrent.await
@@ -19,14 +20,14 @@ import io.ktor.server.application.install
 import io.ktor.server.testing.testApplication
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
+import io.mockk.unmockkObject
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import aws.sdk.kotlin.services.sts.StsClient as KotlinStsClient
+import aws.smithy.kotlin.runtime.http.engine.CloseableHttpClientEngine
 import org.junit.jupiter.api.Test
-import software.amazon.awssdk.http.async.SdkAsyncHttpClient
-import software.amazon.awssdk.imds.Ec2MetadataAsyncClient
-import software.amazon.awssdk.imds.Ec2MetadataRetryPolicy
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClientBuilder
 import java.util.concurrent.CountDownLatch
@@ -43,10 +44,13 @@ class AwsKtorLifecycleEdgeCasesTest {
     fun `Kinesis and IMDS clients remain open until ApplicationStopped`() {
         val clients = SimpleClients()
         val closeCounts = clients.closeCounts
+        val imdsEngine = mockk<CloseableHttpClientEngine>(relaxed = true)
 
-        mockkStatic(KinesisAsyncClient::class, Ec2MetadataAsyncClient::class)
+        mockkStatic(KinesisAsyncClient::class)
+        mockkObject(ImdsHttpClientFactory)
         try {
             clients.configureBuilders()
+            every { ImdsHttpClientFactory.createEngine(any()) } returns imdsEngine
 
             val stoppingCounts = mutableListOf<Int>()
             testApplication {
@@ -63,8 +67,10 @@ class AwsKtorLifecycleEdgeCasesTest {
 
             stoppingCounts shouldBeEqualTo listOf(0)
             closeCounts.forEach { it.get() shouldBeEqualTo 1 }
+            verify(exactly = 1) { imdsEngine.close() }
         } finally {
-            unmockkStatic(KinesisAsyncClient::class, Ec2MetadataAsyncClient::class)
+            unmockkStatic(KinesisAsyncClient::class)
+            unmockkObject(ImdsHttpClientFactory)
         }
     }
 
@@ -155,27 +161,17 @@ class AwsKtorLifecycleEdgeCasesTest {
 
     private class SimpleClients {
         val kinesisClient = mockk<KinesisAsyncClient>(relaxed = true)
-        val imdsClient = mockk<Ec2MetadataAsyncClient>(relaxed = true)
-        val closeCounts = List(2) { AtomicInteger() }
+        val closeCounts = List(1) { AtomicInteger() }
 
         init {
             every { kinesisClient.close() } answers { closeCounts[0].incrementAndGet() }
-            every { imdsClient.close() } answers { closeCounts[1].incrementAndGet() }
         }
 
         val kinesisBuilder = mockk<KinesisAsyncClientBuilder>(relaxed = true)
-        val imdsBuilder = mockk<Ec2MetadataAsyncClient.Builder>(relaxed = true)
 
         fun configureBuilders() {
             every { KinesisAsyncClient.builder() } returns kinesisBuilder
             every { kinesisBuilder.build() } returns kinesisClient
-            every { Ec2MetadataAsyncClient.builder() } returns imdsBuilder
-            every { imdsBuilder.tokenTtl(any()) } returns imdsBuilder
-            every { imdsBuilder.endpointMode(any()) } returns imdsBuilder
-            every { imdsBuilder.endpoint(any()) } returns imdsBuilder
-            every { imdsBuilder.retryPolicy(any<Ec2MetadataRetryPolicy>()) } returns imdsBuilder
-            every { imdsBuilder.httpClient(any<SdkAsyncHttpClient>()) } returns imdsBuilder
-            every { imdsBuilder.build() } returns imdsClient
         }
     }
 }

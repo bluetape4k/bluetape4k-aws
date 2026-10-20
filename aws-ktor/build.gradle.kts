@@ -56,6 +56,7 @@ dependencies {
 
     implementation(libs.aws.smithy.aws.signing.default)
     implementation(libs.aws.smithy.http.client.engine.okhttp)
+    compileOnly("com.squareup.okhttp3:okhttp:5.5.0")
 
     compileOnly(platform(bt4k.spring.boot4.dependencies))
     compileOnly(libs.micrometer.core)
