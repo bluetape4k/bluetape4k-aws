@@ -11,7 +11,6 @@ dependencies {
     implementation(libs.ktor.server.content.negotiation)
     implementation(libs.ktor.serialization.jackson)
     implementation(libs.aws.kotlin.dynamodb)
-    implementation(libs.aws2.auth)
     implementation(libs.kotlinx.coroutines.core)
 
     testImplementation(bt4k.bluetape4k.junit5)

@@ -3,8 +3,8 @@ package io.bluetape4k.aws.ktor.sns
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
-import io.bluetape4k.aws.sns.SnsHttpEnvelopeConformanceFixtures
-import io.bluetape4k.aws.sns.SnsHttpEnvelopeValidationException
+import io.bluetape4k.aws.kotlin.sns.SnsHttpEnvelopeConformanceFixtures
+import io.bluetape4k.aws.kotlin.sns.SnsHttpEnvelopeValidationException
 import io.bluetape4k.jackson3.Jackson
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug

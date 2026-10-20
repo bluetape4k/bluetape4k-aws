@@ -6,7 +6,6 @@ import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.aws.ktor.imds.ImdsKtorPlugin
 import io.bluetape4k.aws.ktor.imds.ImdsHttpClientFactory
-import io.bluetape4k.aws.ktor.kinesis.KinesisKtorPlugin
 import io.bluetape4k.aws.ktor.sts.StsKtorRuntime
 import io.bluetape4k.concurrent.await
 import io.bluetape4k.concurrent.get
@@ -14,7 +13,6 @@ import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.ktor.core.ApplicationResourceClosePhase
 import io.bluetape4k.ktor.core.ApplicationResourceRegistry
 import io.bluetape4k.ktor.core.ApplicationResourceRegistryState
-import io.bluetape4k.logging.KLogging
 import io.ktor.server.application.ApplicationStopping
 import io.ktor.server.application.install
 import io.ktor.server.testing.testApplication
@@ -23,13 +21,10 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkObject
-import io.mockk.unmockkStatic
 import io.mockk.verify
 import aws.sdk.kotlin.services.sts.StsClient as KotlinStsClient
 import aws.smithy.kotlin.runtime.http.engine.CloseableHttpClientEngine
 import org.junit.jupiter.api.Test
-import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
-import software.amazon.awssdk.services.kinesis.KinesisAsyncClientBuilder
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
@@ -38,27 +33,22 @@ import kotlin.time.Duration.Companion.seconds
 
 class AwsKtorLifecycleEdgeCasesTest {
 
-    companion object: KLogging()
-
     @Test
-    fun `Kinesis and IMDS clients remain open until ApplicationStopped`() {
-        val clients = SimpleClients()
-        val closeCounts = clients.closeCounts
+    fun `IMDS engine remains open until ApplicationStopped`() {
         val imdsEngine = mockk<CloseableHttpClientEngine>(relaxed = true)
+        val closeCount = AtomicInteger()
+        every { imdsEngine.close() } answers { closeCount.incrementAndGet() }
 
-        mockkStatic(KinesisAsyncClient::class)
         mockkObject(ImdsHttpClientFactory)
         try {
-            clients.configureBuilders()
             every { ImdsHttpClientFactory.createEngine(any()) } returns imdsEngine
 
             val stoppingCounts = mutableListOf<Int>()
             testApplication {
                 application {
-                    install(KinesisKtorPlugin)
                     install(ImdsKtorPlugin)
                     monitor.subscribe(ApplicationStopping) {
-                        stoppingCounts += closeCounts.map { it.get() }.sum()
+                        stoppingCounts += closeCount.get()
                     }
                 }
 
@@ -66,10 +56,9 @@ class AwsKtorLifecycleEdgeCasesTest {
             }
 
             stoppingCounts shouldBeEqualTo listOf(0)
-            closeCounts.forEach { it.get() shouldBeEqualTo 1 }
+            closeCount.get() shouldBeEqualTo 1
             verify(exactly = 1) { imdsEngine.close() }
         } finally {
-            unmockkStatic(KinesisAsyncClient::class)
             unmockkObject(ImdsHttpClientFactory)
         }
     }
@@ -159,19 +148,4 @@ class AwsKtorLifecycleEdgeCasesTest {
         }
     }
 
-    private class SimpleClients {
-        val kinesisClient = mockk<KinesisAsyncClient>(relaxed = true)
-        val closeCounts = List(1) { AtomicInteger() }
-
-        init {
-            every { kinesisClient.close() } answers { closeCounts[0].incrementAndGet() }
-        }
-
-        val kinesisBuilder = mockk<KinesisAsyncClientBuilder>(relaxed = true)
-
-        fun configureBuilders() {
-            every { KinesisAsyncClient.builder() } returns kinesisBuilder
-            every { kinesisBuilder.build() } returns kinesisClient
-        }
-    }
 }

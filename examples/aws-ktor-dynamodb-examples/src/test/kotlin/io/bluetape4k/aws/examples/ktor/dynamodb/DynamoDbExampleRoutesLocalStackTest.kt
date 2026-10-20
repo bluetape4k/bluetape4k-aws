@@ -6,6 +6,7 @@ import aws.sdk.kotlin.runtime.auth.credentials.StaticCredentialsProvider
 import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.aws.ktor.AwsKtorCore
 import io.bluetape4k.ktor.testing.shouldHaveStatus
 import io.bluetape4k.testcontainers.aws.AwsEmulatorServer
 import io.bluetape4k.testcontainers.aws.FlociServer
@@ -21,6 +22,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.serialization.jackson.jackson
 import io.ktor.server.testing.ApplicationTestBuilder
+import io.ktor.server.application.install
 import io.ktor.server.testing.testApplication
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -44,6 +46,9 @@ class DynamoDbExampleRoutesLocalStackTest {
 
     private inline fun testModule(crossinline block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
         application {
+            install(AwsKtorCore) {
+                allowInsecureLocalHttpEndpoint = true
+            }
             dynamoDbExampleModule(
                 endpointUrl = endpointUrl,
                 region = awsEmulator.regionName,

@@ -13,10 +13,10 @@ import io.ktor.server.application.install
 import io.ktor.server.testing.testApplication
 import io.mockk.mockk
 import org.junit.jupiter.api.Test
+import aws.smithy.kotlin.runtime.auth.awscredentials.Credentials
 import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
+import aws.smithy.kotlin.runtime.collections.Attributes
 import aws.smithy.kotlin.runtime.http.engine.HttpClientEngine
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
@@ -27,8 +27,9 @@ class AwsKtorCoreTest {
 
     @Test
     fun `core config toString redacts endpoint and credential provider`() {
-        val provider = object: software.amazon.awssdk.auth.credentials.AwsCredentialsProvider {
-            override fun resolveCredentials() = AwsBasicCredentials.create("access-key", "credential-secret")
+        val provider = object: CredentialsProvider {
+            override suspend fun resolve(attributes: Attributes): Credentials = error("unused")
+
             override fun toString() = "provider-secret"
         }
         val config = AwsKtorCoreConfig().apply {
@@ -36,7 +37,7 @@ class AwsKtorCoreTest {
             endpointOverride = Url(
                 "https://endpoint-user:endpoint-password@example.com/private-path?token=endpoint-token",
             )
-            javaCredentialsProvider = provider
+            kotlinCredentialsProvider = provider
         }
 
         val rendered = config.toString()
@@ -53,7 +54,6 @@ class AwsKtorCoreTest {
 
     @Test
     fun `application stores shared AWS defaults`() = testApplication {
-        val javaCredentials = StaticCredentialsProvider.create(AwsBasicCredentials.create("ak", "sk"))
         val kotlinCredentials = mockk<CredentialsProvider>()
         val smithyHttpClient = mockk<HttpClientEngine>()
         val clock = Clock.fixed(Instant.parse("2026-05-26T01:02:03Z"), ZoneOffset.UTC)
@@ -63,7 +63,6 @@ class AwsKtorCoreTest {
                 region = "ap-northeast-2"
                 endpointOverride = Url("http://localhost:4566")
                 allowInsecureLocalHttpEndpoint = true
-                javaCredentialsProvider = javaCredentials
                 kotlinCredentialsProvider = kotlinCredentials
                 kotlinHttpClient = smithyHttpClient
                 signingClock = clock
@@ -78,7 +77,6 @@ class AwsKtorCoreTest {
         defaults.region shouldBeEqualTo "ap-northeast-2"
         defaults.endpointOverride.toString() shouldBeEqualTo "http://localhost:4566"
         defaults.allowInsecureLocalHttpEndpoint shouldBeEqualTo true
-        defaults.javaCredentialsProvider shouldBeSameInstanceAs javaCredentials
         defaults.kotlinCredentialsProvider shouldBeSameInstanceAs kotlinCredentials
         defaults.kotlinHttpClient shouldBeSameInstanceAs smithyHttpClient
         defaults.signingClock shouldBeSameInstanceAs clock
@@ -147,105 +145,4 @@ class AwsKtorCoreTest {
         client.get("/readyz") shouldHaveStatus HttpStatusCode.OK
     }
 
-    @Test
-    fun `core plugin stores S3 Control customizers`() = testApplication {
-        val customizer = AwsKtorS3ControlAsyncClientCustomizer { builder ->
-            builder.overrideConfiguration { it.putHeader("x-test", "s3control") }
-        }
-
-        application {
-            install(AwsKtorCore) {
-                s3ControlAsyncClient(customizer)
-            }
-        }
-
-        startApplication()
-
-        application.awsKtorDefaults().s3ControlAsyncClientCustomizers.single() shouldBeSameInstanceAs customizer
-    }
-
-    @Test
-    fun `core plugin stores S3 Vectors customizers`() = testApplication {
-        val customizer = AwsKtorS3VectorsAsyncClientCustomizer { builder ->
-            builder.overrideConfiguration { it.putHeader("x-test", "s3vectors") }
-        }
-
-        application {
-            install(AwsKtorCore) {
-                s3VectorsAsyncClient(customizer)
-            }
-        }
-
-        startApplication()
-
-        application.awsKtorDefaults().s3VectorsAsyncClientCustomizers.single() shouldBeSameInstanceAs customizer
-    }
-
-    @Test
-    fun `core plugin stores SES v2 customizers`() = testApplication {
-        val customizer = AwsKtorSesV2AsyncClientCustomizer { builder ->
-            builder.overrideConfiguration { it.putHeader("x-test", "sesv2") }
-        }
-
-        application {
-            install(AwsKtorCore) {
-                sesV2AsyncClient(customizer)
-            }
-        }
-
-        startApplication()
-
-        application.awsKtorDefaults().sesV2AsyncClientCustomizers.single() shouldBeSameInstanceAs customizer
-    }
-
-    @Test
-    fun `core plugin stores SNS customizers`() = testApplication {
-        val customizer = AwsKtorSnsAsyncClientCustomizer { builder ->
-            builder.overrideConfiguration { it.putHeader("x-test", "sns") }
-        }
-
-        application {
-            install(AwsKtorCore) {
-                snsAsyncClient(customizer)
-            }
-        }
-
-        startApplication()
-
-        application.awsKtorDefaults().snsAsyncClientCustomizers.single() shouldBeSameInstanceAs customizer
-    }
-
-    @Test
-    fun `core plugin stores Kinesis customizers`() = testApplication {
-        val customizer = AwsKtorKinesisAsyncClientCustomizer { builder ->
-            builder.overrideConfiguration { it.putHeader("x-test", "kinesis") }
-        }
-
-        application {
-            install(AwsKtorCore) {
-                kinesisAsyncClient(customizer)
-            }
-        }
-
-        startApplication()
-
-        application.awsKtorDefaults().kinesisAsyncClientCustomizers.single() shouldBeSameInstanceAs customizer
-    }
-
-    @Test
-    fun `core plugin stores STS customizers`() = testApplication {
-        val customizer = AwsKtorStsAsyncClientCustomizer { builder ->
-            builder.overrideConfiguration { it.putHeader("x-test", "sts") }
-        }
-
-        application {
-            install(AwsKtorCore) {
-                stsAsyncClient(customizer)
-            }
-        }
-
-        startApplication()
-
-        application.awsKtorDefaults().stsAsyncClientCustomizers.single() shouldBeSameInstanceAs customizer
-    }
 }

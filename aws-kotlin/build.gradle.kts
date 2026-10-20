@@ -1,3 +1,7 @@
+plugins {
+    `java-test-fixtures`
+}
+
 sourceSets {
     test {
         resources.srcDir(rootProject.file("conformance/kinesis-observation-v1"))

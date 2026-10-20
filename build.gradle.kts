@@ -682,15 +682,23 @@ dependencies {
     kinesisDryRunLegacyDependencies(rootLibs.kotlin.stdlib)
 }
 
-val compileAwsKtorSqsConsumerFixture = tasks.register<JavaCompile>("compileAwsKtorSqsConsumerFixture") {
-    description = "Compiles a minimal external SQS consumer against aws-ktor API dependencies."
+val awsKtorSqsConsumerFixtureSourceSet = sourceSets.create("awsKtorSqsConsumerFixture")
+tasks.named<JavaCompile>(awsKtorSqsConsumerFixtureSourceSet.compileJavaTaskName) {
+    options.release.set(25)
+}
+val awsKtorSqsConsumerFixtureKotlinCompile =
+    tasks.named<KotlinJvmCompile>(awsKtorSqsConsumerFixtureSourceSet.getCompileTaskName("kotlin")) {
+        source(file("aws-ktor/src/consumerFixture/kotlin/io/bluetape4k/aws/ktor/consumerfixture/AwsKtorConsumerFixture.kt"))
+        libraries.setFrom(awsKtorSqsConsumerFixtureClasspath)
+        destinationDirectory.set(layout.buildDirectory.dir("consumer-fixtures/aws-ktor-sqs/classes"))
+        compilerOptions.jvmTarget.set(JvmTarget.JVM_25)
+        compilerOptions.freeCompilerArgs.add("-jvm-default=enable")
+        dependsOn(":bluetape4k-aws-ktor:jar")
+    }
+val compileAwsKtorSqsConsumerFixture = tasks.register("compileAwsKtorSqsConsumerFixture") {
+    description = "Compiles a Kotlin external consumer against aws-ktor API dependencies."
     group = "verification"
-    source(fileTree("aws-ktor/src/consumerFixture/java") { include("**/*.java") })
-    classpath = awsKtorSqsConsumerFixtureClasspath
-    destinationDirectory.set(layout.buildDirectory.dir("consumer-fixtures/aws-ktor-sqs/classes"))
-    sourceCompatibility = "25"
-    targetCompatibility = "25"
-    options.encoding = "UTF-8"
+    dependsOn(awsKtorSqsConsumerFixtureKotlinCompile)
 }
 
 fun registerSqsConsumerFixtureCompile(

@@ -23,17 +23,6 @@ import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationPlugin
 import io.ktor.server.application.createApplicationPlugin
 import io.ktor.util.AttributeKey
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
-import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClientBuilder
-import software.amazon.awssdk.services.kinesis.KinesisAsyncClientBuilder
-import software.amazon.awssdk.services.s3control.S3ControlAsyncClientBuilder
-import software.amazon.awssdk.services.s3vectors.S3VectorsAsyncClientBuilder
-import software.amazon.awssdk.services.sesv2.SesV2AsyncClientBuilder
-import software.amazon.awssdk.services.sns.SnsAsyncClientBuilder
-import software.amazon.awssdk.services.sqs.SqsAsyncClientBuilder
-import software.amazon.awssdk.services.sts.StsAsyncClientBuilder
-import java.net.URI
 import java.time.Clock
 
 /**
@@ -52,7 +41,6 @@ import java.time.Clock
 class AwsKtorDefaults(
     val region: String? = null,
     endpointOverride: Url? = null,
-    @Transient val javaCredentialsProvider: AwsCredentialsProvider? = null,
     @Transient val kotlinCredentialsProvider: CredentialsProvider? = null,
     @Transient val signingClock: Clock? = null,
     @Transient val kotlinHttpClient: HttpClientEngine? = null,
@@ -67,15 +55,7 @@ class AwsKtorDefaults(
     sqsClientCustomizers: List<AwsKtorSqsClientCustomizer> = emptyList(),
     stsClientCustomizers: List<AwsKtorStsClientCustomizer> = emptyList(),
     httpClientCustomizers: List<AwsKtorHttpClientCustomizer> = emptyList(),
-    sqsAsyncClientCustomizers: List<AwsKtorSqsAsyncClientCustomizer> = emptyList(),
-    eventBridgeAsyncClientCustomizers: List<AwsKtorEventBridgeAsyncClientCustomizer> = emptyList(),
-    kinesisAsyncClientCustomizers: List<AwsKtorKinesisAsyncClientCustomizer> = emptyList(),
-    s3ControlAsyncClientCustomizers: List<AwsKtorS3ControlAsyncClientCustomizer> = emptyList(),
-    s3VectorsAsyncClientCustomizers: List<AwsKtorS3VectorsAsyncClientCustomizer> = emptyList(),
-    sesV2AsyncClientCustomizers: List<AwsKtorSesV2AsyncClientCustomizer> = emptyList(),
-    snsAsyncClientCustomizers: List<AwsKtorSnsAsyncClientCustomizer> = emptyList(),
     dynamoDbClientCustomizers: List<AwsKtorDynamoDbClientCustomizer> = emptyList(),
-    stsAsyncClientCustomizers: List<AwsKtorStsAsyncClientCustomizer> = emptyList(),
     val allowInsecureLocalHttpEndpoint: Boolean = false,
 ): AbstractValueObject() {
 
@@ -116,37 +96,7 @@ class AwsKtorDefaults(
     private val httpClientCustomizersValue: List<AwsKtorHttpClientCustomizer>? = httpClientCustomizers
 
     @Transient
-    private val sqsAsyncClientCustomizersValue: List<AwsKtorSqsAsyncClientCustomizer>? = sqsAsyncClientCustomizers
-
-    @Transient
-    private val eventBridgeAsyncClientCustomizersValue: List<AwsKtorEventBridgeAsyncClientCustomizer>? =
-        eventBridgeAsyncClientCustomizers
-
-    @Transient
-    private val kinesisAsyncClientCustomizersValue: List<AwsKtorKinesisAsyncClientCustomizer>? =
-        kinesisAsyncClientCustomizers
-
-    @Transient
-    private val s3ControlAsyncClientCustomizersValue: List<AwsKtorS3ControlAsyncClientCustomizer>? =
-        s3ControlAsyncClientCustomizers
-
-    @Transient
-    private val s3VectorsAsyncClientCustomizersValue: List<AwsKtorS3VectorsAsyncClientCustomizer>? =
-        s3VectorsAsyncClientCustomizers
-
-    @Transient
-    private val sesV2AsyncClientCustomizersValue: List<AwsKtorSesV2AsyncClientCustomizer>? =
-        sesV2AsyncClientCustomizers
-
-    @Transient
-    private val snsAsyncClientCustomizersValue: List<AwsKtorSnsAsyncClientCustomizer>? =
-        snsAsyncClientCustomizers
-
-    @Transient
     private val dynamoDbClientCustomizersValue: List<AwsKtorDynamoDbClientCustomizer>? = dynamoDbClientCustomizers
-
-    @Transient
-    private val stsAsyncClientCustomizersValue: List<AwsKtorStsAsyncClientCustomizer>? = stsAsyncClientCustomizers
 
     init {
         require(endpointOverrideValue == null || !region.isNullOrBlank()) {
@@ -202,54 +152,15 @@ class AwsKtorDefaults(
     val httpClientCustomizers: List<AwsKtorHttpClientCustomizer>
         get() = httpClientCustomizersValue ?: emptyList()
 
-    /** 플러그인이 생성한 AWS SDK Java v2 SQS 비동기 클라이언트의 공유 사용자 정의 설정입니다. */
-    val sqsAsyncClientCustomizers: List<AwsKtorSqsAsyncClientCustomizer>
-        get() = sqsAsyncClientCustomizersValue ?: emptyList()
-
-    /** 플러그인이 생성한 AWS SDK Java v2 EventBridge 비동기 클라이언트의 공유 사용자 정의 설정입니다. */
-    val eventBridgeAsyncClientCustomizers: List<AwsKtorEventBridgeAsyncClientCustomizer>
-        get() = eventBridgeAsyncClientCustomizersValue ?: emptyList()
-
-    /** 플러그인이 생성한 AWS SDK Java v2 Kinesis 비동기 클라이언트의 공유 사용자 정의 설정입니다. */
-    val kinesisAsyncClientCustomizers: List<AwsKtorKinesisAsyncClientCustomizer>
-        get() = kinesisAsyncClientCustomizersValue ?: emptyList()
-
-    /** 플러그인이 생성한 AWS SDK Java v2 S3 Control 비동기 클라이언트의 공유 사용자 정의 설정입니다. */
-    val s3ControlAsyncClientCustomizers: List<AwsKtorS3ControlAsyncClientCustomizer>
-        get() = s3ControlAsyncClientCustomizersValue ?: emptyList()
-
-    /** 플러그인이 생성한 AWS SDK Java v2 S3 Vectors 비동기 클라이언트의 공유 사용자 정의 설정입니다. */
-    val s3VectorsAsyncClientCustomizers: List<AwsKtorS3VectorsAsyncClientCustomizer>
-        get() = s3VectorsAsyncClientCustomizersValue ?: emptyList()
-
-    /** 플러그인이 생성한 AWS SDK Java v2 SES v2 비동기 클라이언트의 공유 사용자 정의 설정입니다. */
-    val sesV2AsyncClientCustomizers: List<AwsKtorSesV2AsyncClientCustomizer>
-        get() = sesV2AsyncClientCustomizersValue ?: emptyList()
-
-    /** 플러그인이 생성한 AWS SDK Java v2 SNS 비동기 클라이언트의 공유 사용자 정의 설정입니다. */
-    val snsAsyncClientCustomizers: List<AwsKtorSnsAsyncClientCustomizer>
-        get() = snsAsyncClientCustomizersValue ?: emptyList()
-
     /** 플러그인이 생성한 AWS Kotlin SDK DynamoDB 클라이언트의 공유 사용자 정의 설정입니다. */
     val dynamoDbClientCustomizers: List<AwsKtorDynamoDbClientCustomizer>
         get() = dynamoDbClientCustomizersValue ?: emptyList()
-
-    /** 플러그인이 생성한 AWS SDK Java v2 STS 비동기 클라이언트의 공유 사용자 정의 설정입니다. */
-    val stsAsyncClientCustomizers: List<AwsKtorStsAsyncClientCustomizer>
-        get() = stsAsyncClientCustomizersValue ?: emptyList()
-
-    internal val javaEndpointOverride: URI?
-        get() = endpointOverrideValue?.let(URI::create)
-
-    internal val effectiveRegion: Region?
-        get() = region?.takeIf { it.isNotBlank() }?.let(Region::of)
 
     override fun equalProperties(other: Any): Boolean =
         other is AwsKtorDefaults &&
                 region == other.region &&
                 endpointOverrideValue == other.endpointOverrideValue &&
                 allowInsecureLocalHttpEndpoint == other.allowInsecureLocalHttpEndpoint &&
-                javaCredentialsProvider == other.javaCredentialsProvider &&
                 kotlinCredentialsProvider == other.kotlinCredentialsProvider &&
                 signingClock == other.signingClock &&
                 kotlinHttpClient == other.kotlinHttpClient &&
@@ -264,15 +175,7 @@ class AwsKtorDefaults(
                 sqsClientCustomizers == other.sqsClientCustomizers &&
                 stsClientCustomizers == other.stsClientCustomizers &&
                 httpClientCustomizers == other.httpClientCustomizers &&
-                sqsAsyncClientCustomizers == other.sqsAsyncClientCustomizers &&
-                eventBridgeAsyncClientCustomizers == other.eventBridgeAsyncClientCustomizers &&
-                kinesisAsyncClientCustomizers == other.kinesisAsyncClientCustomizers &&
-                s3ControlAsyncClientCustomizers == other.s3ControlAsyncClientCustomizers &&
-                s3VectorsAsyncClientCustomizers == other.s3VectorsAsyncClientCustomizers &&
-                sesV2AsyncClientCustomizers == other.sesV2AsyncClientCustomizers &&
-                snsAsyncClientCustomizers == other.snsAsyncClientCustomizers &&
-                dynamoDbClientCustomizers == other.dynamoDbClientCustomizers &&
-                stsAsyncClientCustomizers == other.stsAsyncClientCustomizers
+                dynamoDbClientCustomizers == other.dynamoDbClientCustomizers
 
     override fun equals(other: Any?): Boolean = other != null && super.equals(other)
 
@@ -280,7 +183,6 @@ class AwsKtorDefaults(
         region,
         endpointOverrideValue,
         allowInsecureLocalHttpEndpoint,
-        javaCredentialsProvider,
         kotlinCredentialsProvider,
         signingClock,
         kotlinHttpClient,
@@ -295,15 +197,7 @@ class AwsKtorDefaults(
         sqsClientCustomizers,
         stsClientCustomizers,
         httpClientCustomizers,
-        sqsAsyncClientCustomizers,
-        eventBridgeAsyncClientCustomizers,
-        kinesisAsyncClientCustomizers,
-        s3ControlAsyncClientCustomizers,
-        s3VectorsAsyncClientCustomizers,
-        sesV2AsyncClientCustomizers,
-        snsAsyncClientCustomizers,
         dynamoDbClientCustomizers,
-        stsAsyncClientCustomizers,
     )
 
     override fun buildStringHelper(): ToStringBuilder =
@@ -311,7 +205,6 @@ class AwsKtorDefaults(
             .add("region", region)
             .add("endpointOverrideConfigured", endpointOverrideValue != null)
             .add("allowInsecureLocalHttpEndpoint", allowInsecureLocalHttpEndpoint)
-            .add("javaCredentialsProviderConfigured", javaCredentialsProvider != null)
             .add("kotlinCredentialsProviderConfigured", kotlinCredentialsProvider != null)
             .add("signingClockConfigured", signingClock != null)
             .add("kotlinHttpClientConfigured", kotlinHttpClient != null)
@@ -326,15 +219,7 @@ class AwsKtorDefaults(
             .add("sqsClientCustomizersCount", sqsClientCustomizers.size)
             .add("stsClientCustomizersCount", stsClientCustomizers.size)
             .add("httpClientCustomizersCount", httpClientCustomizers.size)
-            .add("sqsAsyncClientCustomizersCount", sqsAsyncClientCustomizers.size)
-            .add("eventBridgeAsyncClientCustomizersCount", eventBridgeAsyncClientCustomizers.size)
-            .add("kinesisAsyncClientCustomizersCount", kinesisAsyncClientCustomizers.size)
-            .add("s3ControlAsyncClientCustomizersCount", s3ControlAsyncClientCustomizers.size)
-            .add("s3VectorsAsyncClientCustomizersCount", s3VectorsAsyncClientCustomizers.size)
-            .add("sesV2AsyncClientCustomizersCount", sesV2AsyncClientCustomizers.size)
-            .add("snsAsyncClientCustomizersCount", snsAsyncClientCustomizers.size)
             .add("dynamoDbClientCustomizersCount", dynamoDbClientCustomizers.size)
-            .add("stsAsyncClientCustomizersCount", stsAsyncClientCustomizers.size)
 
     companion object {
         private const val serialVersionUID: Long = -6925410098353228441L
@@ -379,9 +264,6 @@ class AwsKtorCoreConfig {
     /** 로컬 loopback endpoint에서만 HTTP를 허용합니다. 기본값은 false입니다. */
     var allowInsecureLocalHttpEndpoint: Boolean = false
 
-    /** 공유 AWS SDK Java v2 자격 증명 공급자입니다. */
-    var javaCredentialsProvider: AwsCredentialsProvider? = null
-
     /** 생성된 AWS Kotlin 서비스 클라이언트에 전달하는 호출자 소유 자격 증명 공급자입니다. */
     var kotlinCredentialsProvider: CredentialsProvider? = null
 
@@ -395,15 +277,7 @@ class AwsKtorCoreConfig {
     var kotlinHttpClient: HttpClientEngine? = null
 
     private val httpClientCustomizers = mutableListOf<AwsKtorHttpClientCustomizer>()
-    private val sqsAsyncClientCustomizers = mutableListOf<AwsKtorSqsAsyncClientCustomizer>()
-    private val eventBridgeAsyncClientCustomizers = mutableListOf<AwsKtorEventBridgeAsyncClientCustomizer>()
-    private val kinesisAsyncClientCustomizers = mutableListOf<AwsKtorKinesisAsyncClientCustomizer>()
-    private val s3ControlAsyncClientCustomizers = mutableListOf<AwsKtorS3ControlAsyncClientCustomizer>()
-    private val s3VectorsAsyncClientCustomizers = mutableListOf<AwsKtorS3VectorsAsyncClientCustomizer>()
-    private val sesV2AsyncClientCustomizers = mutableListOf<AwsKtorSesV2AsyncClientCustomizer>()
-    private val snsAsyncClientCustomizers = mutableListOf<AwsKtorSnsAsyncClientCustomizer>()
     private val dynamoDbClientCustomizers = mutableListOf<AwsKtorDynamoDbClientCustomizer>()
-    private val stsAsyncClientCustomizers = mutableListOf<AwsKtorStsAsyncClientCustomizer>()
     private val cloudWatchClientCustomizers = mutableListOf<AwsKtorCloudWatchClientCustomizer>()
     private val cloudWatchLogsClientCustomizers = mutableListOf<AwsKtorCloudWatchLogsClientCustomizer>()
     private val eventBridgeClientCustomizers = mutableListOf<AwsKtorEventBridgeClientCustomizer>()
@@ -486,73 +360,16 @@ class AwsKtorCoreConfig {
     }
 
     /**
-     * 전역 SQS 비동기 클라이언트 빌더 사용자 정의 설정을 추가합니다.
-     */
-    fun sqsAsyncClient(customizer: AwsKtorSqsAsyncClientCustomizer) {
-        sqsAsyncClientCustomizers += customizer
-    }
-
-    /**
-     * 전역 EventBridge 비동기 클라이언트 빌더 사용자 정의 설정을 추가합니다.
-     */
-    fun eventBridgeAsyncClient(customizer: AwsKtorEventBridgeAsyncClientCustomizer) {
-        eventBridgeAsyncClientCustomizers += customizer
-    }
-
-    /**
-     * 전역 Kinesis 비동기 클라이언트 빌더 사용자 정의 설정을 추가합니다.
-     */
-    fun kinesisAsyncClient(customizer: AwsKtorKinesisAsyncClientCustomizer) {
-        kinesisAsyncClientCustomizers += customizer
-    }
-
-    /**
-     * 전역 S3 Control 비동기 클라이언트 빌더 사용자 정의 설정을 추가합니다.
-     */
-    fun s3ControlAsyncClient(customizer: AwsKtorS3ControlAsyncClientCustomizer) {
-        s3ControlAsyncClientCustomizers += customizer
-    }
-
-    /**
-     * 전역 S3 Vectors 비동기 클라이언트 빌더 사용자 정의 설정을 추가합니다.
-     */
-    fun s3VectorsAsyncClient(customizer: AwsKtorS3VectorsAsyncClientCustomizer) {
-        s3VectorsAsyncClientCustomizers += customizer
-    }
-
-    /**
-     * 전역 SES v2 비동기 클라이언트 빌더 사용자 정의 설정을 추가합니다.
-     */
-    fun sesV2AsyncClient(customizer: AwsKtorSesV2AsyncClientCustomizer) {
-        sesV2AsyncClientCustomizers += customizer
-    }
-
-    /**
-     * 전역 SNS 비동기 클라이언트 빌더 사용자 정의 설정을 추가합니다.
-     */
-    fun snsAsyncClient(customizer: AwsKtorSnsAsyncClientCustomizer) {
-        snsAsyncClientCustomizers += customizer
-    }
-
-    /**
      * 전역 AWS Kotlin SDK DynamoDB 클라이언트 빌더 사용자 정의 설정을 추가합니다.
      */
     fun dynamoDbClient(customizer: AwsKtorDynamoDbClientCustomizer) {
         dynamoDbClientCustomizers += customizer
     }
 
-    /**
-     * 전역 STS 비동기 클라이언트 빌더 사용자 정의 설정을 추가합니다.
-     */
-    fun stsAsyncClient(customizer: AwsKtorStsAsyncClientCustomizer) {
-        stsAsyncClientCustomizers += customizer
-    }
-
     internal fun toDefaults(): AwsKtorDefaults =
         AwsKtorDefaults(
             region = region,
             endpointOverride = endpointOverride,
-            javaCredentialsProvider = javaCredentialsProvider,
             kotlinCredentialsProvider = kotlinCredentialsProvider,
             signingClock = signingClock,
             kotlinHttpClient = kotlinHttpClient,
@@ -567,15 +384,7 @@ class AwsKtorCoreConfig {
             sqsClientCustomizers = sqsClientCustomizers.toList(),
             stsClientCustomizers = stsClientCustomizers.toList(),
             httpClientCustomizers = httpClientCustomizers.toList(),
-            sqsAsyncClientCustomizers = sqsAsyncClientCustomizers.toList(),
-            eventBridgeAsyncClientCustomizers = eventBridgeAsyncClientCustomizers.toList(),
-            kinesisAsyncClientCustomizers = kinesisAsyncClientCustomizers.toList(),
-            s3ControlAsyncClientCustomizers = s3ControlAsyncClientCustomizers.toList(),
-            s3VectorsAsyncClientCustomizers = s3VectorsAsyncClientCustomizers.toList(),
-            sesV2AsyncClientCustomizers = sesV2AsyncClientCustomizers.toList(),
-            snsAsyncClientCustomizers = snsAsyncClientCustomizers.toList(),
             dynamoDbClientCustomizers = dynamoDbClientCustomizers.toList(),
-            stsAsyncClientCustomizers = stsAsyncClientCustomizers.toList(),
             allowInsecureLocalHttpEndpoint = allowInsecureLocalHttpEndpoint,
         )
 
@@ -584,7 +393,6 @@ class AwsKtorCoreConfig {
             .add("region", region)
             .add("endpointOverrideConfigured", endpointOverride != null)
             .add("allowInsecureLocalHttpEndpoint", allowInsecureLocalHttpEndpoint)
-            .add("javaCredentialsProviderConfigured", javaCredentialsProvider != null)
             .add("kotlinCredentialsProviderConfigured", kotlinCredentialsProvider != null)
             .add("signingClockConfigured", signingClock != null)
             .add("kotlinHttpClientConfigured", kotlinHttpClient != null)
@@ -649,64 +457,8 @@ fun interface AwsKtorStsClientCustomizer {
 }
 
 /**
- * 플러그인이 생성할 AWS SDK Java v2 SQS 비동기 클라이언트 빌더를 사용자 정의합니다.
- */
-fun interface AwsKtorSqsAsyncClientCustomizer {
-    fun customize(builder: SqsAsyncClientBuilder)
-}
-
-/**
- * 플러그인이 생성할 AWS SDK Java v2 EventBridge 비동기 클라이언트 빌더를 사용자 정의합니다.
- */
-fun interface AwsKtorEventBridgeAsyncClientCustomizer {
-    fun customize(builder: EventBridgeAsyncClientBuilder)
-}
-
-/**
- * 플러그인이 생성할 AWS SDK Java v2 Kinesis 비동기 클라이언트 빌더를 사용자 정의합니다.
- */
-fun interface AwsKtorKinesisAsyncClientCustomizer {
-    fun customize(builder: KinesisAsyncClientBuilder)
-}
-
-/**
- * 플러그인이 생성할 AWS SDK Java v2 S3 Control 비동기 클라이언트 빌더를 사용자 정의합니다.
- */
-fun interface AwsKtorS3ControlAsyncClientCustomizer {
-    fun customize(builder: S3ControlAsyncClientBuilder)
-}
-
-/**
- * 플러그인이 생성할 AWS SDK Java v2 S3 Vectors 비동기 클라이언트 빌더를 사용자 정의합니다.
- */
-fun interface AwsKtorS3VectorsAsyncClientCustomizer {
-    fun customize(builder: S3VectorsAsyncClientBuilder)
-}
-
-/**
- * 플러그인이 생성할 AWS SDK Java v2 SES v2 비동기 클라이언트 빌더를 사용자 정의합니다.
- */
-fun interface AwsKtorSesV2AsyncClientCustomizer {
-    fun customize(builder: SesV2AsyncClientBuilder)
-}
-
-/**
- * 플러그인이 생성할 AWS SDK Java v2 SNS 비동기 클라이언트 빌더를 사용자 정의합니다.
- */
-fun interface AwsKtorSnsAsyncClientCustomizer {
-    fun customize(builder: SnsAsyncClientBuilder)
-}
-
-/**
  * 플러그인이 생성할 AWS Kotlin SDK DynamoDB 클라이언트 빌더를 사용자 정의합니다.
  */
 fun interface AwsKtorDynamoDbClientCustomizer {
     fun customize(builder: aws.sdk.kotlin.services.dynamodb.DynamoDbClient.Config.Builder)
-}
-
-/**
- * 플러그인이 생성할 AWS SDK Java v2 STS 비동기 클라이언트 빌더를 사용자 정의합니다.
- */
-fun interface AwsKtorStsAsyncClientCustomizer {
-    fun customize(builder: StsAsyncClientBuilder)
 }

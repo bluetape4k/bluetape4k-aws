@@ -1,4 +1,4 @@
-package io.bluetape4k.aws.sns
+package io.bluetape4k.aws.kotlin.sns
 
 /** SNS HTTP adapter가 함께 소비하는 유효 envelope 사례입니다. */
 data class SnsHttpEnvelopeValidCase(

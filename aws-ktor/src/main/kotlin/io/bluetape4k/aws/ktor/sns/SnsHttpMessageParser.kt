@@ -1,7 +1,7 @@
 package io.bluetape4k.aws.ktor.sns
 
-import io.bluetape4k.aws.sns.SnsHttpEnvelope
-import io.bluetape4k.aws.sns.SnsHttpEnvelopePolicy
+import io.bluetape4k.aws.kotlin.sns.SnsHttpEnvelope
+import io.bluetape4k.aws.kotlin.sns.SnsHttpEnvelopePolicy
 import io.bluetape4k.jackson3.jsonMapper
 import io.bluetape4k.support.requirePositiveNumber
 import tools.jackson.core.StreamReadFeature

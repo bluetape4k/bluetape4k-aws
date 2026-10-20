@@ -5,7 +5,7 @@ dependencies {
     // Direct Ktor artifacts remain intentional: the example owns its client/server engines.
     implementation(libs.ktor.client.cio)
     implementation(libs.ktor.server.cio)
-    implementation(libs.aws2.auth)
+    implementation(libs.aws.kotlin.s3)
 
     testImplementation(bt4k.bluetape4k.junit5)
     testImplementation(bt4k.bluetape4k.ktor.testing)
