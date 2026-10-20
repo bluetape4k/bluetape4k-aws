@@ -1,6 +1,14 @@
 package io.bluetape4k.aws.ktor
 
+import aws.smithy.kotlin.runtime.client.ProtocolRequestInterceptorContext
+import aws.smithy.kotlin.runtime.http.HttpMethod
+import aws.smithy.kotlin.runtime.http.request.HttpRequest
+import aws.smithy.kotlin.runtime.net.Host
+import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.mockk.every
+import io.mockk.mockk
 import org.junit.jupiter.api.Test
 
 class AwsKtorEndpointPolicyTest {
@@ -94,6 +102,29 @@ class AwsKtorEndpointPolicyTest {
                     region = "ap-northeast-2",
                     allowInsecureLocalHttpEndpoint = true,
                 )
+            }
+        }
+    }
+
+    @Test
+    fun `rejects remote HTTP endpoint after endpoint discovery rewrites the request host`() {
+        val discoveredUrl = Url.parse("http://localhost:4566").copy {
+            host = Host.parse("169.254.169.254")
+        }
+        val request = HttpRequest(
+            method = HttpMethod.GET,
+            url = discoveredUrl,
+        )
+        val context = mockk<ProtocolRequestInterceptorContext<Any, HttpRequest>> {
+            every { protocolRequest } returns request
+        }
+
+        assertFailsWith<IllegalArgumentException> {
+            runSuspendIO {
+                AwsKotlinEndpointPolicyInterceptor(
+                    region = "ap-northeast-2",
+                    allowInsecureLocalHttpEndpoint = true,
+                ).modifyBeforeTransmit(context)
             }
         }
     }
