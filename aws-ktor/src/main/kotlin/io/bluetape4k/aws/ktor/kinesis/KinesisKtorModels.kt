@@ -6,8 +6,7 @@ import io.bluetape4k.support.requireGe
 import io.bluetape4k.support.requireInRange
 import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.requirePositiveNumber
-import software.amazon.awssdk.core.SdkBytes
-import software.amazon.awssdk.services.kinesis.model.ShardIteratorType
+import aws.sdk.kotlin.services.kinesis.model.ShardIteratorType
 import java.io.ObjectInputStream
 import java.io.Serializable
 import java.time.Duration
@@ -21,11 +20,17 @@ import java.time.Instant
  * Ktor 애플리케이션 코드가 타입이 같은 매개변수의 순서를 실수로 바꾸지 않도록
  * 스트림 이름과 파티션 키를 명명된 값으로 감쌉니다.
  */
-data class KinesisPutRecordRequest(
+class KinesisPutRecordRequest(
     val streamName: String,
     val partitionKey: String,
-    val data: SdkBytes,
+    data: ByteArray,
 ): Serializable {
+
+    private val dataBytes: ByteArray = data.copyOf()
+
+    /** Kinesis payload bytes. A defensive copy is returned. */
+    val data: ByteArray
+        get() = dataBytes.copyOf()
 
     init {
         streamName.requireNotBlank("streamName")
@@ -35,6 +40,32 @@ data class KinesisPutRecordRequest(
     companion object {
         private const val serialVersionUID: Long = 7178086878245536883L
     }
+
+    fun copy(
+        streamName: String = this.streamName,
+        partitionKey: String = this.partitionKey,
+        data: ByteArray = this.data,
+    ): KinesisPutRecordRequest = KinesisPutRecordRequest(streamName, partitionKey, data)
+
+    operator fun component1(): String = streamName
+
+    operator fun component2(): String = partitionKey
+
+    operator fun component3(): ByteArray = data
+
+    override fun equals(other: Any?): Boolean =
+        this === other || (
+            other is KinesisPutRecordRequest &&
+                streamName == other.streamName &&
+                partitionKey == other.partitionKey &&
+                dataBytes.contentEquals(other.dataBytes)
+            )
+
+    override fun hashCode(): Int =
+        31 * (31 * streamName.hashCode() + partitionKey.hashCode()) + dataBytes.contentHashCode()
+
+    override fun toString(): String =
+        "KinesisPutRecordRequest(streamName=$streamName, partitionKey=$partitionKey, dataSize=${dataBytes.size})"
 }
 
 /**
@@ -43,7 +74,7 @@ data class KinesisPutRecordRequest(
 data class KinesisShardIteratorRequest(
     val streamName: String,
     val shardId: String,
-    val type: ShardIteratorType = ShardIteratorType.TRIM_HORIZON,
+    val type: ShardIteratorType = ShardIteratorType.TrimHorizon,
     val startingSequenceNumber: String? = null,
 ): Serializable {
 
@@ -55,6 +86,36 @@ data class KinesisShardIteratorRequest(
 
     companion object {
         private const val serialVersionUID: Long = 6767831282132268415L
+    }
+
+    @Suppress("UnusedPrivateMember")
+    private fun writeReplace(): Any =
+        KinesisShardIteratorRequestSerializationProxy(
+            streamName = streamName,
+            shardId = shardId,
+            typeValue = type.value,
+            startingSequenceNumber = startingSequenceNumber,
+        )
+}
+
+private data class KinesisShardIteratorRequestSerializationProxy(
+    val streamName: String,
+    val shardId: String,
+    val typeValue: String,
+    val startingSequenceNumber: String?,
+): Serializable {
+
+    @Suppress("UnusedPrivateMember")
+    private fun readResolve(): Any =
+        KinesisShardIteratorRequest(
+            streamName = streamName,
+            shardId = shardId,
+            type = ShardIteratorType.fromValue(typeValue),
+            startingSequenceNumber = startingSequenceNumber,
+        )
+
+    companion object {
+        private const val serialVersionUID: Long = 1L
     }
 }
 

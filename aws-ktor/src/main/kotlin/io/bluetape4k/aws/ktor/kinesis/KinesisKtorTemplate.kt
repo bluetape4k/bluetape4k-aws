@@ -1,12 +1,27 @@
 package io.bluetape4k.aws.ktor.kinesis
 
-import io.bluetape4k.aws.kinesis.createStream
-import io.bluetape4k.aws.kinesis.deleteStream
-import io.bluetape4k.aws.kinesis.describeStream
-import io.bluetape4k.aws.kinesis.getRecords
-import io.bluetape4k.aws.kinesis.putRecord
-import io.bluetape4k.aws.kinesis.putRecords
-import io.bluetape4k.javatimes.millis
+import aws.sdk.kotlin.services.kinesis.KinesisClient
+import aws.sdk.kotlin.services.kinesis.model.CreateStreamResponse
+import aws.sdk.kotlin.services.kinesis.model.DeleteStreamResponse
+import aws.sdk.kotlin.services.kinesis.model.DescribeStreamResponse
+import aws.sdk.kotlin.services.kinesis.model.ExpiredIteratorException
+import aws.sdk.kotlin.services.kinesis.model.GetRecordsResponse
+import aws.sdk.kotlin.services.kinesis.model.GetShardIteratorResponse
+import aws.sdk.kotlin.services.kinesis.model.KinesisException
+import aws.sdk.kotlin.services.kinesis.model.PutRecordResponse
+import aws.sdk.kotlin.services.kinesis.model.PutRecordsRequestEntry
+import aws.sdk.kotlin.services.kinesis.model.PutRecordsResponse
+import aws.sdk.kotlin.services.kinesis.model.ProvisionedThroughputExceededException
+import aws.sdk.kotlin.services.kinesis.model.Record
+import aws.sdk.kotlin.services.kinesis.model.ShardIteratorType
+import aws.smithy.kotlin.runtime.http.response.HttpResponse
+import io.bluetape4k.aws.kotlin.kinesis.createStream
+import io.bluetape4k.aws.kotlin.kinesis.deleteStream
+import io.bluetape4k.aws.kotlin.kinesis.describeStream
+import io.bluetape4k.aws.kotlin.kinesis.getRecords
+import io.bluetape4k.aws.kotlin.kinesis.getShardIterator
+import io.bluetape4k.aws.kotlin.kinesis.putRecord
+import io.bluetape4k.aws.kotlin.kinesis.putRecords
 import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.requireNotEmpty
 import io.bluetape4k.support.requirePositiveNumber
@@ -16,43 +31,25 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.future.await
-import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
-import software.amazon.awssdk.services.kinesis.model.CreateStreamResponse
-import software.amazon.awssdk.services.kinesis.model.DeleteStreamResponse
-import software.amazon.awssdk.services.kinesis.model.DescribeStreamResponse
-import software.amazon.awssdk.services.kinesis.model.ExpiredIteratorException
-import software.amazon.awssdk.services.kinesis.model.GetRecordsRequest
-import software.amazon.awssdk.services.kinesis.model.GetRecordsResponse
-import software.amazon.awssdk.services.kinesis.model.GetShardIteratorRequest
-import software.amazon.awssdk.services.kinesis.model.GetShardIteratorResponse
-import software.amazon.awssdk.services.kinesis.model.KinesisException
-import software.amazon.awssdk.services.kinesis.model.PutRecordResponse
-import software.amazon.awssdk.services.kinesis.model.PutRecordsRequestEntry
-import software.amazon.awssdk.services.kinesis.model.PutRecordsResponse
-import software.amazon.awssdk.services.kinesis.model.Record
-import software.amazon.awssdk.services.kinesis.model.ShardIteratorType
 import java.time.Duration
 import kotlin.random.Random
 import kotlin.time.toKotlinDuration
+import aws.smithy.kotlin.runtime.time.Instant as SmithyInstant
 
 /**
- * [KinesisAsyncClient]를 사용하는 코루틴 친화적인 [KinesisKtorOperations] 구현입니다.
+ * AWS Kotlin SDK [KinesisClient]를 사용하는 코루틴 중심 [KinesisKtorOperations] 구현입니다.
  *
- * ## 계약
- *
- * 단순한 스트림 및 레코드 작업은 리포지토리의 `aws-java` 코루틴 도우미를 재사용합니다.
- * 레코드 Flow는 공유 SDK 기본 요소가 아니라 명시적인 Ktor 애플리케이션 소비자 계약이므로
- * 이 모듈에 유지합니다.
+ * 단순 작업은 `aws-kotlin` 모듈의 suspend 확장을 재사용합니다. 단일 샤드 cold Flow는 Ktor
+ * 옵션의 retry와 polling 계약을 보존하도록 이 모듈에서 실행합니다.
  */
 class KinesisKtorTemplate(
-    private val kinesisAsyncClient: KinesisAsyncClient,
+    private val kinesisClient: KinesisClient,
     private val streams: Map<String, KinesisKtorStream> = emptyMap(),
 ): KinesisKtorOperations {
 
     override suspend fun createStream(streamName: String, shardCount: Int): CreateStreamResponse {
         shardCount.requirePositiveNumber("shardCount")
-        return kinesisAsyncClient.createStream(streamName, shardCount)
+        return kinesisClient.createStream(streamName, shardCount)
     }
 
     override suspend fun createConfiguredStream(streamName: String): CreateStreamResponse {
@@ -63,13 +60,13 @@ class KinesisKtorTemplate(
     }
 
     override suspend fun deleteStream(streamName: String): DeleteStreamResponse =
-        kinesisAsyncClient.deleteStream(streamName)
+        kinesisClient.deleteStream(streamName)
 
     override suspend fun describeStream(streamName: String): DescribeStreamResponse =
-        kinesisAsyncClient.describeStream(streamName)
+        kinesisClient.describeStream(streamName)
 
     override suspend fun putRecord(request: KinesisPutRecordRequest): PutRecordResponse =
-        kinesisAsyncClient.putRecord(
+        kinesisClient.putRecord(
             streamName = request.streamName,
             partitionKey = request.partitionKey,
             data = request.data,
@@ -80,23 +77,21 @@ class KinesisKtorTemplate(
         entries: List<PutRecordsRequestEntry>,
     ): PutRecordsResponse {
         entries.requireNotEmpty("entries")
-        return kinesisAsyncClient.putRecords(streamName, entries)
+        return kinesisClient.putRecords(streamName, entries)
     }
 
     override suspend fun getShardIterator(request: KinesisShardIteratorRequest): GetShardIteratorResponse =
-        kinesisAsyncClient.getShardIterator(
-            GetShardIteratorRequest.builder()
-                .streamName(request.streamName)
-                .shardId(request.shardId)
-                .shardIteratorType(request.type)
-                .apply {
-                    request.startingSequenceNumber?.let(::startingSequenceNumber)
-                }
-                .build()
-        ).await()
+        kinesisClient.getShardIterator(
+            streamName = request.streamName,
+            shardId = request.shardId,
+            type = request.type,
+            builder = {
+                request.startingSequenceNumber?.let { startingSequenceNumber = it }
+            },
+        )
 
     override suspend fun getRecords(shardIterator: String, limit: Int): GetRecordsResponse =
-        kinesisAsyncClient.getRecords(shardIterator, limit)
+        kinesisClient.getRecords(shardIterator, limit)
 
     override fun recordFlow(request: KinesisRecordFlowRequest): Flow<Record> = flow {
         val options = request.options
@@ -117,29 +112,20 @@ class KinesisKtorTemplate(
                     "shardIterator must be initialized before GetRecords."
                 }
 
-                val response = kinesisAsyncClient.getRecords(
-                    GetRecordsRequest.builder()
-                        .shardIterator(currentShardIterator)
-                        .limit(options.batchLimit)
-                        .build()
-                ).await()
-
+                val response = kinesisClient.getRecords(currentShardIterator, options.batchLimit)
                 iteratorRetryCount = 0
                 throttleRetryCount = 0
 
-                for (record in response.records().orEmpty()) {
+                val records = response.records.orEmpty()
+                for (record in records) {
                     emit(record)
-                    lastSeenSequenceNumber = record.sequenceNumber()
+                    lastSeenSequenceNumber = record.sequenceNumber
                 }
 
-                val nextShardIterator = response.nextShardIterator() ?: return@flow
+                val nextShardIterator = response.nextShardIterator ?: return@flow
                 shardIterator = nextShardIterator
 
-                val pollDelay = if (response.records().orEmpty().isEmpty()) {
-                    options.emptyBackoff
-                } else {
-                    options.pollInterval
-                }
+                val pollDelay = if (records.isEmpty()) options.emptyBackoff else options.pollInterval
                 delay(pollDelay.toKotlinDuration())
             } catch (e: CancellationException) {
                 throw e
@@ -159,7 +145,7 @@ class KinesisKtorTemplate(
                     ?: currentPosition
                 shardIterator = null
             } catch (e: KinesisException) {
-                if (!e.isThrottlingException) throw e
+                if (!e.isKinesisThrottlingException()) throw e
 
                 throttleRetryCount++
                 if (throttleRetryCount > options.maxThrottleRetries) {
@@ -176,37 +162,38 @@ class KinesisKtorTemplate(
         shardId: String,
         position: KinesisStartingPosition,
     ): String {
-        val response = kinesisAsyncClient.getShardIterator(
-            GetShardIteratorRequest.builder()
-                .streamName(streamName)
-                .shardId(shardId)
-                .applyPosition(position)
-                .build()
-        ).await()
-        return response.shardIterator()
+        val response = kinesisClient.getShardIterator(
+            streamName = streamName,
+            shardId = shardId,
+            type = position.shardIteratorType(),
+            builder = {
+                when (position) {
+                    is KinesisStartingPosition.AtSequenceNumber -> startingSequenceNumber = position.sequenceNumber
+                    is KinesisStartingPosition.AfterSequenceNumber -> startingSequenceNumber = position.sequenceNumber
+                    is KinesisStartingPosition.AtTimestamp -> timestamp =
+                        SmithyInstant.fromEpochSeconds(position.timestamp.epochSecond, position.timestamp.nano)
+                    KinesisStartingPosition.TrimHorizon,
+                    KinesisStartingPosition.Latest -> Unit
+                }
+            },
+        )
+        return response.shardIterator
             ?: error("getShardIterator returned null iterator for stream=$streamName shard=$shardId")
     }
 
-    private fun GetShardIteratorRequest.Builder.applyPosition(
-        position: KinesisStartingPosition,
-    ): GetShardIteratorRequest.Builder = apply {
-        when (position) {
-            KinesisStartingPosition.TrimHorizon -> shardIteratorType(ShardIteratorType.TRIM_HORIZON)
-            KinesisStartingPosition.Latest -> shardIteratorType(ShardIteratorType.LATEST)
-            is KinesisStartingPosition.AtSequenceNumber -> {
-                shardIteratorType(ShardIteratorType.AT_SEQUENCE_NUMBER)
-                startingSequenceNumber(position.sequenceNumber)
-            }
-            is KinesisStartingPosition.AfterSequenceNumber -> {
-                shardIteratorType(ShardIteratorType.AFTER_SEQUENCE_NUMBER)
-                startingSequenceNumber(position.sequenceNumber)
-            }
-            is KinesisStartingPosition.AtTimestamp -> {
-                shardIteratorType(ShardIteratorType.AT_TIMESTAMP)
-                timestamp(position.timestamp)
-            }
+    private fun KinesisStartingPosition.shardIteratorType(): ShardIteratorType =
+        when (this) {
+            KinesisStartingPosition.TrimHorizon -> ShardIteratorType.TrimHorizon
+            KinesisStartingPosition.Latest -> ShardIteratorType.Latest
+            is KinesisStartingPosition.AtSequenceNumber -> ShardIteratorType.AtSequenceNumber
+            is KinesisStartingPosition.AfterSequenceNumber -> ShardIteratorType.AfterSequenceNumber
+            is KinesisStartingPosition.AtTimestamp -> ShardIteratorType.AtTimestamp
         }
-    }
+
+    private fun KinesisException.isKinesisThrottlingException(): Boolean =
+        this is ProvisionedThroughputExceededException ||
+            (sdkErrorMetadata.protocolResponse as? HttpResponse)?.status?.value == 429 ||
+            sdkErrorMetadata.errorCode in KINESIS_THROTTLING_ERROR_CODES
 
     private fun jitteredBackoff(attempt: Int, options: KinesisRecordFlowOptions): Duration {
         val maxMs = options.maxThrottleBackoff.toMillis()
@@ -224,7 +211,23 @@ class KinesisKtorTemplate(
         }
 
         val floor = (baseMs * (1.0 - options.jitterRatio)).toLong().coerceAtLeast(0L)
-        val jittered = Random.nextLong(floor, baseMs + 1)
-        return jittered.millis()
+        return Duration.ofMillis(Random.nextLong(floor, baseMs + 1))
+    }
+
+    private companion object {
+        val KINESIS_THROTTLING_ERROR_CODES = setOf(
+            "BandwidthLimitExceeded",
+            "EC2ThrottledException",
+            "ProvisionedThroughputExceededException",
+            "RequestLimitExceeded",
+            "RequestThrottled",
+            "RequestThrottledException",
+            "SlowDown",
+            "ThrottledException",
+            "Throttling",
+            "ThrottlingException",
+            "TooManyRequestsException",
+            "TransactionInProgressException",
+        )
     }
 }

@@ -5,8 +5,16 @@ import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
+import aws.sdk.kotlin.services.sqs.SqsClient
+import aws.sdk.kotlin.services.sqs.model.ChangeMessageVisibilityRequest
+import aws.sdk.kotlin.services.sqs.model.ChangeMessageVisibilityResponse
+import aws.sdk.kotlin.services.sqs.model.DeleteMessageRequest
+import aws.sdk.kotlin.services.sqs.model.DeleteMessageResponse
+import aws.sdk.kotlin.services.sqs.model.Message
+import aws.sdk.kotlin.services.sqs.model.ReceiveMessageRequest
+import aws.sdk.kotlin.services.sqs.model.ReceiveMessageResponse
 import io.mockk.clearMocks
-import io.mockk.every
+import io.mockk.coEvery
 import io.mockk.mockk
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
@@ -14,17 +22,9 @@ import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import software.amazon.awssdk.services.sqs.SqsAsyncClient
-import software.amazon.awssdk.services.sqs.model.ChangeMessageVisibilityRequest
-import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest
-import software.amazon.awssdk.services.sqs.model.Message
-import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
-import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse
 import java.time.Duration
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.function.Consumer
 import kotlin.reflect.KClass
 import kotlin.time.Duration.Companion.seconds
 
@@ -33,7 +33,7 @@ class SqsConsumerRuntimeAdvancedTest {
 
     companion object: KLoggingChannel()
 
-    private val client = mockk<SqsAsyncClient>()
+    private val client = mockk<SqsClient>()
 
     @BeforeEach
     fun beforeEach() {
@@ -48,11 +48,9 @@ class SqsConsumerRuntimeAdvancedTest {
         val message = message("message-1", "receipt-1", "not-json")
 
         stubReceives(client, message)
-        every {
-            client.deleteMessage(any<Consumer<DeleteMessageRequest.Builder>>())
-        } answers {
+        coEvery { client.deleteMessage(any<DeleteMessageRequest>()) } coAnswers {
             deleteCalls.incrementAndGet()
-            completed(mockk())
+            DeleteMessageResponse {}
         }
 
         val runtime = runtime(
@@ -77,25 +75,19 @@ class SqsConsumerRuntimeAdvancedTest {
 
     @Test
     fun `manual nack and ack APIs call visibility and delete once`() = runSuspendIO {
-        val visibilityTimeouts = ConcurrentLinkedQueue<Int>()
-        val deleteCalls = AtomicInteger()
+        val visibilityRequests = ConcurrentLinkedQueue<ChangeMessageVisibilityRequest>()
+        val deleteRequests = ConcurrentLinkedQueue<DeleteMessageRequest>()
         val message = message("message-1", "receipt-1", "manual")
 
         stubReceives(client, message)
 
-        every {
-            client.changeMessageVisibility(any<Consumer<ChangeMessageVisibilityRequest.Builder>>())
-        } answers {
-            val request = ChangeMessageVisibilityRequest.builder()
-                .also(firstArg<Consumer<ChangeMessageVisibilityRequest.Builder>>()::accept).build()
-            visibilityTimeouts += request.visibilityTimeout()
-            completed(mockk())
+        coEvery { client.changeMessageVisibility(any<ChangeMessageVisibilityRequest>()) } coAnswers {
+            visibilityRequests += firstArg<ChangeMessageVisibilityRequest>()
+            ChangeMessageVisibilityResponse {}
         }
-        every {
-            client.deleteMessage(any<Consumer<DeleteMessageRequest.Builder>>())
-        } answers {
-            deleteCalls.incrementAndGet()
-            completed(mockk())
+        coEvery { client.deleteMessage(any<DeleteMessageRequest>()) } coAnswers {
+            deleteRequests += firstArg<DeleteMessageRequest>()
+            DeleteMessageResponse {}
         }
 
         val runtime = runtime(
@@ -111,9 +103,54 @@ class SqsConsumerRuntimeAdvancedTest {
             runtime.start()
 
             await atMost 5.seconds untilAsserted {
-                visibilityTimeouts.toList() shouldBeEqualTo listOf(0)
-                deleteCalls.get() shouldBeEqualTo 1
+                visibilityRequests.map { it.visibilityTimeout } shouldBeEqualTo listOf(0)
+                deleteRequests.size shouldBeEqualTo 1
             }
+            visibilityRequests.single().queueUrl shouldBeEqualTo "https://sqs.local/source"
+            visibilityRequests.single().receiptHandle shouldBeEqualTo "receipt-1"
+            deleteRequests.single().queueUrl shouldBeEqualTo "https://sqs.local/source"
+            deleteRequests.single().receiptHandle shouldBeEqualTo "receipt-1"
+        } finally {
+            runtime.stop()
+        }
+    }
+
+    @Test
+    fun `poll request keeps long polling concurrency and system attributes`() = runSuspendIO {
+        val requests = ConcurrentLinkedQueue<ReceiveMessageRequest>()
+        coEvery { client.receiveMessage(any<ReceiveMessageRequest>()) } coAnswers {
+            requests += firstArg<ReceiveMessageRequest>()
+            ReceiveMessageResponse {}
+        }
+
+        val runtime = SqsConsumerRuntime(
+            SqsConsumerRuntimeConfig(
+                sqsClient = client,
+                queueUrl = "https://sqs.local/orders.fifo",
+                coroutines = 1,
+                maxMessages = 3,
+                waitTimeSeconds = 7,
+                visibilityTimeoutSeconds = 19,
+                messageType = String::class,
+                messageHandler = {},
+            ),
+        )
+
+        try {
+            runtime.start()
+            await atMost 5.seconds untilAsserted {
+                requests.isNotEmpty().shouldBeTrue()
+            }
+
+            val request = requests.first()
+            request.queueUrl shouldBeEqualTo "https://sqs.local/orders.fifo"
+            request.maxNumberOfMessages shouldBeEqualTo 3
+            request.waitTimeSeconds shouldBeEqualTo 7
+            request.visibilityTimeout shouldBeEqualTo 19
+            request.messageAttributeNames shouldBeEqualTo listOf("All")
+            request.messageSystemAttributeNames shouldBeEqualTo listOf(
+                aws.sdk.kotlin.services.sqs.model.MessageSystemAttributeName.All,
+            )
         } finally {
             runtime.stop()
         }
@@ -126,9 +163,7 @@ class SqsConsumerRuntimeAdvancedTest {
 
         stubReceives(client, message)
 
-        every {
-            client.deleteMessage(any<Consumer<DeleteMessageRequest.Builder>>())
-        } returns completed(mockk())
+        coEvery { client.deleteMessage(any<DeleteMessageRequest>()) } returns DeleteMessageResponse {}
 
         val runtime = runtime(
             client = client,
@@ -185,13 +220,9 @@ class SqsConsumerRuntimeAdvancedTest {
 
         stubReceives(client, message)
 
-        every {
-            client.changeMessageVisibility(any<Consumer<ChangeMessageVisibilityRequest.Builder>>())
-        } answers {
-            val request = ChangeMessageVisibilityRequest.builder()
-                .also(firstArg<Consumer<ChangeMessageVisibilityRequest.Builder>>()::accept).build()
-            visibilityTimeouts += request.visibilityTimeout()
-            completed(mockk())
+        coEvery { client.changeMessageVisibility(any<ChangeMessageVisibilityRequest>()) } coAnswers {
+            visibilityTimeouts += firstArg<ChangeMessageVisibilityRequest>().visibilityTimeout ?: -1
+            ChangeMessageVisibilityResponse {}
         }
 
         val runtime = runtime(
@@ -218,7 +249,7 @@ class SqsConsumerRuntimeAdvancedTest {
     }
 
     private fun runtime(
-        client: SqsAsyncClient,
+        client: SqsClient,
         deleteOnSuccess: Boolean = true,
         converter: SqsMessageConverter = StringOrByteArraySqsMessageConverter,
         conversionFailurePolicy: SqsConversionFailurePolicy = SqsConversionFailurePolicy.HandleAsFailure,
@@ -229,7 +260,7 @@ class SqsConsumerRuntimeAdvancedTest {
     ): SqsConsumerRuntime =
         SqsConsumerRuntime(
             SqsConsumerRuntimeConfig(
-                sqsAsyncClient = client,
+                sqsClient = client,
                 queueUrl = "https://sqs.local/source",
                 coroutines = 1,
                 maxMessages = 1,
@@ -246,25 +277,20 @@ class SqsConsumerRuntimeAdvancedTest {
             )
         )
 
-    private fun stubReceives(client: SqsAsyncClient, firstMessage: Message) {
+    private fun stubReceives(client: SqsClient, firstMessage: Message) {
         val receiveCalls = AtomicInteger()
-        every {
-            client.receiveMessage(any<Consumer<ReceiveMessageRequest.Builder>>())
-        } answers {
+        coEvery { client.receiveMessage(any<ReceiveMessageRequest>()) } coAnswers {
             val messages = if (receiveCalls.incrementAndGet() == 1) listOf(firstMessage) else emptyList()
-            completed(ReceiveMessageResponse.builder().messages(messages).build())
+            ReceiveMessageResponse { this.messages = messages }
         }
     }
 
     private fun message(id: String, receiptHandle: String, body: String): Message =
-        Message.builder()
-            .messageId(id)
-            .receiptHandle(receiptHandle)
-            .body(body)
-            .build()
-
-    private fun <T> completed(value: T): CompletableFuture<T> =
-        CompletableFuture.completedFuture(value)
+        Message {
+            messageId = id
+            this.receiptHandle = receiptHandle
+            this.body = body
+        }
 
     private object ThrowingConverter: SqsMessageConverter {
         override fun <T: Any> convert(message: Message, targetType: KClass<T>): T =

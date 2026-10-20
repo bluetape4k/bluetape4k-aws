@@ -8,6 +8,16 @@ import io.bluetape4k.logging.warn
 import io.bluetape4k.support.requireGe
 import io.bluetape4k.support.requireInRange
 import io.bluetape4k.support.requirePositiveNumber
+import aws.sdk.kotlin.services.sqs.SqsClient
+import aws.sdk.kotlin.services.sqs.model.ChangeMessageVisibilityRequest
+import aws.sdk.kotlin.services.sqs.model.DeleteMessageRequest
+import aws.sdk.kotlin.services.sqs.model.GetQueueUrlRequest
+import aws.sdk.kotlin.services.sqs.model.Message
+import aws.sdk.kotlin.services.sqs.model.MessageAttributeValue
+import aws.sdk.kotlin.services.sqs.model.MessageSystemAttributeName
+import aws.sdk.kotlin.services.sqs.model.ReceiveMessageRequest
+import aws.sdk.kotlin.services.sqs.model.SendMessageRequest
+import aws.sdk.kotlin.services.sqs.model.SendMessageResponse
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineName
@@ -20,7 +30,6 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.future.await
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
@@ -29,10 +38,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
-import software.amazon.awssdk.services.sqs.SqsAsyncClient
-import software.amazon.awssdk.services.sqs.model.Message
-import software.amazon.awssdk.services.sqs.model.MessageAttributeValue
-import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 import java.io.Serializable
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
@@ -128,9 +133,9 @@ internal class BackoffState(
  * Ktor를 거치지 않는 bootstrap 코드에서 유용합니다.
  */
 data class SqsConsumerRuntimeConfig(
-    /** receive, delete, visibility 변경, send 요청에 사용할 AWS SDK v2 async SQS client입니다. */
-    val sqsAsyncClient: SqsAsyncClient,
-    /** runtime이 [sqsAsyncClient]를 소유하며 `stop` 후 닫아야 하는지 나타냅니다. */
+    /** receive, delete, visibility 변경, send 요청에 사용할 AWS Kotlin SDK SQS client입니다. */
+    val sqsClient: SqsClient,
+    /** runtime이 [sqsClient]를 소유하며 `stop` 후 닫아야 하는지 나타냅니다. */
     val ownsClient: Boolean = false,
     /** 소비할 queue URL입니다. [queueName]과 동시에 설정할 수 없습니다. */
     val queueUrl: String? = null,
@@ -283,7 +288,7 @@ class SqsMessageContext internal constructor(
 
     /** 현재 메시지의 visibility timeout을 변경합니다. */
     suspend fun changeVisibility(timeoutSeconds: Int) {
-        runtime.changeVisibility(queueUrl, message.receiptHandle(), timeoutSeconds)
+        runtime.changeVisibility(queueUrl, message.requireReceiptHandle(), timeoutSeconds)
     }
 
     /** 현재 메시지의 visibility timeout을 변경해 negative acknowledge 처리합니다. */
@@ -302,8 +307,8 @@ class SqsMessageContext internal constructor(
     override fun toString(): String =
         ToStringBuilder(this)
             .add("queueUrlConfigured", queueUrl.isNotBlank())
-            .add("messageIdPresent", !message.messageId().isNullOrBlank())
-            .add("bodyPresent", !message.body().isNullOrEmpty())
+            .add("messageIdPresent", !message.messageId.isNullOrBlank())
+            .add("bodyPresent", !message.body.isNullOrEmpty())
             .toString()
 }
 
@@ -315,7 +320,7 @@ class SqsMessageContext internal constructor(
  *   종료 중인 호출은 idempotent하게 무시하고, [stop] 이후 호출은 `IllegalStateException`으로 실패합니다.
  * - [stop]은 새 receive를 중단하고 [SqsConsumerRuntimeConfig.shutdownTimeout]까지 처리 중인 handler를 기다린 뒤
  *   남은 handler를 취소합니다. 시작 전 호출도 runtime을 영구적으로 종료합니다.
- * - [SqsAsyncClient]는 plugin이 생성한 경우에만 닫습니다.
+ * - [SqsClient]는 plugin이 생성한 경우에만 닫습니다.
  */
 class SqsConsumerRuntime(
     private val config: SqsConsumerRuntimeConfig,
@@ -441,7 +446,7 @@ class SqsConsumerRuntime(
         }
 
         runInterruptible(Dispatchers.IO) {
-            config.sqsAsyncClient.close()
+            config.sqsClient.close()
         }
     }
 
@@ -460,13 +465,13 @@ class SqsConsumerRuntime(
     ): SendMessageResponse {
         val startedAt = System.nanoTime()
         return try {
-            val response = config.sqsAsyncClient
-                .sendMessage {
-                    it.queueUrl(queueUrl)
-                    it.messageBody(messageBody)
-                    delaySeconds?.let(it::delaySeconds)
-                }
-                .await()
+            val response = config.sqsClient.sendMessage(
+                SendMessageRequest {
+                    this.queueUrl = queueUrl
+                    this.messageBody = messageBody
+                    this.delaySeconds = delaySeconds
+                },
+            )
 
             observe(
                 KtorSqsObservationOperations.SEND,
@@ -484,10 +489,12 @@ class SqsConsumerRuntime(
     }
 
     internal suspend fun delete(queueUrl: String, receiptHandle: String) {
-        config.sqsAsyncClient.deleteMessage {
-            it.queueUrl(queueUrl)
-            it.receiptHandle(receiptHandle)
-        }.await()
+        config.sqsClient.deleteMessage(
+            DeleteMessageRequest {
+                this.queueUrl = queueUrl
+                this.receiptHandle = receiptHandle
+            },
+        )
     }
 
     internal suspend fun ack(context: SqsMessageContext) {
@@ -498,7 +505,7 @@ class SqsConsumerRuntime(
 
         val startedAt = System.nanoTime()
         try {
-            delete(context.queueUrl, context.message.receiptHandle())
+            delete(context.queueUrl, context.message.requireReceiptHandle())
             context.deleted = true
             config.interceptors.forEach { it.afterAck(context) }
             observe(KtorSqsObservationOperations.ACK, KtorSqsObservationOutcomes.SUCCESS, context, startedAt)
@@ -512,18 +519,20 @@ class SqsConsumerRuntime(
 
     internal suspend fun changeVisibility(queueUrl: String, receiptHandle: String, timeoutSeconds: Int) {
         timeoutSeconds.requireInRange(0, MAX_VISIBILITY_SECONDS, "timeoutSeconds")
-        config.sqsAsyncClient.changeMessageVisibility {
-            it.queueUrl(queueUrl)
-            it.receiptHandle(receiptHandle)
-            it.visibilityTimeout(timeoutSeconds)
-        }.await()
+        config.sqsClient.changeMessageVisibility(
+            ChangeMessageVisibilityRequest {
+                this.queueUrl = queueUrl
+                this.receiptHandle = receiptHandle
+                this.visibilityTimeout = timeoutSeconds
+            },
+        )
     }
 
     internal suspend fun nack(context: SqsMessageContext, timeoutSeconds: Int) {
         config.interceptors.forEach { it.beforeNack(context, timeoutSeconds) }
         val startedAt = System.nanoTime()
         try {
-            changeVisibility(context.queueUrl, context.message.receiptHandle(), timeoutSeconds)
+            changeVisibility(context.queueUrl, context.message.requireReceiptHandle(), timeoutSeconds)
             config.interceptors.forEach { it.afterNack(context, timeoutSeconds) }
 
             observe(
@@ -561,14 +570,16 @@ class SqsConsumerRuntime(
                 permits = acquireHandlerPermits()
                 config.interceptors.forEach { it.beforeReceive(queueUrl) }
                 val startedAt = System.nanoTime()
-                val response = config.sqsAsyncClient.receiveMessage {
-                    it.queueUrl(queueUrl)
-                    it.maxNumberOfMessages(permits)
-                    it.waitTimeSeconds(config.waitTimeSeconds)
-                    it.messageAttributeNames("All")
-                    it.messageSystemAttributeNamesWithStrings("All")
-                    config.visibilityTimeoutSeconds?.let(it::visibilityTimeout)
-                }.await()
+                val response = config.sqsClient.receiveMessage(
+                    ReceiveMessageRequest {
+                        this.queueUrl = queueUrl
+                        this.maxNumberOfMessages = permits
+                        this.waitTimeSeconds = config.waitTimeSeconds
+                        this.messageAttributeNames = listOf("All")
+                        this.messageSystemAttributeNames = listOf(MessageSystemAttributeName.All)
+                        this.visibilityTimeout = config.visibilityTimeoutSeconds
+                    },
+                )
 
                 backoff.reset()
                 if (!isRunning) {
@@ -577,7 +588,7 @@ class SqsConsumerRuntime(
                     return
                 }
 
-                val messages = response.messages().orEmpty()
+                val messages = response.messages.orEmpty()
                 config.interceptors.forEach { it.afterReceive(queueUrl, messages) }
                 observe(
                     operation = KtorSqsObservationOperations.RECEIVE,
@@ -766,7 +777,7 @@ class SqsConsumerRuntime(
         when {
             config.hasManualDeadLetterQueue -> {
                 forwardToDeadLetterQueue(queueUrl, message, cause)
-                delete(queueUrl, message.receiptHandle())
+                delete(queueUrl, message.requireReceiptHandle())
             }
 
             else -> {
@@ -774,7 +785,7 @@ class SqsConsumerRuntime(
                 val timeoutSeconds = config.failureVisibilityStrategy?.visibilityTimeoutSeconds(failureContext)
                     ?: config.failureVisibilityTimeoutSeconds
                 timeoutSeconds?.let {
-                    changeVisibility(queueUrl, message.receiptHandle(), it)
+                    changeVisibility(queueUrl, message.requireReceiptHandle(), it)
                 }
             }
         }
@@ -784,11 +795,13 @@ class SqsConsumerRuntime(
         val targetQueueUrl = resolveDeadLetterQueueUrl()
         val attributes = deadLetterAttributes(queueUrl, message, cause)
 
-        config.sqsAsyncClient.sendMessage {
-            it.queueUrl(targetQueueUrl)
-            it.messageBody(message.body().orEmpty())
-            it.messageAttributes(attributes)
-        }.await()
+        config.sqsClient.sendMessage(
+            SendMessageRequest {
+                this.queueUrl = targetQueueUrl
+                messageBody = message.body.orEmpty()
+                messageAttributes = attributes
+            },
+        )
     }
 
     private fun deadLetterAttributes(
@@ -797,14 +810,16 @@ class SqsConsumerRuntime(
         cause: Throwable,
     ): Map<String, MessageAttributeValue> {
         val attributes = LinkedHashMap<String, MessageAttributeValue>()
-        attributes["bluetape4k-original-message-id"] = stringAttribute(message.messageId().orEmpty())
+        attributes["bluetape4k-original-message-id"] = stringAttribute(message.messageId.orEmpty())
         attributes["bluetape4k-original-queue-url"] = stringAttribute(queueUrl)
         attributes["bluetape4k-original-receive-count"] =
-            stringAttribute(message.attributesAsStrings()["ApproximateReceiveCount"].orEmpty())
+            stringAttribute(
+                message.attributes?.get(MessageSystemAttributeName.ApproximateReceiveCount).orEmpty(),
+            )
         attributes["bluetape4k-error-class"] = stringAttribute(cause::class.qualifiedName.orEmpty())
         attributes["bluetape4k-error-message"] = stringAttribute(cause.message.orEmpty().take(256))
 
-        message.messageAttributes().orEmpty()
+        message.messageAttributes.orEmpty()
             .filterKeys { it !in attributes }
             .entries
             .take(MAX_MESSAGE_ATTRIBUTES - attributes.size)
@@ -816,9 +831,9 @@ class SqsConsumerRuntime(
     private suspend fun resolveQueueUrl(): String {
         resolvedQueueUrl?.let { return it }
         return queueUrlMutex.withLock {
-            resolvedQueueUrl ?: config.sqsAsyncClient.getQueueUrl {
-                it.queueName(config.queueName)
-            }.await().queueUrl().also {
+            resolvedQueueUrl ?: requireNotNull(
+                config.sqsClient.getQueueUrl(GetQueueUrlRequest { queueName = config.queueName }).queueUrl,
+            ) { "SQS returned no queue URL for queue name '${config.queueName}'." }.also {
                 resolvedQueueUrl = it
             }
         }
@@ -826,16 +841,15 @@ class SqsConsumerRuntime(
 
     private suspend fun resolveDeadLetterQueueUrl(): String {
         config.deadLetterQueueUrl?.takeIf { it.isNotBlank() }?.let { return it }
-        return config.sqsAsyncClient.getQueueUrl {
-            it.queueName(config.deadLetterQueueName)
-        }.await().queueUrl()
+        return requireNotNull(
+            config.sqsClient.getQueueUrl(GetQueueUrlRequest { queueName = config.deadLetterQueueName }).queueUrl,
+        ) { "SQS returned no queue URL for dead-letter queue '${config.deadLetterQueueName}'." }
     }
 
-    private fun stringAttribute(value: String): MessageAttributeValue =
-        MessageAttributeValue.builder()
-            .dataType("String")
-            .stringValue(value)
-            .build()
+    private fun stringAttribute(value: String): MessageAttributeValue = MessageAttributeValue {
+        dataType = "String"
+        stringValue = value
+    }
 
     private fun observe(
         operation: String,
@@ -844,7 +858,7 @@ class SqsConsumerRuntime(
         startedAt: Long? = null,
         tags: Map<String, String> = emptyMap(),
     ) {
-        observe(operation, outcome, context.queueUrl, context.message.messageId(), startedAt, tags)
+        observe(operation, outcome, context.queueUrl, context.message.messageId, startedAt, tags)
     }
 
     private fun observe(
@@ -917,3 +931,6 @@ class SqsConsumerRuntime(
         )
     }
 }
+
+private fun Message.requireReceiptHandle(): String =
+    requireNotNull(receiptHandle) { "Received SQS message has no receipt handle." }

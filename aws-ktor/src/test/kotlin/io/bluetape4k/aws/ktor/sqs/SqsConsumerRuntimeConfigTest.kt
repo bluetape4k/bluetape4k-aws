@@ -6,16 +6,21 @@ import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
-import io.bluetape4k.aws.ktor.AwsKtorSqsAsyncClientCustomizer
+import io.bluetape4k.aws.ktor.AwsKtorSqsClientCustomizer
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
-import io.ktor.http.Url
+import aws.sdk.kotlin.services.sqs.SqsClient
+import aws.sdk.kotlin.services.sqs.model.Message
+import aws.sdk.kotlin.services.sqs.model.ReceiveMessageRequest
+import aws.sdk.kotlin.services.sqs.model.ReceiveMessageResponse
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import io.mockk.coEvery
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CompletableDeferred
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.during
@@ -23,15 +28,9 @@ import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import software.amazon.awssdk.services.sqs.SqsAsyncClient
-import software.amazon.awssdk.services.sqs.model.Message
-import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
-import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse
 import java.time.Duration
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.function.Consumer
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -40,7 +39,7 @@ class SqsConsumerRuntimeConfigTest {
 
     companion object: KLogging()
 
-    private val client = mockk<SqsAsyncClient>()
+    private val client = mockk<SqsClient>()
 
     @Test
     fun `config toString does not invoke injected collaborator toString`() {
@@ -100,11 +99,11 @@ class SqsConsumerRuntimeConfigTest {
 
     @Test
     fun `message context toString redacts body and receipt handle`() {
-        val message = Message.builder()
-            .messageId("message-id-secret")
-            .receiptHandle("receipt-secret")
-            .body("message-body-secret")
-            .build()
+        val message = Message {
+            messageId = "message-id-secret"
+            receiptHandle = "receipt-secret"
+            body = "message-body-secret"
+        }
         val context = SqsMessageContext(
             SqsConsumerRuntime(runtimeConfig()),
             "https://sqs.local/queue-secret",
@@ -182,12 +181,15 @@ class SqsConsumerRuntimeConfigTest {
             maxTimeoutSeconds = 10,
             jitterRatio = 0.0,
         )
-        val message = Message.builder()
-            .messageId("message-1")
-            .receiptHandle("receipt-1")
-            .body("body")
-            .attributesWithStrings(mapOf("ApproximateReceiveCount" to Int.MAX_VALUE.toString()))
-            .build()
+        val message = Message {
+            messageId = "message-1"
+            receiptHandle = "receipt-1"
+            body = "body"
+            attributes = mapOf(
+                aws.sdk.kotlin.services.sqs.model.MessageSystemAttributeName.ApproximateReceiveCount to
+                    Int.MAX_VALUE.toString(),
+            )
+        }
         val context = SqsConsumerFailureContext(
             queueUrl = "https://sqs.local/source",
             message = message,
@@ -200,10 +202,10 @@ class SqsConsumerRuntimeConfigTest {
 
     @Test
     fun `default converter supports string byte array and raw message`() {
-        val message = Message.builder()
-            .body("hello")
-            .receiptHandle("receipt")
-            .build()
+        val message = Message {
+            body = "hello"
+            receiptHandle = "receipt"
+        }
 
         log.debug { "message=$message" }
         StringOrByteArraySqsMessageConverter.convert(message, String::class) shouldBeEqualTo "hello"
@@ -221,14 +223,14 @@ class SqsConsumerRuntimeConfigTest {
             .toRuntimeConfig(
                 AwsKtorDefaults(
                     region = "ap-northeast-2",
-                    endpointOverride = Url("http://localhost:4566"),
+                    endpointOverride = io.ktor.http.Url("http://localhost:4566"),
                 )
             )
 
         config.ownsClient.shouldBeTrue()
         config.queueName shouldBeEqualTo "orders"
 
-        config.sqsAsyncClient.close()
+        config.sqsClient.close()
     }
 
     @Test
@@ -237,19 +239,19 @@ class SqsConsumerRuntimeConfigTest {
         val config = SqsConsumerPluginConfig()
             .apply {
                 queueName = "orders"
-                sqsAsyncClient { order += "service" }
+                sqsClient(AwsKtorSqsClientCustomizer { order += "service" })
                 onMessage<String> {}
             }
             .toRuntimeConfig(
                 AwsKtorDefaults(
                     region = "ap-northeast-2",
-                    sqsAsyncClientCustomizers = listOf(AwsKtorSqsAsyncClientCustomizer { order += "shared" }),
+                    sqsClientCustomizers = listOf(AwsKtorSqsClientCustomizer { order += "shared" }),
                 )
             )
 
         order shouldBeEqualTo listOf("shared", "service")
 
-        config.sqsAsyncClient.close()
+        config.sqsClient.close()
     }
 
     @Test
@@ -269,11 +271,9 @@ class SqsConsumerRuntimeConfigTest {
     fun `stop before start rejects restart and never polls with closed owned client`() = runSuspendIO {
         val receiveCalls = AtomicInteger()
         every { client.close() } returns Unit
-        every {
-            client.receiveMessage(any<Consumer<ReceiveMessageRequest.Builder>>())
-        } answers {
+        coEvery { client.receiveMessage(any<ReceiveMessageRequest>()) } coAnswers {
             receiveCalls.incrementAndGet()
-            CompletableFuture.completedFuture(ReceiveMessageResponse.builder().build())
+            ReceiveMessageResponse {}
         }
         val runtime = SqsConsumerRuntime(
             runtimeConfig(client = client, ownsClient = true)
@@ -293,14 +293,12 @@ class SqsConsumerRuntimeConfigTest {
     fun `stopped runtime rejects restart without reusing closed owned client`() = runSuspendIO {
         val receiveCalls = AtomicInteger()
         val receiveStarted = CountDownLatch(1)
-        val pendingReceive = CompletableFuture<ReceiveMessageResponse>()
+        val pendingReceive = CompletableDeferred<ReceiveMessageResponse>()
         every { client.close() } returns Unit
-        every {
-            client.receiveMessage(any<Consumer<ReceiveMessageRequest.Builder>>())
-        } answers {
+        coEvery { client.receiveMessage(any<ReceiveMessageRequest>()) } coAnswers {
             receiveCalls.incrementAndGet()
             receiveStarted.countDown()
-            pendingReceive
+            pendingReceive.await()
         }
         val runtime = SqsConsumerRuntime(
             runtimeConfig(client = client, ownsClient = true)
@@ -323,7 +321,7 @@ class SqsConsumerRuntimeConfigTest {
             }
             verify(exactly = 1) { client.close() }
         } finally {
-            pendingReceive.cancel(true)
+            pendingReceive.cancel()
             runtime.stop()
         }
     }
@@ -332,14 +330,12 @@ class SqsConsumerRuntimeConfigTest {
     fun `duplicate start creates one poller and injected client stays open after duplicate stop`() = runSuspendIO {
         val receiveCalls = AtomicInteger()
         val receiveStarted = CountDownLatch(1)
-        val pendingReceive = CompletableFuture<ReceiveMessageResponse>()
+        val pendingReceive = CompletableDeferred<ReceiveMessageResponse>()
 
-        every {
-            client.receiveMessage(any<Consumer<ReceiveMessageRequest.Builder>>())
-        } answers {
+        coEvery { client.receiveMessage(any<ReceiveMessageRequest>()) } coAnswers {
             receiveCalls.incrementAndGet()
             receiveStarted.countDown()
-            pendingReceive
+            pendingReceive.await()
         }
         val runtime = SqsConsumerRuntime(
             runtimeConfig(client = client, ownsClient = false)
@@ -359,7 +355,7 @@ class SqsConsumerRuntimeConfigTest {
             runtime.stop()
             verify(exactly = 0) { client.close() }
         } finally {
-            pendingReceive.cancel(true)
+            pendingReceive.cancel()
             runtime.stop()
         }
     }
@@ -383,7 +379,7 @@ class SqsConsumerRuntimeConfigTest {
     fun `invalid runtime configuration leaves injected client open`() {
         assertFailsWith<IllegalArgumentException> {
             SqsConsumerPluginConfig().apply {
-                sqsAsyncClient = client
+                sqsClient = client
                 queueUrl = null
                 queueName = null
                 onMessage<String> {}
@@ -394,7 +390,7 @@ class SqsConsumerRuntimeConfigTest {
     }
 
     private fun runtimeConfig(
-        client: SqsAsyncClient = this.client,
+        client: SqsClient = this.client,
         ownsClient: Boolean = false,
         queueUrl: String? = "https://sqs.local/source",
         queueName: String? = null,
@@ -407,7 +403,7 @@ class SqsConsumerRuntimeConfigTest {
         failureVisibilityStrategy: SqsFailureVisibilityStrategy? = null,
     ): SqsConsumerRuntimeConfig =
         SqsConsumerRuntimeConfig(
-            sqsAsyncClient = client,
+            sqsClient = client,
             ownsClient = ownsClient,
             queueUrl = queueUrl,
             queueName = queueName,

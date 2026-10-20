@@ -3,7 +3,9 @@ package io.bluetape4k.aws.ktor.sqs
 import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.support.requireGe
 import io.bluetape4k.support.requireInRange
-import software.amazon.awssdk.services.sqs.model.Message
+import aws.sdk.kotlin.services.sqs.model.Message
+import aws.sdk.kotlin.services.sqs.model.MessageAttributeValue
+import aws.sdk.kotlin.services.sqs.model.MessageSystemAttributeName
 import java.io.Serializable
 import java.time.Duration
 import kotlin.math.roundToInt
@@ -51,16 +53,114 @@ data class SqsConsumerFailureContext(
     val phase: SqsConsumerFailurePhase,
 ): Serializable {
 
+    private fun writeReplace(): Any = SqsConsumerFailureContextSerializationProxy(
+        queueUrl = queueUrl,
+        message = SqsMessageSerializationProxy.from(message),
+        cause = cause,
+        phase = phase,
+    )
+
     /**
      * SQS `ApproximateReceiveCount` system attribute에서 읽은 대략적인 수신 횟수입니다.
      *
      * attribute가 없거나 정수로 해석할 수 없으면 `null`을 반환합니다.
      */
     val approximateReceiveCount: Int?
-        get() = message.attributesAsStrings()["ApproximateReceiveCount"]?.toIntOrNull()
+        get() = message.attributes
+            ?.get(MessageSystemAttributeName.ApproximateReceiveCount)
+            ?.toIntOrNull()
 
     companion object {
         private const val serialVersionUID: Long = 1L
+    }
+}
+
+/** SDK 모델을 영속 serial form에 넣지 않고 repository 값만 기록합니다. */
+private data class SqsConsumerFailureContextSerializationProxy(
+    val queueUrl: String,
+    val message: SqsMessageSerializationProxy,
+    val cause: Throwable,
+    val phase: SqsConsumerFailurePhase,
+): Serializable {
+
+    private fun readResolve(): Any = SqsConsumerFailureContext(
+        queueUrl = queueUrl,
+        message = message.toSdkMessage(),
+        cause = cause,
+        phase = phase,
+    )
+
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}
+
+private data class SqsMessageSerializationProxy(
+    val attributes: Map<String, String>?,
+    val body: String?,
+    val md5OfBody: String?,
+    val md5OfMessageAttributes: String?,
+    val messageAttributes: Map<String, SqsMessageAttributeSerializationProxy>?,
+    val messageId: String?,
+    val receiptHandle: String?,
+): Serializable {
+
+    fun toSdkMessage(): Message = Message {
+        attributes = this@SqsMessageSerializationProxy.attributes
+            ?.mapKeys { (name, _) -> MessageSystemAttributeName.fromValue(name) }
+        body = this@SqsMessageSerializationProxy.body
+        md5OfBody = this@SqsMessageSerializationProxy.md5OfBody
+        md5OfMessageAttributes = this@SqsMessageSerializationProxy.md5OfMessageAttributes
+        messageAttributes = this@SqsMessageSerializationProxy.messageAttributes
+            ?.mapValues { (_, value) -> value.toSdkValue() }
+        messageId = this@SqsMessageSerializationProxy.messageId
+        receiptHandle = this@SqsMessageSerializationProxy.receiptHandle
+    }
+
+    companion object {
+        private const val serialVersionUID: Long = 1L
+
+        fun from(message: Message): SqsMessageSerializationProxy = SqsMessageSerializationProxy(
+            attributes = message.attributes?.mapKeys { (name, _) -> name.value },
+            body = message.body,
+            md5OfBody = message.md5OfBody,
+            md5OfMessageAttributes = message.md5OfMessageAttributes,
+            messageAttributes = message.messageAttributes?.mapValues { (_, value) ->
+                SqsMessageAttributeSerializationProxy.from(value)
+            },
+            messageId = message.messageId,
+            receiptHandle = message.receiptHandle,
+        )
+    }
+}
+
+private data class SqsMessageAttributeSerializationProxy(
+    val binaryListValues: List<ByteArray>?,
+    val binaryValue: ByteArray?,
+    val dataType: String,
+    val stringListValues: List<String>?,
+    val stringValue: String?,
+): Serializable {
+
+    fun toSdkValue(): MessageAttributeValue = MessageAttributeValue {
+        binaryListValues = this@SqsMessageAttributeSerializationProxy.binaryListValues?.map { it.copyOf() }
+        binaryValue = this@SqsMessageAttributeSerializationProxy.binaryValue?.copyOf()
+        dataType = this@SqsMessageAttributeSerializationProxy.dataType
+        stringListValues = this@SqsMessageAttributeSerializationProxy.stringListValues?.toList()
+        stringValue = this@SqsMessageAttributeSerializationProxy.stringValue
+    }
+
+    companion object {
+        private const val serialVersionUID: Long = 1L
+
+        fun from(value: MessageAttributeValue): SqsMessageAttributeSerializationProxy =
+            SqsMessageAttributeSerializationProxy(
+                binaryListValues = value.binaryListValues?.map { it.copyOf() },
+                binaryValue = value.binaryValue?.copyOf(),
+                dataType = value.dataType,
+                stringListValues = value.stringListValues?.toList(),
+                stringValue = value.stringValue,
+            )
     }
 }
 

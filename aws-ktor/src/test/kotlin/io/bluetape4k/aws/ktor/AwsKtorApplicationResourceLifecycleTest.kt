@@ -28,6 +28,7 @@ import io.ktor.server.testing.testApplication
 import io.mockk.mockk
 import io.mockk.every
 import io.mockk.verify
+import aws.sdk.kotlin.services.kinesis.KinesisClient
 import aws.sdk.kotlin.services.cloudwatch.CloudWatchClient
 import aws.sdk.kotlin.services.eventbridge.EventBridgeClient
 import aws.sdk.kotlin.services.s3control.S3ControlClient
@@ -37,7 +38,6 @@ import aws.sdk.kotlin.services.sns.SnsClient
 import aws.sdk.kotlin.services.sts.StsClient
 import aws.smithy.kotlin.runtime.http.engine.CloseableHttpClientEngine
 import org.junit.jupiter.api.Test
-import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
 import java.util.concurrent.atomic.AtomicInteger
 
 class AwsKtorApplicationResourceLifecycleTest {
@@ -74,7 +74,7 @@ class AwsKtorApplicationResourceLifecycleTest {
         val snsClient = mockk<SnsClient>(relaxed = true)
         val sesClient = mockk<SesV2Client>(relaxed = true)
         val eventBridgeClient = mockk<EventBridgeClient>(relaxed = true)
-        val kinesisClient = mockk<KinesisAsyncClient>(relaxed = true)
+        val kinesisClient = mockk<KinesisClient>(relaxed = true)
         val s3VectorsClient = mockk<S3VectorsClient>(relaxed = true)
         val cloudWatchClient = mockk<CloudWatchClient>(relaxed = true)
         val imdsEngine = mockk<CloseableHttpClientEngine>(relaxed = true)
@@ -130,7 +130,7 @@ class AwsKtorApplicationResourceLifecycleTest {
         val snsClient = mockk<SnsClient>(relaxed = true)
         val sesClient = mockk<SesV2Client>(relaxed = true)
         val eventBridgeClient = mockk<EventBridgeClient>(relaxed = true)
-        val kinesisClient = mockk<KinesisAsyncClient>(relaxed = true)
+        val kinesisClient = mockk<KinesisClient>(relaxed = true)
         val s3VectorsClient = mockk<S3VectorsClient>(relaxed = true)
         val cloudWatchClient = mockk<CloudWatchClient>(relaxed = true)
         val s3ControlClient = mockk<S3ControlClient>(relaxed = true)
@@ -143,7 +143,7 @@ class AwsKtorApplicationResourceLifecycleTest {
             .registerApplicationResources(registry)
         requireNotNull(EventBridgeKtorPluginConfig().apply { this.eventBridgeClient = eventBridgeClient }.toRuntime())
             .registerApplicationResources(registry)
-        requireNotNull(KinesisKtorPluginConfig().apply { kinesisAsyncClient = kinesisClient }.toRuntime())
+        requireNotNull(KinesisKtorPluginConfig().apply { this.kinesisClient = kinesisClient }.toRuntime())
             .registerApplicationResources(registry)
         requireNotNull(S3VectorsKtorPluginConfig().apply { this.s3VectorsClient = s3VectorsClient }.toRuntime())
             .registerApplicationResources(registry)

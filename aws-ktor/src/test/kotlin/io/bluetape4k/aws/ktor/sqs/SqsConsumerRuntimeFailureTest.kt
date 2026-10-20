@@ -4,18 +4,30 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeGreaterOrEqualTo
 import io.bluetape4k.assertions.shouldBeLessThan
-import io.bluetape4k.concurrent.completableFutureOf
-import io.bluetape4k.concurrent.failedCompletableFutureOf
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
+import aws.sdk.kotlin.services.sqs.SqsClient
+import aws.sdk.kotlin.services.sqs.model.ChangeMessageVisibilityRequest
+import aws.sdk.kotlin.services.sqs.model.ChangeMessageVisibilityResponse
+import aws.sdk.kotlin.services.sqs.model.DeleteMessageRequest
+import aws.sdk.kotlin.services.sqs.model.DeleteMessageResponse
+import aws.sdk.kotlin.services.sqs.model.GetQueueUrlRequest
+import aws.sdk.kotlin.services.sqs.model.GetQueueUrlResponse
+import aws.sdk.kotlin.services.sqs.model.Message
+import aws.sdk.kotlin.services.sqs.model.ReceiveMessageRequest
+import aws.sdk.kotlin.services.sqs.model.ReceiveMessageResponse
+import aws.sdk.kotlin.services.sqs.model.SendMessageRequest
+import aws.sdk.kotlin.services.sqs.model.SendMessageResponse
 import io.mockk.clearMocks
 import io.mockk.every
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.future.await
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -26,21 +38,9 @@ import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import software.amazon.awssdk.services.sqs.SqsAsyncClient
-import software.amazon.awssdk.services.sqs.model.ChangeMessageVisibilityRequest
-import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest
-import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest
-import software.amazon.awssdk.services.sqs.model.GetQueueUrlResponse
-import software.amazon.awssdk.services.sqs.model.Message
-import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
-import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse
-import software.amazon.awssdk.services.sqs.model.SendMessageRequest
-import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 import java.time.Duration
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.function.Consumer
 import kotlin.system.measureTimeMillis
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -50,7 +50,7 @@ class SqsConsumerRuntimeFailureTest {
 
     companion object: KLoggingChannel()
 
-    private val client = mockk<SqsAsyncClient>()
+    private val client = mockk<SqsClient>()
 
     @BeforeEach
     fun beforeEach() {
@@ -61,25 +61,21 @@ class SqsConsumerRuntimeFailureTest {
     fun `slow handlers apply backpressure to receive loop`() = runSuspendIO {
         val receiveCalls = AtomicInteger()
         val handlerStarted = CountDownLatch(1)
-        val message = Message.builder().messageId("message-1").receiptHandle("receipt-1").body("slow").build()
+        val message = Message { messageId = "message-1"; receiptHandle = "receipt-1"; body = "slow" }
 
-        every {
-            client.receiveMessage(any<Consumer<ReceiveMessageRequest.Builder>>())
-        } answers {
+        coEvery { client.receiveMessage(any<ReceiveMessageRequest>()) } coAnswers {
             val response = if (receiveCalls.incrementAndGet() == 1) {
-                ReceiveMessageResponse.builder().messages(message).build()
+                ReceiveMessageResponse { messages = listOf(message) }
             } else {
-                ReceiveMessageResponse.builder().build()
+                ReceiveMessageResponse {}
             }
-            completableFutureOf(response)
+            response
         }
-        every {
-            client.deleteMessage(any<Consumer<DeleteMessageRequest.Builder>>())
-        } returns completableFutureOf(mockk())
+        coEvery { client.deleteMessage(any<DeleteMessageRequest>()) } returns DeleteMessageResponse {}
 
         val runtime = SqsConsumerRuntime(
             SqsConsumerRuntimeConfig(
-                sqsAsyncClient = client,
+                sqsClient = client,
                 queueUrl = "https://sqs.local/source",
                 coroutines = 1,
                 maxMessages = 1,
@@ -113,22 +109,18 @@ class SqsConsumerRuntimeFailureTest {
         coroutineScope {
             val receiveCalls = AtomicInteger()
             val handlerStarted = CountDownLatch(1)
-            val releaseHandler = CompletableFuture<Unit>()
-            val message = Message.builder().messageId("message-1").receiptHandle("receipt-1").body("slow").build()
+            val releaseHandler = CompletableDeferred<Unit>()
+            val message = Message { messageId = "message-1"; receiptHandle = "receipt-1"; body = "slow" }
 
-            every {
-                client.receiveMessage(any<Consumer<ReceiveMessageRequest.Builder>>())
-            } answers {
+            coEvery { client.receiveMessage(any<ReceiveMessageRequest>()) } coAnswers {
                 receiveCalls.incrementAndGet()
-                completableFutureOf(ReceiveMessageResponse.builder().messages(message).build())
+                ReceiveMessageResponse { messages = listOf(message) }
             }
-            every {
-                client.deleteMessage(any<Consumer<DeleteMessageRequest.Builder>>())
-            } returns completableFutureOf(mockk())
+            coEvery { client.deleteMessage(any<DeleteMessageRequest>()) } returns DeleteMessageResponse {}
 
             val runtime = SqsConsumerRuntime(
                 SqsConsumerRuntimeConfig(
-                    sqsAsyncClient = client,
+                    sqsClient = client,
                     queueUrl = "https://sqs.local/source",
                     coroutines = 1,
                     maxMessages = 1,
@@ -175,25 +167,20 @@ class SqsConsumerRuntimeFailureTest {
         coroutineScope {
             val visibilityCalls = AtomicInteger()
             val handlerStarted = CountDownLatch(1)
-            val releaseHandler = CompletableFuture<Unit>()
-            val message = Message.builder().messageId("message-1").receiptHandle("receipt-1").body("slow").build()
+            val releaseHandler = CompletableDeferred<Unit>()
+            val message = Message { messageId = "message-1"; receiptHandle = "receipt-1"; body = "slow" }
 
-            every {
-                client.receiveMessage(any<Consumer<ReceiveMessageRequest.Builder>>())
-            } returns completableFutureOf(ReceiveMessageResponse.builder().messages(message).build())
-            every {
-                client.changeMessageVisibility(any<Consumer<ChangeMessageVisibilityRequest.Builder>>())
-            } answers {
+            coEvery { client.receiveMessage(any<ReceiveMessageRequest>()) } returns
+                ReceiveMessageResponse { messages = listOf(message) }
+            coEvery { client.changeMessageVisibility(any<ChangeMessageVisibilityRequest>()) } coAnswers {
                 visibilityCalls.incrementAndGet()
-                completableFutureOf(mockk())
+                ChangeMessageVisibilityResponse {}
             }
-            every {
-                client.deleteMessage(any<Consumer<DeleteMessageRequest.Builder>>())
-            } returns completableFutureOf(mockk())
+            coEvery { client.deleteMessage(any<DeleteMessageRequest>()) } returns DeleteMessageResponse {}
 
             val runtime = SqsConsumerRuntime(
                 SqsConsumerRuntimeConfig(
-                    sqsAsyncClient = client,
+                    sqsClient = client,
                     queueUrl = "https://sqs.local/source",
                     coroutines = 1,
                     maxMessages = 1,
@@ -238,28 +225,23 @@ class SqsConsumerRuntimeFailureTest {
             val visibilityCalls = AtomicInteger()
             val deleteCalls = AtomicInteger()
             val handlerStarted = CountDownLatch(1)
-            val neverCompletes = CompletableFuture<Unit>()
-            val message = Message.builder().messageId("message-1").receiptHandle("receipt-1").body("stuck").build()
+            val neverCompletes = CompletableDeferred<Unit>()
+            val message = Message { messageId = "message-1"; receiptHandle = "receipt-1"; body = "stuck" }
 
-            every {
-                client.receiveMessage(any<Consumer<ReceiveMessageRequest.Builder>>())
-            } returns completableFutureOf(ReceiveMessageResponse.builder().messages(message).build())
-            every {
-                client.changeMessageVisibility(any<Consumer<ChangeMessageVisibilityRequest.Builder>>())
-            } answers {
+            coEvery { client.receiveMessage(any<ReceiveMessageRequest>()) } returns
+                ReceiveMessageResponse { messages = listOf(message) }
+            coEvery { client.changeMessageVisibility(any<ChangeMessageVisibilityRequest>()) } coAnswers {
                 visibilityCalls.incrementAndGet()
-                completableFutureOf(mockk())
+                ChangeMessageVisibilityResponse {}
             }
-            every {
-                client.deleteMessage(any<Consumer<DeleteMessageRequest.Builder>>())
-            } answers {
+            coEvery { client.deleteMessage(any<DeleteMessageRequest>()) } coAnswers {
                 deleteCalls.incrementAndGet()
-                completableFutureOf(mockk())
+                DeleteMessageResponse {}
             }
 
             val runtime = SqsConsumerRuntime(
                 SqsConsumerRuntimeConfig(
-                    sqsAsyncClient = client,
+                    sqsClient = client,
                     queueUrl = "https://sqs.local/source",
                     coroutines = 1,
                     maxMessages = 1,
@@ -314,32 +296,26 @@ class SqsConsumerRuntimeFailureTest {
     fun `successful handler delete failure does not forward message to dead letter queue`() = runSuspendIO {
         val receiveCalls = AtomicInteger()
         val deleteCalls = AtomicInteger()
-        val pendingReceive = CompletableFuture<ReceiveMessageResponse>()
-        val message = Message.builder().messageId("message-1").receiptHandle("receipt-1").body("ok").build()
+        val pendingReceive = CompletableDeferred<ReceiveMessageResponse>()
+        val message = Message { messageId = "message-1"; receiptHandle = "receipt-1"; body = "ok" }
 
-        every {
-            client.receiveMessage(any<Consumer<ReceiveMessageRequest.Builder>>())
-        } answers {
+        coEvery { client.receiveMessage(any<ReceiveMessageRequest>()) } coAnswers {
             val response = if (receiveCalls.incrementAndGet() == 1) {
-                ReceiveMessageResponse.builder().messages(message).build()
+                ReceiveMessageResponse { messages = listOf(message) }
             } else {
-                return@answers pendingReceive
+                return@coAnswers pendingReceive.await()
             }
-            completableFutureOf(response)
+            response
         }
-        every {
-            client.deleteMessage(any<Consumer<DeleteMessageRequest.Builder>>())
-        } answers {
+        coEvery { client.deleteMessage(any<DeleteMessageRequest>()) } coAnswers {
             deleteCalls.incrementAndGet()
-            failedCompletableFutureOf(RuntimeException("delete failed"))
+            throw RuntimeException("delete failed")
         }
-        every {
-            client.sendMessage(any<Consumer<SendMessageRequest.Builder>>())
-        } returns completableFutureOf(SendMessageResponse.builder().messageId("dlq").build())
+        coEvery { client.sendMessage(any<SendMessageRequest>()) } returns SendMessageResponse { messageId = "dlq" }
 
         val runtime = SqsConsumerRuntime(
             SqsConsumerRuntimeConfig(
-                sqsAsyncClient = client,
+                sqsClient = client,
                 queueUrl = "https://sqs.local/source",
                 coroutines = 1,
                 maxMessages = 1,
@@ -358,13 +334,11 @@ class SqsConsumerRuntimeFailureTest {
                 deleteCalls.get() shouldBeGreaterOrEqualTo 1
             }
         } finally {
-            pendingReceive.cancel(true)
+            pendingReceive.cancel()
             runtime.stop()
         }
 
-        verify(exactly = 0) {
-            client.sendMessage(any<Consumer<SendMessageRequest.Builder>>())
-        }
+        coVerify(exactly = 0) { client.sendMessage(any<SendMessageRequest>()) }
     }
 
     @Test
@@ -372,27 +346,21 @@ class SqsConsumerRuntimeFailureTest {
         val resolveCalls = AtomicInteger()
         val receiveCalls = AtomicInteger()
 
-        every {
-            client.getQueueUrl(any<Consumer<GetQueueUrlRequest.Builder>>())
-        } answers {
+        coEvery { client.getQueueUrl(any<GetQueueUrlRequest>()) } coAnswers {
             if (resolveCalls.incrementAndGet() == 1) {
-                failedCompletableFutureOf(RuntimeException("temporary getQueueUrl failure"))
+                throw RuntimeException("temporary getQueueUrl failure")
             } else {
-                completableFutureOf(
-                    GetQueueUrlResponse.builder().queueUrl("https://sqs.local/source").build()
-                )
+                GetQueueUrlResponse { queueUrl = "https://sqs.local/source" }
             }
         }
-        every {
-            client.receiveMessage(any<Consumer<ReceiveMessageRequest.Builder>>())
-        } answers {
+        coEvery { client.receiveMessage(any<ReceiveMessageRequest>()) } coAnswers {
             receiveCalls.incrementAndGet()
-            completableFutureOf(ReceiveMessageResponse.builder().build())
+            ReceiveMessageResponse {}
         }
 
         val runtime = SqsConsumerRuntime(
             SqsConsumerRuntimeConfig(
-                sqsAsyncClient = client,
+                sqsClient = client,
                 queueName = "source",
                 coroutines = 1,
                 maxMessages = 1,
