@@ -7,7 +7,7 @@ import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.aws.ktor.AwsKtorCore
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
-import io.bluetape4k.aws.ktor.AwsKtorEventBridgeAsyncClientCustomizer
+import io.bluetape4k.aws.ktor.AwsKtorEventBridgeClientCustomizer
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.ktor.http.Url
 import io.ktor.server.application.install
@@ -18,12 +18,12 @@ import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient
+import aws.sdk.kotlin.services.eventbridge.EventBridgeClient
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EventBridgeKtorPluginTest {
 
-    private val client = mockk<EventBridgeAsyncClient>(relaxed = true)
+    private val client = mockk<EventBridgeClient>(relaxed = true)
     private val operations = mockk<EventBridgeKtorOperations>(relaxed = true)
 
     @BeforeEach
@@ -69,7 +69,7 @@ class EventBridgeKtorPluginTest {
     @Test
     fun `injected client remains application owned`() = runSuspendIO {
         val runtime = EventBridgeKtorPluginConfig().apply {
-            eventBridgeAsyncClient = client
+            eventBridgeClient = client
         }.toRuntime()
         requireNotNull(runtime)
 
@@ -95,13 +95,13 @@ class EventBridgeKtorPluginTest {
     fun `service customizer runs after shared customizer`() = runSuspendIO {
         val order = mutableListOf<String>()
         val runtime = EventBridgeKtorPluginConfig().apply {
-            eventBridgeAsyncClient { order += "service" }
+            eventBridgeClient { order += "service" }
         }.toRuntime(
             AwsKtorDefaults(
                 region = "ap-northeast-2",
                 endpointOverride = Url("http://localhost:4566"),
-                eventBridgeAsyncClientCustomizers = listOf(
-                    AwsKtorEventBridgeAsyncClientCustomizer { order += "shared" }
+                eventBridgeClientCustomizers = listOf(
+                    AwsKtorEventBridgeClientCustomizer { order += "shared" }
                 ),
             )
         )
@@ -115,7 +115,7 @@ class EventBridgeKtorPluginTest {
     @Test
     fun `default event bus property is carried into template`() {
         val runtime = EventBridgeKtorPluginConfig().apply {
-            eventBridgeAsyncClient = client
+            eventBridgeClient = client
             defaultEventBusName = "orders"
         }.toRuntime()
         requireNotNull(runtime)

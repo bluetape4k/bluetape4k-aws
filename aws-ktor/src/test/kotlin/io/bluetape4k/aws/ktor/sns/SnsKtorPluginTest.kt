@@ -8,7 +8,7 @@ import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.ktor.AwsKtorCore
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
-import io.bluetape4k.aws.ktor.AwsKtorSnsAsyncClientCustomizer
+import io.bluetape4k.aws.ktor.AwsKtorSnsClientCustomizer
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
@@ -21,14 +21,14 @@ import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import software.amazon.awssdk.services.sns.SnsAsyncClient
+import aws.sdk.kotlin.services.sns.SnsClient
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SnsKtorPluginTest {
 
     companion object: KLogging()
 
-    private val client = mockk<SnsAsyncClient>(relaxed = true)
+    private val client = mockk<SnsClient>(relaxed = true)
     private val operations = mockk<SnsKtorOperations>(relaxed = true)
 
     @BeforeEach
@@ -82,7 +82,7 @@ class SnsKtorPluginTest {
     @Test
     fun `injected client remains application owned`() = runSuspendIO {
         val runtime = SnsKtorPluginConfig()
-            .apply { snsAsyncClient = client }
+            .apply { snsClient = client }
             .toRuntime()
             .shouldNotBeNull()
 
@@ -108,13 +108,13 @@ class SnsKtorPluginTest {
     fun `service customizer runs after shared customizer`() = runSuspendIO {
         val order = mutableListOf<String>()
         val runtime = SnsKtorPluginConfig()
-            .apply { snsAsyncClient { order += "service" } }
+            .apply { snsClient { order += "service" } }
             .toRuntime(
                 AwsKtorDefaults(
                     region = "ap-northeast-2",
                     endpointOverride = Url("http://localhost:4566"),
-                    snsAsyncClientCustomizers = listOf(
-                        AwsKtorSnsAsyncClientCustomizer { order += "shared" }
+                    snsClientCustomizers = listOf(
+                        AwsKtorSnsClientCustomizer { order += "shared" }
                     ),
                 )
             )

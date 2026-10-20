@@ -1,12 +1,13 @@
 package io.bluetape4k.aws.ktor.cloudwatch
 
 import io.bluetape4k.ToStringBuilder
-import io.bluetape4k.aws.ktor.AwsKtorCloudWatchLogsAsyncClientCustomizer
+import aws.sdk.kotlin.services.cloudwatchlogs.CloudWatchLogsClient
+import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
+import aws.smithy.kotlin.runtime.http.engine.HttpClientEngine
+import aws.smithy.kotlin.runtime.net.url.Url
+import io.bluetape4k.aws.kotlin.cloudwatch.cloudWatchLogsClientOf
+import io.bluetape4k.aws.ktor.AwsKtorCloudWatchLogsClientCustomizer
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
-import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClient
-import java.net.URI
 import java.time.Duration
 
 /**
@@ -22,8 +23,8 @@ class CloudWatchLogsKtorPluginConfig {
     /** Ktor CloudWatch Logs 런타임 등록을 활성화합니다. */
     var enabled: Boolean = true
 
-    /** 애플리케이션이 소유하는 선택적인 AWS SDK v2 CloudWatch Logs 비동기 클라이언트입니다. */
-    var cloudWatchLogsAsyncClient: CloudWatchLogsAsyncClient? = null
+    /** 애플리케이션이 소유하는 선택적인 AWS Kotlin SDK CloudWatch Logs 클라이언트입니다. */
+    var cloudWatchLogsClient: CloudWatchLogsClient? = null
 
     /** 애플리케이션이 소유하는 선택적인 작업 파사드입니다. */
     var cloudWatchLogsOperations: CloudWatchLogsKtorOperations? = null
@@ -32,10 +33,13 @@ class CloudWatchLogsKtorPluginConfig {
     var region: String? = null
 
     /** 플러그인이 클라이언트를 생성할 때 사용하는 선택적인 CloudWatch Logs 엔드포인트 재정의입니다. */
-    var endpointOverride: URI? = null
+    var endpointOverride: Url? = null
 
     /** 플러그인이 클라이언트를 생성할 때 사용하는 선택적인 자격 증명 공급자입니다. */
-    var credentialsProvider: AwsCredentialsProvider? = null
+    var credentialsProvider: CredentialsProvider? = null
+
+    /** 플러그인이 생성할 client에 전달할 호출자 소유 Smithy HTTP 엔진입니다. */
+    var httpClient: HttpClientEngine? = null
 
     /** 스트림 식별자를 생략한 작업에 사용할 기본 CloudWatch Logs 그룹 이름입니다. */
     var logGroupName: String? = null
@@ -61,13 +65,13 @@ class CloudWatchLogsKtorPluginConfig {
     /** 애플리케이션 시작 시 구성된 로그 스트림을 생성합니다. */
     var createLogStreamOnStart: Boolean = false
 
-    private val clientCustomizers = mutableListOf<AwsKtorCloudWatchLogsAsyncClientCustomizer>()
+    private val clientCustomizers = mutableListOf<AwsKtorCloudWatchLogsClientCustomizer>()
     private val shutdownObservers = mutableListOf<CloudWatchLogsShutdownObserver>()
 
     /**
      * 플러그인이 생성한 클라이언트에 CloudWatch Logs 비동기 클라이언트 빌더 사용자 정의 설정을 추가합니다.
      */
-    fun cloudWatchLogsAsyncClient(customizer: AwsKtorCloudWatchLogsAsyncClientCustomizer) {
+    fun cloudWatchLogsClient(customizer: AwsKtorCloudWatchLogsClientCustomizer) {
         clientCustomizers += customizer
     }
 
@@ -96,8 +100,8 @@ class CloudWatchLogsKtorPluginConfig {
             )
         }
 
-        val injectedClient = cloudWatchLogsAsyncClient
-        val client = injectedClient ?: createCloudWatchLogsAsyncClient(defaults)
+        val injectedClient = cloudWatchLogsClient
+        val client = injectedClient ?: createCloudWatchLogsClient(defaults)
         val operations = CloudWatchLogsKtorTemplate(client, defaultLogStream, batchSize)
 
         return CloudWatchLogsKtorRuntime(
@@ -124,27 +128,29 @@ class CloudWatchLogsKtorPluginConfig {
         }
     }
 
-    private fun createCloudWatchLogsAsyncClient(defaults: AwsKtorDefaults): CloudWatchLogsAsyncClient {
+    private fun createCloudWatchLogsClient(defaults: AwsKtorDefaults): CloudWatchLogsClient {
         val effectiveRegion = region?.takeIf { it.isNotBlank() } ?: defaults.region?.takeIf { it.isNotBlank() }
-        val effectiveEndpoint = endpointOverride ?: defaults.javaEndpointOverride
+        val effectiveEndpoint = endpointOverride ?: defaults.endpointOverride?.let { Url.parse(it.toString()) }
         require(effectiveEndpoint == null || !effectiveRegion.isNullOrBlank()) {
             "region must be configured when endpointOverride is configured."
         }
 
-        val builder = CloudWatchLogsAsyncClient.builder()
-        effectiveRegion?.let { builder.region(Region.of(it)) }
-        (credentialsProvider ?: defaults.javaCredentialsProvider)?.let(builder::credentialsProvider)
-        effectiveEndpoint?.let(builder::endpointOverride)
-        defaults.cloudWatchLogsAsyncClientCustomizers.forEach { it.customize(builder) }
-        clientCustomizers.forEach { it.customize(builder) }
-
-        return builder.build()
+        return cloudWatchLogsClientOf(
+            endpointUrl = effectiveEndpoint,
+            region = effectiveRegion,
+            credentialsProvider = credentialsProvider ?: defaults.kotlinCredentialsProvider,
+            httpClient = httpClient ?: defaults.kotlinHttpClient,
+            builder = {
+                defaults.cloudWatchLogsClientCustomizers.forEach { it.customize(this) }
+                clientCustomizers.forEach { it.customize(this) }
+            },
+        )
     }
 
     override fun toString(): String {
         return ToStringBuilder(this)
             .add("enabled", enabled)
-            .add("cloudWatchLogsAsyncClientConfigured", cloudWatchLogsAsyncClient != null)
+            .add("cloudWatchLogsClientConfigured", cloudWatchLogsClient != null)
             .add("cloudWatchLogsOperationsConfigured", cloudWatchLogsOperations != null)
             .add("region", region)
             .add("endpointConfigured", endpointOverride != null)

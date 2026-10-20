@@ -1,38 +1,32 @@
 package io.bluetape4k.aws.ktor.sts
 
+import aws.sdk.kotlin.services.sts.StsClient
+import aws.sdk.kotlin.services.sts.model.AssumeRoleRequest
+import aws.sdk.kotlin.services.sts.model.AssumeRoleResponse
+import aws.sdk.kotlin.services.sts.model.Credentials
+import aws.sdk.kotlin.services.sts.model.GetCallerIdentityRequest
+import aws.sdk.kotlin.services.sts.model.GetCallerIdentityResponse
+import aws.sdk.kotlin.services.sts.model.GetSessionTokenRequest
+import aws.sdk.kotlin.services.sts.model.GetSessionTokenResponse
+import aws.smithy.kotlin.runtime.time.Instant
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
-import io.bluetape4k.concurrent.completableFutureOf
-import io.bluetape4k.concurrent.failedCompletableFutureOf
-import io.bluetape4k.logging.coroutines.KLoggingChannel
-import io.bluetape4k.logging.debug
 import io.mockk.clearMocks
-import io.mockk.every
+import io.mockk.coEvery
 import io.mockk.mockk
 import io.mockk.slot
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import software.amazon.awssdk.core.exception.SdkClientException
-import software.amazon.awssdk.services.sts.StsAsyncClient
-import software.amazon.awssdk.services.sts.model.AssumeRoleRequest
-import software.amazon.awssdk.services.sts.model.AssumeRoleResponse
-import software.amazon.awssdk.services.sts.model.Credentials
-import software.amazon.awssdk.services.sts.model.GetCallerIdentityRequest
-import software.amazon.awssdk.services.sts.model.GetCallerIdentityResponse
-import software.amazon.awssdk.services.sts.model.GetSessionTokenRequest
-import software.amazon.awssdk.services.sts.model.GetSessionTokenResponse
-import java.time.Instant
-import java.util.concurrent.CompletableFuture
 
 class StsKtorTemplateTest {
 
-    companion object: KLoggingChannel()
-
-    private val client = mockk<StsAsyncClient>()
+    private val client = mockk<StsClient>()
 
     @BeforeEach
     fun beforeEach() {
@@ -40,35 +34,27 @@ class StsKtorTemplateTest {
     }
 
     @Test
-    fun `callerIdentity delegates to STS getCallerIdentity`() = runTest {
+    fun `callerIdentity delegates to Kotlin STS client`() = runTest {
         val request = slot<GetCallerIdentityRequest>()
-        val response = GetCallerIdentityResponse.builder()
-            .account("123456789012")
-            .arn("arn:aws:iam::123456789012:user/debop")
-            .userId("user-1")
-            .build()
-
-        every {
-            client.getCallerIdentity(capture(request))
-        } returns completableFutureOf(response)
+        val response = GetCallerIdentityResponse {
+            account = "123456789012"
+            arn = "arn:aws:iam::123456789012:user/debop"
+            userId = "user-1"
+        }
+        coEvery { client.getCallerIdentity(capture(request)) } returns response
 
         val result = template(client).callerIdentity()
 
-        log.debug { "result=$result" }
-        result shouldBeEqualTo response
-        request.captured shouldBeEqualTo GetCallerIdentityRequest.builder().build()
+        result shouldBeSameInstanceAs response
+        result.account shouldBeEqualTo "123456789012"
+        request.captured shouldBeEqualTo GetCallerIdentityRequest {}
     }
 
     @Test
-    fun `assumeRole maps role session and duration`() = runTest {
+    fun `assumeRole maps role session duration and external ID`() = runTest {
         val request = slot<AssumeRoleRequest>()
-        val response = AssumeRoleResponse.builder()
-            .credentials(credentials())
-            .build()
-
-        every {
-            client.assumeRole(capture(request))
-        } returns completableFutureOf(response)
+        val response = AssumeRoleResponse { credentials = credentials() }
+        coEvery { client.assumeRole(capture(request)) } returns response
 
         val result = template(client).assumeRole(
             StsAssumeRoleRequest(
@@ -79,26 +65,18 @@ class StsKtorTemplateTest {
             )
         )
 
-        log.debug { "result=$result" }
-        result shouldBeEqualTo response
-
-        log.debug { "request=${request.captured}" }
-        request.captured.roleArn() shouldBeEqualTo "arn:aws:iam::123456789012:role/orders"
-        request.captured.roleSessionName() shouldBeEqualTo "orders-api"
-        request.captured.durationSeconds() shouldBeEqualTo 1_800
-        request.captured.externalId() shouldBeEqualTo "external-1"
+        result shouldBeSameInstanceAs response
+        request.captured.roleArn shouldBeEqualTo "arn:aws:iam::123456789012:role/orders"
+        request.captured.roleSessionName shouldBeEqualTo "orders-api"
+        request.captured.durationSeconds shouldBeEqualTo 1_800
+        request.captured.externalId shouldBeEqualTo "external-1"
     }
 
     @Test
     fun `sessionToken maps duration and MFA fields`() = runTest {
         val request = slot<GetSessionTokenRequest>()
-        val response = GetSessionTokenResponse.builder()
-            .credentials(credentials())
-            .build()
-
-        every {
-            client.getSessionToken(capture(request))
-        } returns completableFutureOf(response)
+        val response = GetSessionTokenResponse { credentials = credentials() }
+        coEvery { client.getSessionToken(capture(request)) } returns response
 
         val result = template(client).sessionToken(
             StsSessionTokenRequest(
@@ -107,82 +85,65 @@ class StsKtorTemplateTest {
                 tokenCode = "123456",
             )
         )
-        log.debug { "result=$result" }
-        result shouldBeEqualTo response
 
-        log.debug { "request=${request.captured}" }
-        request.captured.durationSeconds() shouldBeEqualTo 900
-        request.captured.serialNumber() shouldBeEqualTo "arn:aws:iam::123456789012:mfa/debop"
-        request.captured.tokenCode() shouldBeEqualTo "123456"
+        result shouldBeSameInstanceAs response
+        request.captured.durationSeconds shouldBeEqualTo 900
+        request.captured.serialNumber shouldBeEqualTo "arn:aws:iam::123456789012:mfa/debop"
+        request.captured.tokenCode shouldBeEqualTo "123456"
     }
 
     @Test
     fun `STS request models validate duration ranges`() {
-        StsAssumeRoleRequest(
-            roleArn = "arn:aws:iam::123456789012:role/orders",
-            sessionName = "orders-api",
-            durationSeconds = 43_200,
-        )
+        StsAssumeRoleRequest("arn:aws:iam::123456789012:role/orders", "orders-api", durationSeconds = 43_200)
         StsSessionTokenRequest(durationSeconds = 129_600)
 
         assertFailsWith<IllegalArgumentException> {
-            StsAssumeRoleRequest(
-                roleArn = "arn:aws:iam::123456789012:role/orders",
-                sessionName = "orders-api",
-                durationSeconds = 899,
-            )
+            StsAssumeRoleRequest("arn:aws:iam::123456789012:role/orders", "orders-api", durationSeconds = 899)
         }
         assertFailsWith<IllegalArgumentException> {
-            StsAssumeRoleRequest(
-                roleArn = "arn:aws:iam::123456789012:role/orders",
-                sessionName = "orders-api",
-                durationSeconds = 43_201,
-            )
+            StsAssumeRoleRequest("arn:aws:iam::123456789012:role/orders", "orders-api", durationSeconds = 43_201)
         }
-        assertFailsWith<IllegalArgumentException> {
-            StsSessionTokenRequest(durationSeconds = 129_601)
-        }
+        assertFailsWith<IllegalArgumentException> { StsSessionTokenRequest(durationSeconds = 129_601) }
     }
 
     @Test
-    fun `callerIdentity cancels the backing future when coroutine is cancelled`() = runTest {
-        val future = CompletableFuture<GetCallerIdentityResponse>()
-        every {
-            client.getCallerIdentity(any<GetCallerIdentityRequest>())
-        } returns future
+    fun `STS response models retain credentials without logging them`() = runTest {
+        val response = AssumeRoleResponse { credentials = credentials() }
+        coEvery { client.assumeRole(any<AssumeRoleRequest>()) } returns response
 
-        val job = launch {
-            template(client).callerIdentity()
-        }
+        val result = template(client).assumeRole(
+            StsAssumeRoleRequest("arn:aws:iam::123456789012:role/orders", "orders-api")
+        )
+
+        result.credentials?.accessKeyId shouldBeEqualTo "access-secret"
+        result.credentials?.secretAccessKey shouldBeEqualTo "secret-secret"
+        result.credentials?.sessionToken shouldBeEqualTo "session-secret"
+    }
+
+    @Test
+    fun `callerIdentity cancellation propagates to the suspend client call`() = runTest {
+        coEvery { client.getCallerIdentity(any<GetCallerIdentityRequest>()) } coAnswers { awaitCancellation() }
+        val job = launch { template(client).callerIdentity() }
         runCurrent()
-
         job.cancel()
-
-        future.isCancelled.shouldBeTrue()
+        job.isCancelled.shouldBeTrue()
     }
 
     @Test
-    fun `failed STS future preserves original exception`() = runTest {
-        val failure = SdkClientException.create("boom")
-        every {
-            client.getCallerIdentity(any<GetCallerIdentityRequest>())
-        } returns failedCompletableFutureOf(failure)
+    fun `failed STS call preserves original exception`() = runTest {
+        val failure = IllegalStateException("boom")
+        coEvery { client.getCallerIdentity(any<GetCallerIdentityRequest>()) } throws failure
 
-        val error = assertFailsWith<SdkClientException> {
-            template(client).callerIdentity()
-        }
-
-        error shouldBeEqualTo failure
+        val error = assertFailsWith<IllegalStateException> { template(client).callerIdentity() }
+        error shouldBeSameInstanceAs failure
     }
 
-    private fun template(client: StsAsyncClient): StsKtorTemplate =
-        StsKtorTemplate(client)
+    private fun template(client: StsClient): StsKtorTemplate = StsKtorTemplate(client)
 
-    private fun credentials(): Credentials =
-        Credentials.builder()
-            .accessKeyId("access")
-            .secretAccessKey("secret")
-            .sessionToken("token")
-            .expiration(Instant.parse("2026-07-01T01:00:00Z"))
-            .build()
+    private fun credentials(): Credentials = Credentials {
+        accessKeyId = "access-secret"
+        secretAccessKey = "secret-secret"
+        sessionToken = "session-secret"
+        expiration = Instant.fromEpochSeconds(1_800_000_000L)
+    }
 }

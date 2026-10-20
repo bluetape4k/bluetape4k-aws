@@ -1,169 +1,125 @@
 package io.bluetape4k.aws.ktor.ses
 
-import io.bluetape4k.logging.KLogging
-import kotlinx.coroutines.future.await
-import software.amazon.awssdk.core.SdkBytes
-import software.amazon.awssdk.services.sesv2.SesV2AsyncClient
-import software.amazon.awssdk.services.sesv2.model.Attachment
-import software.amazon.awssdk.services.sesv2.model.Body
-import software.amazon.awssdk.services.sesv2.model.Content
-import software.amazon.awssdk.services.sesv2.model.Destination
-import software.amazon.awssdk.services.sesv2.model.EmailContent
-import software.amazon.awssdk.services.sesv2.model.Message
-import software.amazon.awssdk.services.sesv2.model.MessageHeader
-import software.amazon.awssdk.services.sesv2.model.RawMessage
-import software.amazon.awssdk.services.sesv2.model.SendEmailRequest
-import software.amazon.awssdk.services.sesv2.model.SendEmailResponse
-import software.amazon.awssdk.services.sesv2.model.Template
-import java.util.concurrent.CompletableFuture
+import aws.sdk.kotlin.services.sesv2.SesV2Client
+import aws.sdk.kotlin.services.sesv2.model.Attachment
+import aws.sdk.kotlin.services.sesv2.model.Body
+import aws.sdk.kotlin.services.sesv2.model.Content
+import aws.sdk.kotlin.services.sesv2.model.Destination
+import aws.sdk.kotlin.services.sesv2.model.EmailContent
+import aws.sdk.kotlin.services.sesv2.model.Message
+import aws.sdk.kotlin.services.sesv2.model.MessageHeader
+import aws.sdk.kotlin.services.sesv2.model.RawMessage
+import aws.sdk.kotlin.services.sesv2.model.SendEmailRequest
+import aws.sdk.kotlin.services.sesv2.model.SendEmailResponse
+import aws.sdk.kotlin.services.sesv2.model.Template
 
 /**
- * [SesV2AsyncClient]를 사용하는 기본 [SesKtorOperations] 구현입니다.
+ * [SesV2Client]를 사용하는 기본 [SesKtorOperations] 구현입니다.
  *
  * ## 계약
  *
  * Ktor 로컬 SES 값 객체를 `SendEmail` API에 매핑하고 구성된 기본 발신자와 구성 집합 값을
- * 적용합니다. AWS SDK 예외는 변경하지 않고 호출자에게 전파합니다.
+ * 적용합니다. AWS Kotlin SDK 예외는 변경하지 않고 호출자에게 전파합니다.
  */
 class SesKtorTemplate(
-    private val sesAsyncClient: SesV2AsyncClient,
+    private val sesClient: SesV2Client,
     private val defaultFrom: String? = null,
     private val configurationSetName: String? = null,
 ): SesKtorOperations {
 
-    companion object: KLogging()
-
     override suspend fun sendEmail(request: SesEmailRequest): SendEmailResponse =
-        sendEmailAsync(request).await()
+        sesClient.sendEmail(request.toSendEmailRequest())
 
     override suspend fun sendTemplateEmail(request: SesTemplateEmailRequest): SendEmailResponse =
-        sendTemplateEmailAsync(request).await()
+        sesClient.sendEmail(request.toSendEmailRequest())
 
     override suspend fun sendRawEmail(request: SesRawEmailRequest): SendEmailResponse =
-        sendRawEmailAsync(request).await()
+        sesClient.sendEmail(request.toSendEmailRequest())
 
     override suspend fun send(request: SendEmailRequest): SendEmailResponse =
-        sendAsync(request).await()
-
-    override fun sendEmailAsync(request: SesEmailRequest): CompletableFuture<SendEmailResponse> =
-        sendAsync(request.toSendEmailRequest())
-
-    override fun sendTemplateEmailAsync(request: SesTemplateEmailRequest): CompletableFuture<SendEmailResponse> =
-        sendAsync(request.toSendEmailRequest())
-
-    override fun sendRawEmailAsync(request: SesRawEmailRequest): CompletableFuture<SendEmailResponse> =
-        sendAsync(request.toSendEmailRequest())
-
-    override fun sendAsync(request: SendEmailRequest): CompletableFuture<SendEmailResponse> =
-        sesAsyncClient.sendEmail(request)
+        sesClient.sendEmail(request)
 
     private fun SesEmailRequest.toSendEmailRequest(): SendEmailRequest =
-        SendEmailRequest.builder()
-            .fromEmailAddress(resolveRequiredFrom(from))
-            .destination(destination.toSdkDestination())
-            .apply {
-                if (replyTo.isNotEmpty()) replyToAddresses(replyTo)
-                resolveConfigurationSet(configurationSetName)?.let(::configurationSetName)
-            }
-            .content(
-                EmailContent.builder()
-                    .simple(
-                        Message.builder()
-                            .subject(contentOf(subject, body.charset))
-                            .body(body.toSdkBody())
-                            .apply {
-                                headers.toSdkHeaders().takeIf { it.isNotEmpty() }?.let(::headers)
-                                attachments.toSdkAttachments().takeIf { it.isNotEmpty() }?.let(::attachments)
-                            }
-                            .build()
+        SendEmailRequest {
+            fromEmailAddress = resolveRequiredFrom(this@toSendEmailRequest.from)
+            destination = this@toSendEmailRequest.destination.toSdkDestination()
+            replyToAddresses = this@toSendEmailRequest.replyTo.takeIf { it.isNotEmpty() }
+            configurationSetName = resolveConfigurationSet(this@toSendEmailRequest.configurationSetName)
+            content = EmailContent {
+                simple = Message {
+                    subject = contentOf(
+                        this@toSendEmailRequest.subject,
+                        this@toSendEmailRequest.body.charset,
                     )
-                    .build()
-            )
-            .build()
+                    body = this@toSendEmailRequest.body.toSdkBody()
+                    headers = this@toSendEmailRequest.headers.toSdkHeaders().takeIf { it.isNotEmpty() }
+                    attachments = this@toSendEmailRequest.attachments.toSdkAttachments().takeIf { it.isNotEmpty() }
+                }
+            }
+        }
 
     private fun SesTemplateEmailRequest.toSendEmailRequest(): SendEmailRequest =
-        SendEmailRequest.builder()
-            .fromEmailAddress(resolveRequiredFrom(from))
-            .destination(destination.toSdkDestination())
-            .apply {
-                if (replyTo.isNotEmpty()) replyToAddresses(replyTo)
-                resolveConfigurationSet(configurationSetName)?.let(::configurationSetName)
+        SendEmailRequest {
+            fromEmailAddress = resolveRequiredFrom(this@toSendEmailRequest.from)
+            destination = this@toSendEmailRequest.destination.toSdkDestination()
+            replyToAddresses = this@toSendEmailRequest.replyTo.takeIf { it.isNotEmpty() }
+            configurationSetName = resolveConfigurationSet(this@toSendEmailRequest.configurationSetName)
+            content = EmailContent {
+                template = Template {
+                    templateName = this@toSendEmailRequest.templateName
+                    templateArn = this@toSendEmailRequest.templateArn
+                    templateData = this@toSendEmailRequest.templateData
+                    headers = this@toSendEmailRequest.headers.toSdkHeaders().takeIf { it.isNotEmpty() }
+                    attachments = this@toSendEmailRequest.attachments.toSdkAttachments().takeIf { it.isNotEmpty() }
+                }
             }
-            .content(
-                EmailContent.builder()
-                    .template(
-                        Template.builder()
-                            .apply {
-                                templateName?.let(::templateName)
-                                templateArn?.let(::templateArn)
-                                templateData?.let(::templateData)
-                                headers.toSdkHeaders().takeIf { it.isNotEmpty() }?.let(::headers)
-                                attachments.toSdkAttachments().takeIf { it.isNotEmpty() }?.let(::attachments)
-                            }
-                            .build()
-                    )
-                    .build()
-            )
-            .build()
+        }
 
     private fun SesRawEmailRequest.toSendEmailRequest(): SendEmailRequest =
-        SendEmailRequest.builder()
-            .content(
-                EmailContent.builder()
-                    .raw(RawMessage.builder().data(SdkBytes.fromByteArray(rawContentForSdk)).build())
-                    .build()
-            )
-            .apply {
-                resolveOptionalFrom(from)?.let(::fromEmailAddress)
-                destination?.let { destination(it.toSdkDestination()) }
-                resolveConfigurationSet(configurationSetName)?.let(::configurationSetName)
+        SendEmailRequest {
+            content = EmailContent {
+                raw = RawMessage { data = rawContentForSdk.copyOf() }
             }
-            .build()
+            fromEmailAddress = resolveOptionalFrom(from)
+            this@toSendEmailRequest.destination?.let { destination = it.toSdkDestination() }
+            configurationSetName = resolveConfigurationSet(this@toSendEmailRequest.configurationSetName)
+        }
 
     private fun SesEmailAddressSet.toSdkDestination(): Destination =
-        Destination.builder()
-            .apply {
-                if (to.isNotEmpty()) toAddresses(to)
-                if (cc.isNotEmpty()) ccAddresses(cc)
-                if (bcc.isNotEmpty()) bccAddresses(bcc)
-            }
-            .build()
+        Destination {
+            toAddresses = to.takeIf { it.isNotEmpty() }
+            ccAddresses = cc.takeIf { it.isNotEmpty() }
+            bccAddresses = bcc.takeIf { it.isNotEmpty() }
+        }
 
     private fun SesEmailBody.toSdkBody(): Body =
-        Body.builder()
-            .apply {
-                text?.let { text(contentOf(it, charset)) }
-                html?.let { html(contentOf(it, charset)) }
-            }
-            .build()
+        Body {
+            this.text = this@toSdkBody.text?.let { contentOf(it, this@toSdkBody.charset) }
+            this.html = this@toSdkBody.html?.let { contentOf(it, this@toSdkBody.charset) }
+        }
 
     private fun contentOf(data: String, charset: String): Content =
-        Content.builder()
-            .data(data)
-            .charset(charset)
-            .build()
+        Content {
+            this.data = data
+            this.charset = charset
+        }
 
     private fun Map<String, String>.toSdkHeaders(): List<MessageHeader> =
         map { (name, value) ->
-            MessageHeader.builder()
-                .name(name)
-                .value(value)
-                .build()
+            MessageHeader { this.name = name; this.value = value }
         }
 
     private fun List<SesEmailAttachment>.toSdkAttachments(): List<Attachment> =
         map { attachment ->
-            Attachment.builder()
-                .rawContent(SdkBytes.fromByteArray(attachment.contentForSdk))
-                .fileName(attachment.fileName)
-                .contentType(attachment.contentType)
-                .contentDisposition(attachment.contentDisposition)
-                .contentTransferEncoding(attachment.contentTransferEncoding)
-                .apply {
-                    attachment.contentDescription?.let(::contentDescription)
-                    attachment.contentId?.let(::contentId)
-                }
-                .build()
+            Attachment {
+                rawContent = attachment.contentForSdk.copyOf()
+                fileName = attachment.fileName
+                contentType = attachment.contentType
+                contentDisposition = attachment.contentDisposition
+                contentTransferEncoding = attachment.contentTransferEncoding
+                contentDescription = attachment.contentDescription
+                contentId = attachment.contentId
+            }
         }
 
     private fun resolveRequiredFrom(from: String?): String =

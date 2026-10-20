@@ -7,7 +7,7 @@ import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.runInterruptible
-import software.amazon.awssdk.services.sns.SnsAsyncClient
+import aws.sdk.kotlin.services.sns.SnsClient
 
 /**
  * SNS Ktor 작업과 플러그인이 소유한 클라이언트 수명 주기를 보관하는 런타임입니다.
@@ -15,7 +15,7 @@ import software.amazon.awssdk.services.sns.SnsAsyncClient
 class SnsKtorRuntime(
     val operations: SnsKtorOperations,
     val parser: SnsHttpMessageParser = SnsHttpMessageParser.default(),
-    private val ownedClient: SnsAsyncClient? = null,
+    private val ownedClient: SnsClient? = null,
 ) {
     companion object: KLoggingChannel()
 
@@ -35,7 +35,7 @@ class SnsKtorRuntime(
     }
 
     /**
-     * 플러그인이 생성한 SNS 클라이언트를 한 번 닫습니다. 주입된 클라이언트는 닫지 않습니다.
+     * 플러그인이 생성한 AWS Kotlin SNS 클라이언트를 한 번 닫습니다. 주입된 클라이언트는 닫지 않습니다.
      */
     suspend fun stop() {
         if (closed.compareAndSet(expect = false, update = true)) {

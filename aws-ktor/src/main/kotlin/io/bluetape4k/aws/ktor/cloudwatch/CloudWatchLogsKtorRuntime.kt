@@ -1,6 +1,6 @@
 package io.bluetape4k.aws.ktor.cloudwatch
 
-import io.bluetape4k.aws.cloudwatch.model.cloudwatchlogs.inputLogEventOf
+import io.bluetape4k.aws.kotlin.cloudwatch.model.cloudwatchlogs.inputLogEventOf
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.warn
 import io.bluetape4k.support.requireInRange
@@ -22,9 +22,9 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClient
-import software.amazon.awssdk.services.cloudwatchlogs.model.InputLogEvent
-import software.amazon.awssdk.services.cloudwatchlogs.model.PutLogEventsResponse
+import aws.sdk.kotlin.services.cloudwatchlogs.CloudWatchLogsClient
+import aws.sdk.kotlin.services.cloudwatchlogs.model.InputLogEvent
+import aws.sdk.kotlin.services.cloudwatchlogs.model.PutLogEventsResponse
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicBoolean
@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 class CloudWatchLogsKtorRuntime(
     val operations: CloudWatchLogsKtorOperations,
-    private val ownedClient: CloudWatchLogsAsyncClient? = null,
+    private val ownedClient: CloudWatchLogsClient? = null,
     private val logStream: CloudWatchLogStream? = null,
     private val batchSize: Int = CLOUDWATCH_LOGS_MAX_BATCH_SIZE,
     private val flushInterval: Duration = Duration.ofSeconds(5),
@@ -69,7 +69,7 @@ class CloudWatchLogsKtorRuntime(
     /** 이전 버전의 생성자와 호환되는 기본 shutdown 정책 생성자입니다. */
     constructor(
         operations: CloudWatchLogsKtorOperations,
-        ownedClient: CloudWatchLogsAsyncClient?,
+        ownedClient: CloudWatchLogsClient?,
         logStream: CloudWatchLogStream?,
         batchSize: Int,
         flushInterval: Duration,
@@ -181,7 +181,7 @@ class CloudWatchLogsKtorRuntime(
                 return emptyList()
             }
             buffer
-                .sortedBy { it.timestamp() ?: 0L }
+                .sortedBy { it.timestamp ?: 0L }
                 .also { buffer.clear() }
         }
 

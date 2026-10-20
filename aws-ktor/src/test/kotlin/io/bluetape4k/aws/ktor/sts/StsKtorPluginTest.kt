@@ -9,7 +9,7 @@ import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.aws.ktor.AwsKtorCore
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
-import io.bluetape4k.aws.ktor.AwsKtorStsAsyncClientCustomizer
+import io.bluetape4k.aws.ktor.AwsKtorStsClientCustomizer
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.KLogging
 import io.ktor.http.Url
@@ -22,17 +22,16 @@ import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import software.amazon.awssdk.services.sts.StsAsyncClient
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
-import java.net.URI
+import aws.sdk.kotlin.services.sts.StsClient
+import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
+import aws.smithy.kotlin.runtime.net.url.Url as SmithyUrl
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StsKtorPluginTest {
 
     companion object: KLogging()
 
-    private val client = mockk<StsAsyncClient>(relaxed = true)
+    private val client = mockk<StsClient>(relaxed = true)
     private val operations = mockk<StsKtorOperations>(relaxed = true)
 
     @BeforeEach
@@ -78,7 +77,7 @@ class StsKtorPluginTest {
     @Test
     fun `injected client remains application owned`() = runSuspendIO {
         val runtime = StsKtorPluginConfig()
-            .apply { stsAsyncClient = client }
+            .apply { stsClient = client }
             .toRuntime()
             .shouldNotBeNull()
 
@@ -104,15 +103,13 @@ class StsKtorPluginTest {
     fun `config diagnostics redact endpoint credentials and injected dependencies`() {
         every { client.toString() } returns "sts-client-secret"
         every { operations.toString() } returns "sts-operations-secret"
-        val provider = object: AwsCredentialsProvider {
-            override fun resolveCredentials() = AwsBasicCredentials.create("access-key", "secret-key")
-            override fun toString() = "credentials-provider-secret"
-        }
+        val provider = mockk<CredentialsProvider>(relaxed = true)
+        every { provider.toString() } returns "credentials-provider-secret"
 
         val rendered = StsKtorPluginConfig().apply {
-            stsAsyncClient = client
+            stsClient = client
             stsOperations = operations
-            endpointOverride = URI("https://endpoint-user:endpoint-password@example.com/private?token=endpoint-secret")
+            endpointOverride = SmithyUrl.parse("https://endpoint-user:endpoint-password@example.com/private?token=endpoint-secret")
             credentialsProvider = provider
         }.toString()
 
@@ -135,14 +132,14 @@ class StsKtorPluginTest {
         val order = mutableListOf<String>()
         val runtime = StsKtorPluginConfig()
             .apply {
-                stsAsyncClient { order += "service" }
+                stsClient { order += "service" }
             }
             .toRuntime(
                 AwsKtorDefaults(
                     region = "ap-northeast-2",
                     endpointOverride = Url("http://localhost:4566"),
-                    stsAsyncClientCustomizers = listOf(
-                        AwsKtorStsAsyncClientCustomizer { order += "shared" }
+                    stsClientCustomizers = listOf(
+                        AwsKtorStsClientCustomizer { order += "shared" }
                     ),
                 )
             )

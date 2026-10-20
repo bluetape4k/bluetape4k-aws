@@ -1,19 +1,17 @@
 package io.bluetape4k.aws.ktor.s3vectors
 
-import io.bluetape4k.aws.s3vectors.S3VectorsOperations
+import aws.sdk.kotlin.services.s3vectors.S3VectorsClient
+import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.ktor.core.ApplicationResourceRegistry
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.runInterruptible
-import software.amazon.awssdk.services.s3vectors.S3VectorsAsyncClient
 
-/**
- * Ktor S3 Vectors 작업과 플러그인이 소유한 클라이언트 수명 주기를 보관하는 런타임입니다.
- */
+/** Ktor S3 Vectors 작업과 플러그인이 소유한 클라이언트 수명 주기를 보관하는 런타임입니다. */
 class S3VectorsKtorRuntime(
-    val operations: S3VectorsOperations,
-    private val ownedClient: S3VectorsAsyncClient? = null,
+    val operations: S3VectorsKtorOperations,
+    private val ownedClient: S3VectorsClient? = null,
 ) {
 
     private val closed = atomic(false)
@@ -31,9 +29,7 @@ class S3VectorsKtorRuntime(
         }
     }
 
-    /**
-     * 플러그인이 생성한 S3 Vectors 클라이언트를 한 번 닫습니다. 주입된 클라이언트는 닫지 않습니다.
-     */
+    /** 플러그인이 생성한 S3 Vectors 클라이언트를 한 번 닫습니다. 주입된 클라이언트는 닫지 않습니다. */
     suspend fun stop() {
         if (closed.compareAndSet(expect = false, update = true)) {
             ownedClient?.let { client ->
@@ -43,4 +39,11 @@ class S3VectorsKtorRuntime(
             }
         }
     }
+
+    override fun toString(): String =
+        ToStringBuilder(this)
+            .add("operationsConfigured", true)
+            .add("ownedClientConfigured", ownedClient != null)
+            .add("closed", closed.value)
+            .toString()
 }

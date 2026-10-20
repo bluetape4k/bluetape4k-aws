@@ -1,43 +1,35 @@
 package io.bluetape4k.aws.ktor.sns
 
+import aws.sdk.kotlin.services.sns.SnsClient
+import aws.sdk.kotlin.services.sns.model.ConfirmSubscriptionRequest
+import aws.sdk.kotlin.services.sns.model.ConfirmSubscriptionResponse
+import aws.sdk.kotlin.services.sns.model.CreateTopicRequest
+import aws.sdk.kotlin.services.sns.model.ListTopicsRequest
+import aws.sdk.kotlin.services.sns.model.ListTopicsResponse
+import aws.sdk.kotlin.services.sns.model.PublishRequest
+import aws.sdk.kotlin.services.sns.model.PublishResponse
+import aws.sdk.kotlin.services.sns.model.Topic
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
-import io.bluetape4k.concurrent.completableFutureOf
-import io.bluetape4k.concurrent.failedCompletableFutureOf
-import io.bluetape4k.coroutines.support.log
-import io.bluetape4k.logging.coroutines.KLoggingChannel
-import io.bluetape4k.logging.debug
+import io.bluetape4k.assertions.shouldNotContain
 import io.mockk.clearMocks
-import io.mockk.every
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
-import io.mockk.verify
+import io.mockk.slot
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import software.amazon.awssdk.core.exception.SdkClientException
-import software.amazon.awssdk.services.sns.SnsAsyncClient
-import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionRequest
-import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionResponse
-import software.amazon.awssdk.services.sns.model.CreateTopicRequest
-import software.amazon.awssdk.services.sns.model.CreateTopicResponse
-import software.amazon.awssdk.services.sns.model.ListTopicsRequest
-import software.amazon.awssdk.services.sns.model.ListTopicsResponse
-import software.amazon.awssdk.services.sns.model.MessageAttributeValue
-import software.amazon.awssdk.services.sns.model.PublishRequest
-import software.amazon.awssdk.services.sns.model.PublishResponse
-import software.amazon.awssdk.services.sns.model.Topic
-import java.util.concurrent.CompletableFuture
-import java.util.function.Consumer
+import java.net.URI
 
 class SnsKtorTemplateTest {
 
-    companion object: KLoggingChannel()
-
-    private val client = mockk<SnsAsyncClient>()
+    private val client = mockk<SnsClient>()
 
     @BeforeEach
     fun beforeEach() {
@@ -45,285 +37,185 @@ class SnsKtorTemplateTest {
     }
 
     @Test
-    fun `findTopicArn scans paged topics`() = runTest {
-        val listRequests = mutableListOf<ListTopicsRequest>()
-        every {
-            client.listTopics(any<Consumer<ListTopicsRequest.Builder>>())
-        } answers {
-            val builder = ListTopicsRequest.builder()
-            firstArg<Consumer<ListTopicsRequest.Builder>>().accept(builder)
-            listRequests += builder.build()
-            val response = if (listRequests.size == 1) {
-                ListTopicsResponse.builder()
-                    .topics(Topic.builder().topicArn("arn:aws:sns:us-east-1:000000000000:other").build())
-                    .nextToken("next")
-                    .build()
-            } else {
-                ListTopicsResponse.builder()
-                    .topics(Topic.builder().topicArn("arn:aws:sns:us-east-1:000000000000:orders").build())
-                    .build()
-            }
-            completableFutureOf(response)
-        }
-
-        template(client).findTopicArn("orders") shouldBeEqualTo "arn:aws:sns:us-east-1:000000000000:orders"
-        listRequests.map { it.nextToken() } shouldBeEqualTo listOf(null, "next")
-    }
-
-    @Test
-    fun `publish maps topic request`() = runTest {
-        lateinit var capturedConsumer: Consumer<PublishRequest.Builder>
-        every {
-            client.publish(any<Consumer<PublishRequest.Builder>>())
-        } answers {
-            capturedConsumer = firstArg()
-            completableFutureOf(PublishResponse.builder().messageId("message-1").build())
-        }
-
-        val result = template(client).publish(
-            SnsPublishRequest(
-                topicArn = "arn:aws:sns:us-east-1:000000000000:orders",
-                subject = "Order accepted",
-                message = "order-json",
+    fun `findTopicArn scans pages and carries the next token`() = runTest {
+        val requests = mutableListOf<ListTopicsRequest>()
+        val responses = ArrayDeque(
+            listOf(
+                ListTopicsResponse {
+                    nextToken = "next-page"
+                    topics = listOf(Topic { topicArn = "arn:aws:sns:us-east-1:123456789012:other" })
+                },
+                ListTopicsResponse {
+                    topics = listOf(Topic { topicArn = "arn:aws:sns:us-east-1:123456789012:orders" })
+                },
             )
         )
-        log.debug { "result=$result" }
-        result.messageId() shouldBeEqualTo "message-1"
+        coEvery { client.listTopics(any<ListTopicsRequest>()) } coAnswers {
+            requests += firstArg<ListTopicsRequest>()
+            responses.removeFirst()
+        }
 
-        val requestBuilder = PublishRequest.builder()
-        capturedConsumer.accept(requestBuilder)
+        val result = SnsKtorTemplate(client).findTopicArn("orders")
 
-        val request = requestBuilder.build()
-        log.debug { "request=$request" }
-        request.topicArn() shouldBeEqualTo "arn:aws:sns:us-east-1:000000000000:orders"
-        request.subject() shouldBeEqualTo "Order accepted"
-        request.message() shouldBeEqualTo "order-json"
+        result shouldBeEqualTo "arn:aws:sns:us-east-1:123456789012:orders"
+        requests.map { it.nextToken } shouldBeEqualTo listOf(null, "next-page")
+        coVerify(exactly = 2) { client.listTopics(any<ListTopicsRequest>()) }
     }
 
     @Test
-    fun `publishSms maps phone number and explicit SMS attributes`() = runTest {
-        lateinit var capturedConsumer: Consumer<PublishRequest.Builder>
-        every {
-            client.publish(any<Consumer<PublishRequest.Builder>>())
-        } answers {
-            capturedConsumer = firstArg()
-            completableFutureOf(PublishResponse.builder().messageId("sms-1").build())
-        }
+    fun `publish maps full string and binary message attributes`() = runTest {
+        val request = slot<PublishRequest>()
+        val response = PublishResponse { messageId = "published-1" }
+        val sourceBytes = byteArrayOf(1, 2, 3)
+        val binaryAttribute = SnsMessageAttribute(dataType = "Binary.custom", binaryValue = sourceBytes)
+        sourceBytes[0] = 9
+        val returnedBytes = requireNotNull(binaryAttribute.binaryValue)
+        returnedBytes[1] = 9
+        coEvery { client.publish(capture(request)) } returns response
 
-        val result = template(client).publishSms(
+        val result = SnsKtorTemplate(client).publish(
+            SnsPublishRequest(
+                topicArn = "arn:aws:sns:us-east-1:123456789012:orders.fifo",
+                message = "hello",
+                subject = "subject",
+                messageAttributes = mapOf(
+                    "kind" to SnsMessageAttribute(dataType = "String.custom", stringValue = "created"),
+                    "payload" to binaryAttribute,
+                ),
+                messageGroupId = "orders",
+                messageDeduplicationId = "event-1",
+            )
+        )
+
+        result shouldBeSameInstanceAs response
+        request.captured.topicArn shouldBeEqualTo "arn:aws:sns:us-east-1:123456789012:orders.fifo"
+        request.captured.messageGroupId shouldBeEqualTo "orders"
+        request.captured.messageDeduplicationId shouldBeEqualTo "event-1"
+        request.captured.messageAttributes?.get("kind")?.dataType shouldBeEqualTo "String.custom"
+        request.captured.messageAttributes?.get("kind")?.stringValue shouldBeEqualTo "created"
+        request.captured.messageAttributes?.get("payload")?.dataType shouldBeEqualTo "Binary.custom"
+        request.captured.messageAttributes?.get("payload")?.binaryValue?.contentEquals(byteArrayOf(1, 2, 3)) shouldBeEqualTo true
+    }
+
+    @Test
+    fun `publishSms standard options override custom values and retain binary attributes`() = runTest {
+        val request = slot<PublishRequest>()
+        coEvery { client.publish(capture(request)) } returns PublishResponse { messageId = "sms-1" }
+
+        SnsKtorTemplate(client).publishSms(
             SnsSmsRequest(
                 phoneNumber = "+15550100000",
                 message = "hello sms",
                 smsType = SnsSmsType.TRANSACTIONAL,
-                senderId = "BLUETAPE",
-                maxPrice = "0.50",
+                senderId = "Bluetape",
                 messageAttributes = mapOf(
-                    "custom.attribute" to MessageAttributeValue.builder()
-                        .dataType("String")
-                        .stringValue("custom")
-                        .build()
+                    SnsSmsRequest.SMS_TYPE_ATTRIBUTE to SnsMessageAttribute("String", "Promotional"),
+                    "binary" to SnsMessageAttribute("Binary", binaryValue = byteArrayOf(4, 5)),
                 ),
             )
         )
 
-        log.debug { "result=$result" }
-        result.messageId() shouldBeEqualTo "sms-1"
+        request.captured.phoneNumber shouldBeEqualTo "+15550100000"
+        request.captured.messageAttributes?.get(SnsSmsRequest.SMS_TYPE_ATTRIBUTE)?.stringValue shouldBeEqualTo "Transactional"
+        request.captured.messageAttributes?.get(SnsSmsRequest.SENDER_ID_ATTRIBUTE)?.stringValue shouldBeEqualTo "Bluetape"
+        request.captured.messageAttributes?.get("binary")?.binaryValue?.contentEquals(byteArrayOf(4, 5)) shouldBeEqualTo true
+    }
 
-        val requestBuilder = PublishRequest.builder()
-        capturedConsumer.accept(requestBuilder)
+    @Test
+    fun `create topic preserves configured FIFO attributes`() = runTest {
+        val request = slot<CreateTopicRequest>()
+        coEvery { client.createTopic(capture(request)) } returns
+                aws.sdk.kotlin.services.sns.model.CreateTopicResponse { topicArn = "arn:topic:orders.fifo" }
 
-        val request = requestBuilder.build()
+        val arn = SnsKtorTemplate(client).createFifoTopic(
+            topicName = "orders.fifo",
+            contentBasedDeduplication = false,
+            fifoThroughputScope = SnsFifoThroughputScope.MESSAGE_GROUP,
+            attributes = mapOf("Environment" to "test", "FifoTopic" to "false"),
+        )
 
-        log.debug { "request=$request" }
-        request.topicArn().shouldBeNull()
-        request.phoneNumber() shouldBeEqualTo "+15550100000"
-        request.messageAttributes().asStrings() shouldBeEqualTo mapOf(
-            "custom.attribute" to "custom",
-            SnsSmsRequest.SMS_TYPE_ATTRIBUTE to "Transactional",
-            SnsSmsRequest.SENDER_ID_ATTRIBUTE to "BLUETAPE",
-            SnsSmsRequest.MAX_PRICE_ATTRIBUTE to "0.50",
+        arn shouldBeEqualTo "arn:topic:orders.fifo"
+        request.captured.attributes shouldBeEqualTo mapOf(
+            "Environment" to "test",
+            "FifoTopic" to "true",
+            "ContentBasedDeduplication" to "false",
+            "FifoThroughputScope" to "MessageGroup",
         )
     }
 
     @Test
     fun `confirmSubscription maps explicit token and trusted message`() = runTest {
         val requests = mutableListOf<ConfirmSubscriptionRequest>()
-        every {
-            client.confirmSubscription(any<Consumer<ConfirmSubscriptionRequest.Builder>>())
-        } answers {
-            val builder = ConfirmSubscriptionRequest.builder()
-            firstArg<Consumer<ConfirmSubscriptionRequest.Builder>>().accept(builder)
-            requests += builder.build()
-            completableFutureOf(ConfirmSubscriptionResponse.builder().subscriptionArn("sub").build())
+        coEvery { client.confirmSubscription(any<ConfirmSubscriptionRequest>()) } coAnswers {
+            requests += firstArg<ConfirmSubscriptionRequest>()
+            ConfirmSubscriptionResponse { subscriptionArn = "arn:subscription:1" }
         }
-        val message =
-            TrustedSnsHttpMessage.fromVerified(SnsHttpMessageParser.default().parse(subscriptionConfirmationJson))
 
-        template(client).confirmSubscription(
-            topicArn = "arn:aws:sns:us-east-1:000000000000:orders",
-            token = "token-1",
+        val operations = SnsKtorTemplate(client)
+        operations.confirmSubscription("arn:aws:sns:us-east-1:123456789012:orders", "token-1")
+        operations.confirmSubscription(
+            TrustedSnsHttpMessage.fromVerified(
+                SnsHttpMessage(
+                    type = SnsHttpMessageType.SUBSCRIPTION_CONFIRMATION,
+                    messageId = "message-1",
+                    topicArn = "arn:aws:sns:us-east-1:123456789012:orders",
+                    message = "confirm",
+                    timestamp = "2026-10-20T00:00:00Z",
+                    signatureVersion = "1",
+                    signature = "signature",
+                    signingCertUrl = URI("https://sns.us-east-1.amazonaws.com/cert.pem"),
+                    token = "token-2",
+                )
+            ),
             authenticateOnUnsubscribe = false,
         )
-        template(client).confirmSubscription(message)
 
-        requests.forEachIndexed { idx, request -> log.debug { "request[$idx]=$request" } }
-        requests[0].authenticateOnUnsubscribe() shouldBeEqualTo "false"
-        requests[1].topicArn() shouldBeEqualTo "arn:aws:sns:us-east-1:000000000000:orders"
-        requests[1].token() shouldBeEqualTo "token-1"
-
-        verify(exactly = 2) {
-            client.confirmSubscription(any<Consumer<ConfirmSubscriptionRequest.Builder>>())
-        }
+        requests.map { it.token } shouldBeEqualTo listOf("token-1", "token-2")
+        requests.map { it.authenticateOnUnsubscribe } shouldBeEqualTo listOf("true", "false")
     }
 
     @Test
-    fun `request constraints reject invalid topic and SMS shapes`() {
+    fun `request constraints reject invalid topic and SMS shapes`() = runTest {
         assertFailsWith<IllegalArgumentException> {
-            SnsPublishRequest(
-                topicArn = "arn:aws:sns:us-east-1:000000000000:standard",
-                message = "m",
-                messageGroupId = "g"
-            )
+            SnsPublishRequest(topicArn = " ", message = "hello")
         }
         assertFailsWith<IllegalArgumentException> {
-            SnsPublishRequest(topicArn = "arn:aws:sns:us-east-1:000000000000:orders.fifo", message = "m")
+            SnsPublishRequest(topicArn = "arn:aws:sns:us-east-1:123456789012:standard", message = "hello", messageGroupId = "g")
         }
         assertFailsWith<IllegalArgumentException> {
-            SnsSmsRequest(phoneNumber = "", message = "m")
+            SnsPublishRequest(topicArn = "arn:aws:sns:us-east-1:123456789012:orders.fifo", message = "hello")
+        }
+        assertFailsWith<IllegalArgumentException> { SnsSmsRequest(phoneNumber = " ", message = "hello") }
+        assertFailsWith<IllegalArgumentException> {
+            SnsKtorTemplate(mockk(relaxed = true)).createFifoTopic("orders", attributes = emptyMap())
         }
     }
 
     @Test
-    fun `publish cancels the backing future when coroutine is cancelled`() = runTest {
-        val future = CompletableFuture<PublishResponse>()
-        every { client.publish(any<Consumer<PublishRequest.Builder>>()) } returns future
-
+    fun `publish cancellation propagates to the suspend client call`() = runTest {
+        coEvery { client.publish(any<PublishRequest>()) } coAnswers { awaitCancellation() }
         val job = launch {
-            template(client).publish(
-                SnsPublishRequest(
-                    topicArn = "arn:aws:sns:us-east-1:000000000000:orders",
-                    message = "order",
-                )
-            )
-        }.log("Template")
-
-        runCurrent()
-
-        job.cancel()
-
-        future.isCancelled.shouldBeTrue()
-    }
-
-    @Test
-    fun `createTopic cancels the backing future when coroutine is cancelled`() = runTest {
-        val future = CompletableFuture<CreateTopicResponse>()
-        every { client.createTopic(any<Consumer<CreateTopicRequest.Builder>>()) } returns future
-
-        val job = launch {
-            template(client).createTopic("orders")
-        }.log("Template")
-
-        runCurrent()
-
-        job.cancel()
-
-        future.isCancelled.shouldBeTrue()
-    }
-
-    @Test
-    fun `createFifoTopic cancels the backing future when coroutine is cancelled`() = runTest {
-        val future = CompletableFuture<CreateTopicResponse>()
-        every { client.createTopic(any<Consumer<CreateTopicRequest.Builder>>()) } returns future
-
-        val job = launch {
-            template(client).createFifoTopic("orders.fifo")
-        }.log("Template")
-
-        runCurrent()
-
-        job.cancel()
-
-        future.isCancelled.shouldBeTrue()
-    }
-
-    @Test
-    fun `findTopicArn cancels paged listing when coroutine is cancelled`() = runTest {
-        val future = CompletableFuture<ListTopicsResponse>()
-        every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } returns future
-
-        val job = launch {
-            template(client).findTopicArn("orders")
-        }.log("Template")
-
-        runCurrent()
-
-        job.cancel()
-
-        future.isCancelled.shouldBeTrue()
-    }
-
-    @Test
-    fun `publishSms cancels the backing future when coroutine is cancelled`() = runTest {
-        val future = CompletableFuture<PublishResponse>()
-        every { client.publish(any<Consumer<PublishRequest.Builder>>()) } returns future
-
-        val job = launch {
-            template(client).publishSms(SnsSmsRequest(phoneNumber = "+15550100000", message = "sms"))
-        }.log("Template")
-
-        runCurrent()
-
-        job.cancel()
-
-        future.isCancelled.shouldBeTrue()
-    }
-
-    @Test
-    fun `confirmSubscription cancels the backing future when coroutine is cancelled`() = runTest {
-        val future = CompletableFuture<ConfirmSubscriptionResponse>()
-        every {
-            client.confirmSubscription(any<Consumer<ConfirmSubscriptionRequest.Builder>>())
-        } returns future
-
-        val job = launch {
-            template(client).confirmSubscription(
-                topicArn = "arn:aws:sns:us-east-1:000000000000:orders",
-                token = "token-1",
-            )
-        }.log("Template")
-
-        runCurrent()
-
-        job.cancel()
-
-        future.isCancelled.shouldBeTrue()
-    }
-
-    @Test
-    fun `failed SNS future preserves original exception`() = runTest {
-        val failure = SdkClientException.create("boom")
-        every {
-            client.publish(any<Consumer<PublishRequest.Builder>>())
-        } returns failedCompletableFutureOf(failure)
-
-        val error = assertFailsWith<SdkClientException> {
-            template(client).publish(
-                SnsPublishRequest(
-                    topicArn = "arn:aws:sns:us-east-1:000000000000:orders",
-                    message = "order",
-                )
-            )
+            SnsKtorTemplate(client).publish(SnsPublishRequest("arn:aws:sns:us-east-1:123456789012:orders", "hello"))
         }
-
-        error shouldBeEqualTo failure
+        runCurrent()
+        job.cancel()
+        job.isCancelled.shouldBeTrue()
     }
 
-    private fun template(client: SnsAsyncClient): SnsKtorTemplate =
-        SnsKtorTemplate(client)
+    @Test
+    fun `failed SNS call preserves original exception`() = runTest {
+        val failure = IllegalStateException("boom")
+        coEvery { client.publish(any<PublishRequest>()) } throws failure
 
-    private fun Map<String, MessageAttributeValue>.asStrings(): Map<String, String> =
-        mapValues { (_, value) ->
-            value.dataType() shouldBeEqualTo "String"
-            value.stringValue()
+        val error = assertFailsWith<IllegalStateException> {
+            SnsKtorTemplate(client).publish(SnsPublishRequest("arn:aws:sns:us-east-1:123456789012:orders", "hello"))
         }
+        error shouldBeSameInstanceAs failure
+    }
+
+    @Test
+    fun `message attribute string and binary content are redacted in diagnostics`() {
+        val attribute = SnsMessageAttribute("Binary", binaryValue = "secret".encodeToByteArray())
+        attribute.toString() shouldNotContain "secret"
+    }
 }

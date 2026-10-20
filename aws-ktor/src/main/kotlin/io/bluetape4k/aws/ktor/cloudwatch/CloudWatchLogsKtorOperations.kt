@@ -1,12 +1,12 @@
 package io.bluetape4k.aws.ktor.cloudwatch
 
 import io.bluetape4k.support.requireNotBlank
-import software.amazon.awssdk.services.cloudwatchlogs.model.CreateLogGroupResponse
-import software.amazon.awssdk.services.cloudwatchlogs.model.CreateLogStreamResponse
-import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeLogGroupsResponse
-import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeLogStreamsResponse
-import software.amazon.awssdk.services.cloudwatchlogs.model.InputLogEvent
-import software.amazon.awssdk.services.cloudwatchlogs.model.PutLogEventsResponse
+import aws.sdk.kotlin.services.cloudwatchlogs.model.CreateLogGroupResponse
+import aws.sdk.kotlin.services.cloudwatchlogs.model.CreateLogStreamResponse
+import aws.sdk.kotlin.services.cloudwatchlogs.model.DescribeLogGroupsResponse
+import aws.sdk.kotlin.services.cloudwatchlogs.model.DescribeLogStreamsResponse
+import aws.sdk.kotlin.services.cloudwatchlogs.model.InputLogEvent
+import aws.sdk.kotlin.services.cloudwatchlogs.model.PutLogEventsResponse
 import java.io.Serializable
 
 /**

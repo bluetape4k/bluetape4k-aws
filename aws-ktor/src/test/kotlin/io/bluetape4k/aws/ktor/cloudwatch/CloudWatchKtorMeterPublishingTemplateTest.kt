@@ -11,8 +11,8 @@ import io.mockk.mockk
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import software.amazon.awssdk.services.cloudwatch.model.MetricDatum
-import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataResponse
+import aws.sdk.kotlin.services.cloudwatch.model.MetricDatum
+import aws.sdk.kotlin.services.cloudwatch.model.PutMetricDataResponse
 import java.util.concurrent.CancellationException
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -39,7 +39,7 @@ class CloudWatchKtorMeterPublishingTemplateTest {
         val registry = SimpleMeterRegistry()
         registry.counter("orders.created", "queue", "orders").increment(3.0)
         coEvery { operations.putMetricData(any<List<MetricDatum>>()) } returns
-                listOf(PutMetricDataResponse.builder().build())
+                listOf(PutMetricDataResponse {})
         val publisher = CloudWatchKtorMeterPublishingTemplate(registry, operations)
 
         val responses = publisher.publishMeter("orders.created")
@@ -47,9 +47,9 @@ class CloudWatchKtorMeterPublishingTemplateTest {
         responses.size shouldBeEqualTo 1
         coVerify(exactly = 1) {
             operations.putMetricData(match<List<MetricDatum>> { metricData ->
-                metricData.single().metricName() == "orders.created.count" &&
-                        metricData.single().dimensions().single().name() == "queue" &&
-                        metricData.single().dimensions().single().value() == "orders"
+                metricData.single().metricName == "orders.created.count" &&
+                        metricData.single().dimensions?.single()?.name == "queue" &&
+                        metricData.single().dimensions?.single()?.value == "orders"
             })
         }
     }

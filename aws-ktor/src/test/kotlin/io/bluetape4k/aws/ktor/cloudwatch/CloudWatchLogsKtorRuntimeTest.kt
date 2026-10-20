@@ -18,9 +18,9 @@ import kotlinx.coroutines.joinAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClient
-import software.amazon.awssdk.services.cloudwatchlogs.model.InputLogEvent
-import software.amazon.awssdk.services.cloudwatchlogs.model.PutLogEventsResponse
+import aws.sdk.kotlin.services.cloudwatchlogs.CloudWatchLogsClient
+import aws.sdk.kotlin.services.cloudwatchlogs.model.InputLogEvent
+import aws.sdk.kotlin.services.cloudwatchlogs.model.PutLogEventsResponse
 import java.time.Duration
 import java.time.Instant
 
@@ -28,7 +28,7 @@ import java.time.Instant
 class CloudWatchLogsKtorRuntimeTest {
 
     private val operations = mockk<CloudWatchLogsKtorOperations>()
-    private val client = mockk<CloudWatchLogsAsyncClient>(relaxed = true)
+    private val client = mockk<CloudWatchLogsClient>(relaxed = true)
 
     @BeforeEach
     fun resetMocks() {
@@ -49,7 +49,7 @@ class CloudWatchLogsKtorRuntimeTest {
         val captured = mutableListOf<List<InputLogEvent>>()
         coEvery { operations.putLogEvents(any(), any()) } coAnswers {
             captured += secondArg<List<InputLogEvent>>()
-            listOf(PutLogEventsResponse.builder().build())
+            listOf(PutLogEventsResponse {})
         }
         val runtime = runtime()
 
@@ -60,7 +60,7 @@ class CloudWatchLogsKtorRuntimeTest {
         runtime.flush().size shouldBeEqualTo 2
         runtime.flush() shouldBeEqualTo emptyList()
         captured.map { it.size } shouldBeEqualTo listOf(2, 1)
-        captured.flatten().map { it.message() } shouldBeEqualTo listOf("first", "second", "third")
+        captured.flatten().map { it.message } shouldBeEqualTo listOf("first", "second", "third")
     }
 
     @Test
@@ -69,7 +69,7 @@ class CloudWatchLogsKtorRuntimeTest {
         coEvery { operations.putLogEvents(any(), any()) } coAnswers {
             delay(50)
             captured += secondArg<List<InputLogEvent>>()
-            listOf(PutLogEventsResponse.builder().build())
+            listOf(PutLogEventsResponse {})
         }
         val runtime = runtime()
         repeat(5) { index ->
@@ -81,13 +81,13 @@ class CloudWatchLogsKtorRuntimeTest {
             async { runtime.flush() },
         ).joinAll()
 
-        captured.flatten().map { it.message() }.sorted() shouldBeEqualTo
+        captured.flatten().map { it.message }.sorted() shouldBeEqualTo
                 listOf("message-0", "message-1", "message-2", "message-3", "message-4")
     }
 
     @Test
     fun `stop flushes buffered events and closes owned client once`() = runSuspendIO {
-        coEvery { operations.putLogEvents(any(), any()) } returns listOf(PutLogEventsResponse.builder().build())
+        coEvery { operations.putLogEvents(any(), any()) } returns listOf(PutLogEventsResponse {})
         val runtime = runtime(ownedClient = client)
 
         runtime.append("message", Instant.EPOCH)
@@ -106,7 +106,7 @@ class CloudWatchLogsKtorRuntimeTest {
         coEvery { operations.putLogEvents(any(), any()) } coAnswers {
             order += "flush"
             delay(250)
-            listOf(PutLogEventsResponse.builder().build())
+            listOf(PutLogEventsResponse {})
         }
         val runtime = runtime(
             ownedClient = client,
@@ -133,7 +133,7 @@ class CloudWatchLogsKtorRuntimeTest {
         coEvery { operations.putLogEvents(any(), any()) } coAnswers {
             order += "flush"
             delay(250)
-            listOf(PutLogEventsResponse.builder().build())
+            listOf(PutLogEventsResponse {})
         }
         val runtime = runtime(
             ownedClient = client,
@@ -161,7 +161,7 @@ class CloudWatchLogsKtorRuntimeTest {
         coEvery { operations.putLogEvents(any(), any()) } coAnswers {
             order += "flush"
             delay(250)
-            listOf(PutLogEventsResponse.builder().build())
+            listOf(PutLogEventsResponse {})
         }
         val runtime = runtime(
             ownedClient = client,
@@ -188,7 +188,7 @@ class CloudWatchLogsKtorRuntimeTest {
         coEvery { operations.putLogEvents(any(), any()) } coAnswers {
             order += "flush"
             delay(250)
-            listOf(PutLogEventsResponse.builder().build())
+            listOf(PutLogEventsResponse {})
         }
         val runtime = runtime(
             ownedClient = client,
@@ -244,7 +244,7 @@ class CloudWatchLogsKtorRuntimeTest {
         every { client.close() } answers { order += "close" }
         coEvery { operations.putLogEvents(any(), any()) } coAnswers {
             order += "flush"
-            listOf(PutLogEventsResponse.builder().build())
+            listOf(PutLogEventsResponse {})
         }
         val runtime = runtime(
             ownedClient = client,
@@ -295,7 +295,7 @@ class CloudWatchLogsKtorRuntimeTest {
     @Test
     fun `periodic flush continues after transient failure`() = runSuspendIO {
         coEvery { operations.putLogEvents(any(), any()) } throws IllegalStateException("boom") andThen
-                listOf(PutLogEventsResponse.builder().build())
+                listOf(PutLogEventsResponse {})
         val runtime = runtime(flushInterval = Duration.ofMillis(20))
 
         runtime.append("message", Instant.EPOCH)
@@ -323,6 +323,35 @@ class CloudWatchLogsKtorRuntimeTest {
     }
 
     @Test
+    fun `later chunk failure restores drained events after an earlier chunk succeeded`() = runSuspendIO {
+        val attempts = mutableListOf<List<String>>()
+        var callCount = 0
+        coEvery { operations.putLogEvents(any(), any()) } coAnswers {
+            attempts += secondArg<List<InputLogEvent>>().map { it.message }
+            if (callCount++ == 1) {
+                throw IllegalStateException("second chunk failed")
+            }
+            listOf(PutLogEventsResponse {})
+        }
+        val runtime = runtime()
+        runtime.append("third", Instant.ofEpochMilli(3))
+        runtime.append("first", Instant.ofEpochMilli(1))
+        runtime.append("second", Instant.ofEpochMilli(2))
+
+        assertFailsWith<IllegalStateException> { runtime.flush() }
+
+        runtime.pendingEventCount() shouldBeEqualTo 3
+        runtime.flush()
+        attempts shouldBeEqualTo listOf(
+            listOf("first", "second"),
+            listOf("third"),
+            listOf("first", "second"),
+            listOf("third"),
+        )
+        runtime.pendingEventCount() shouldBeEqualTo 0
+    }
+
+    @Test
     fun `empty flush does not call operations`() = runSuspendIO {
         runtime().flush() shouldBeEqualTo emptyList()
 
@@ -339,7 +368,7 @@ class CloudWatchLogsKtorRuntimeTest {
     }
 
     private fun runtime(
-        ownedClient: CloudWatchLogsAsyncClient? = null,
+        ownedClient: CloudWatchLogsClient? = null,
         flushInterval: Duration = Duration.ofSeconds(5),
         shutdownFlushTimeout: Duration = Duration.ofSeconds(5),
         shutdownPolicy: CloudWatchLogsShutdownPolicy = CloudWatchLogsShutdownPolicy.WarnAndContinue,

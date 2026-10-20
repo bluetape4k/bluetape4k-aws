@@ -8,7 +8,7 @@ import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.ktor.AwsKtorCore
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
-import io.bluetape4k.aws.ktor.AwsKtorSesV2AsyncClientCustomizer
+import io.bluetape4k.aws.ktor.AwsKtorSesV2ClientCustomizer
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.KLogging
 import io.ktor.http.Url
@@ -20,14 +20,14 @@ import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import software.amazon.awssdk.services.sesv2.SesV2AsyncClient
+import aws.sdk.kotlin.services.sesv2.SesV2Client
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SesKtorPluginTest {
 
     companion object: KLogging()
 
-    private val client = mockk<SesV2AsyncClient>(relaxed = true)
+    private val client = mockk<SesV2Client>(relaxed = true)
     private val operations = mockk<SesKtorOperations>(relaxed = true)
 
     @BeforeEach
@@ -74,7 +74,7 @@ class SesKtorPluginTest {
     fun `injected client remains application owned`() = runSuspendIO {
         val runtime = SesKtorPluginConfig()
             .apply {
-                sesV2AsyncClient = client
+                sesV2Client = client
             }
             .toRuntime()
             .shouldNotBeNull()
@@ -102,14 +102,14 @@ class SesKtorPluginTest {
         val order = mutableListOf<String>()
         val runtime = SesKtorPluginConfig()
             .apply {
-                sesV2AsyncClient { order += "service" }
+                sesV2Client { order += "service" }
             }
             .toRuntime(
                 AwsKtorDefaults(
                     region = "ap-northeast-2",
                     endpointOverride = Url("http://localhost:4566"),
-                    sesV2AsyncClientCustomizers = listOf(
-                        AwsKtorSesV2AsyncClientCustomizer { order += "shared" }
+                    sesV2ClientCustomizers = listOf(
+                        AwsKtorSesV2ClientCustomizer { order += "shared" }
                     ),
                 )
             )

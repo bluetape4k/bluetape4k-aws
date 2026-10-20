@@ -7,10 +7,10 @@ import io.micrometer.core.instrument.Measurement
 import io.micrometer.core.instrument.Meter
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Statistic
-import software.amazon.awssdk.services.cloudwatch.model.Dimension
-import software.amazon.awssdk.services.cloudwatch.model.MetricDatum
-import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataResponse
-import software.amazon.awssdk.services.cloudwatch.model.StandardUnit
+import aws.sdk.kotlin.services.cloudwatch.model.Dimension
+import aws.sdk.kotlin.services.cloudwatch.model.MetricDatum
+import aws.sdk.kotlin.services.cloudwatch.model.PutMetricDataResponse
+import aws.sdk.kotlin.services.cloudwatch.model.StandardUnit
 import java.util.*
 
 /**
@@ -65,10 +65,10 @@ class CloudWatchKtorMeterPublishingTemplate(
 
     private fun Meter.toMetricData(): List<MetricDatum> {
         val dimensions = id.tags.map { tag ->
-            Dimension.builder()
-                .name(tag.key)
-                .value(tag.value)
-                .build()
+            Dimension {
+                name = tag.key
+                value = tag.value
+            }
         }
 
         return measure()
@@ -82,16 +82,16 @@ class CloudWatchKtorMeterPublishingTemplate(
         meterName: String,
         dimensions: List<Dimension>,
     ): MetricDatum =
-        MetricDatum.builder()
-            .metricName("${meterName}.${statistic.name.lowercase(Locale.US)}")
-            .dimensions(dimensions)
-            .unit(statistic.toStandardUnit())
-            .value(value)
-            .build()
+        MetricDatum {
+            metricName = "${meterName}.${statistic.name.lowercase(Locale.US)}"
+            this.dimensions = dimensions
+            unit = statistic.toStandardUnit()
+            this.value = value
+        }
 
     private fun Statistic.toStandardUnit(): StandardUnit =
         when (this) {
-            Statistic.COUNT -> StandardUnit.COUNT
-            else -> StandardUnit.NONE
+            Statistic.COUNT -> StandardUnit.Count
+            else -> StandardUnit.None
         }
 }

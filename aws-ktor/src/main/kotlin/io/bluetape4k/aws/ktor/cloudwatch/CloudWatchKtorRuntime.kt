@@ -7,14 +7,14 @@ import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.runInterruptible
-import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient
+import aws.sdk.kotlin.services.cloudwatch.CloudWatchClient
 
 /**
  * Ktor CloudWatch 작업과 플러그인이 소유한 클라이언트 수명 주기를 보관하는 런타임입니다.
  */
 class CloudWatchKtorRuntime(
     val operations: CloudWatchKtorOperations,
-    private val ownedClient: CloudWatchAsyncClient? = null,
+    private val ownedClient: CloudWatchClient? = null,
 ) {
     companion object: KLoggingChannel()
 

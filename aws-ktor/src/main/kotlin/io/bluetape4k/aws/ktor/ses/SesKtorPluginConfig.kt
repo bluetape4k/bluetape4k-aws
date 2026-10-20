@@ -2,12 +2,13 @@ package io.bluetape4k.aws.ktor.ses
 
 import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
-import io.bluetape4k.aws.ktor.AwsKtorSesV2AsyncClientCustomizer
+import io.bluetape4k.aws.ktor.AwsKtorSesV2ClientCustomizer
+import io.bluetape4k.aws.kotlin.sesv2.sesV2ClientOf
 import io.bluetape4k.support.requireNotBlank
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
-import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.sesv2.SesV2AsyncClient
-import java.net.URI
+import aws.sdk.kotlin.services.sesv2.SesV2Client
+import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
+import aws.smithy.kotlin.runtime.http.engine.HttpClientEngine
+import aws.smithy.kotlin.runtime.net.url.Url
 
 /**
  * [SesKtorPlugin] 구성입니다.
@@ -22,8 +23,8 @@ class SesKtorPluginConfig {
     /** Ktor SES 런타임 등록을 활성화합니다. */
     var enabled: Boolean = true
 
-    /** 애플리케이션이 소유하는 선택적인 AWS SDK v2 SES v2 비동기 클라이언트입니다. */
-    var sesV2AsyncClient: SesV2AsyncClient? = null
+    /** 애플리케이션이 소유하는 선택적인 AWS Kotlin SDK SES v2 클라이언트입니다. */
+    var sesV2Client: SesV2Client? = null
 
     /** 애플리케이션이 소유하는 선택적인 작업 파사드입니다. */
     var sesOperations: SesKtorOperations? = null
@@ -32,10 +33,13 @@ class SesKtorPluginConfig {
     var region: String? = null
 
     /** 플러그인이 클라이언트를 생성할 때 사용하는 선택적인 SES 엔드포인트 재정의입니다. */
-    var endpointOverride: URI? = null
+    var endpointOverride: Url? = null
 
     /** 플러그인이 클라이언트를 생성할 때 사용하는 선택적인 자격 증명 공급자입니다. */
-    var credentialsProvider: AwsCredentialsProvider? = null
+    var credentialsProvider: CredentialsProvider? = null
+
+    /** 플러그인이 생성한 클라이언트에 사용할 호출자 소유 Smithy HTTP 엔진입니다. */
+    var httpClient: HttpClientEngine? = null
 
     /** 요청에서 `from`을 생략했을 때 사용하는 기본 발신자입니다. */
     var defaultFrom: String? = null
@@ -43,12 +47,12 @@ class SesKtorPluginConfig {
     /** 요청에서 구성 집합을 생략했을 때 사용하는 기본 SES 구성 집합입니다. */
     var configurationSetName: String? = null
 
-    private val clientCustomizers = mutableListOf<AwsKtorSesV2AsyncClientCustomizer>()
+    private val clientCustomizers = mutableListOf<AwsKtorSesV2ClientCustomizer>()
 
     /**
-     * 플러그인이 생성한 클라이언트에 SES v2 비동기 클라이언트 빌더 사용자 정의 설정을 추가합니다.
+     * 플러그인이 생성한 AWS Kotlin SES v2 클라이언트에 사용자 정의 설정을 추가합니다.
      */
-    fun sesV2AsyncClient(customizer: AwsKtorSesV2AsyncClientCustomizer) {
+    fun sesV2Client(customizer: AwsKtorSesV2ClientCustomizer) {
         clientCustomizers += customizer
     }
 
@@ -62,10 +66,10 @@ class SesKtorPluginConfig {
         defaultFrom?.requireEmailHeaderValue("defaultFrom")
         configurationSetName?.requireNotBlank("configurationSetName")
 
-        val injectedClient = sesV2AsyncClient
-        val client = injectedClient ?: createSesV2AsyncClient(defaults)
+        val injectedClient = sesV2Client
+        val client = injectedClient ?: createSesV2Client(defaults)
         val operations = SesKtorTemplate(
-            sesAsyncClient = client,
+            sesClient = client,
             defaultFrom = defaultFrom,
             configurationSetName = configurationSetName,
         )
@@ -76,31 +80,34 @@ class SesKtorPluginConfig {
         )
     }
 
-    private fun createSesV2AsyncClient(defaults: AwsKtorDefaults): SesV2AsyncClient {
+    private fun createSesV2Client(defaults: AwsKtorDefaults): SesV2Client {
         val effectiveRegion = region?.takeIf { it.isNotBlank() } ?: defaults.region?.takeIf { it.isNotBlank() }
-        val effectiveEndpoint = endpointOverride ?: defaults.javaEndpointOverride
+        val effectiveEndpoint = endpointOverride ?: defaults.endpointOverride?.let { Url.parse(it.toString()) }
         require(effectiveEndpoint == null || !effectiveRegion.isNullOrBlank()) {
             "region must be configured when endpointOverride is configured."
         }
 
-        val builder = SesV2AsyncClient.builder()
-        effectiveRegion?.let { builder.region(Region.of(it)) }
-        (credentialsProvider ?: defaults.javaCredentialsProvider)?.let(builder::credentialsProvider)
-        effectiveEndpoint?.let(builder::endpointOverride)
-        defaults.sesV2AsyncClientCustomizers.forEach { it.customize(builder) }
-        clientCustomizers.forEach { it.customize(builder) }
-
-        return builder.build()
+        return sesV2ClientOf(
+            endpointUrl = effectiveEndpoint,
+            region = effectiveRegion,
+            credentialsProvider = credentialsProvider ?: defaults.kotlinCredentialsProvider,
+            httpClient = httpClient ?: defaults.kotlinHttpClient,
+            builder = {
+                defaults.sesV2ClientCustomizers.forEach { it.customize(this) }
+                clientCustomizers.forEach { it.customize(this) }
+            },
+        )
     }
 
     override fun toString(): String =
         ToStringBuilder(this)
             .add("enabled", enabled)
-            .add("sesV2AsyncClientConfigured", sesV2AsyncClient != null)
+            .add("sesV2ClientConfigured", sesV2Client != null)
             .add("sesOperationsConfigured", sesOperations != null)
             .add("region", region)
             .add("endpointConfigured", endpointOverride != null)
             .add("credentialsProviderConfigured", credentialsProvider != null)
+            .add("httpClientConfigured", httpClient != null)
             .add("defaultFrom", defaultFrom)
             .add("configurationSetName", configurationSetName)
             .toString()
