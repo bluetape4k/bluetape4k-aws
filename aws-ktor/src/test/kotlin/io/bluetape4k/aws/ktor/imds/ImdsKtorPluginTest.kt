@@ -1,36 +1,37 @@
 package io.bluetape4k.aws.ktor.imds
 
+import aws.smithy.kotlin.runtime.http.engine.CloseableHttpClientEngine
+import aws.smithy.kotlin.runtime.http.HttpException
+import aws.sdk.kotlin.runtime.config.imds.EndpointMode
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeInstanceOf
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldContain
-import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.logging.KLogging
 import io.ktor.server.application.install
 import io.ktor.server.testing.testApplication
 import io.mockk.clearMocks
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
-import software.amazon.awssdk.imds.Ec2MetadataAsyncClient
-import software.amazon.awssdk.imds.EndpointMode
+import java.net.URI
+import java.net.Proxy
 import java.time.Duration
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ImdsKtorPluginTest {
 
     companion object: KLogging()
 
-    private val client = mockk<Ec2MetadataAsyncClient>(relaxed = true)
     private val operations = mockk<ImdsKtorOperations>(relaxed = true)
 
     @BeforeEach
     fun resetMocks() {
-        clearMocks(client, operations)
+        clearMocks(operations)
     }
 
     @Test
@@ -49,7 +50,7 @@ class ImdsKtorPluginTest {
     }
 
     @Test
-    fun `plugin install accepts injected operations with invalid client only settings`() = testApplication {
+    fun `injected operations bypass client only validation`() = testApplication {
         application {
             install(ImdsKtorPlugin) {
                 imdsOperations = operations
@@ -62,22 +63,6 @@ class ImdsKtorPluginTest {
         startApplication()
 
         application.imds() shouldBeSameInstanceAs operations
-        application.attributes[ImdsKtorRuntimeKey].operations shouldBeSameInstanceAs operations
-    }
-
-    @Test
-    fun `injected operations bypass client only validation`() {
-        val runtime = ImdsKtorPluginConfig().apply {
-            imdsOperations = operations
-            tokenTtl = Duration.ZERO
-            requestTimeout = Duration.ZERO
-            retries = -1
-        }.toRuntime()
-
-        runtime.shouldNotBeNull()
-        runtime.operations shouldBeSameInstanceAs operations
-
-        runtime.stop()
     }
 
     @Test
@@ -91,46 +76,42 @@ class ImdsKtorPluginTest {
         startApplication()
 
         application.imdsOrNull().shouldBeNull()
-        val error = assertFailsWith<IllegalStateException> {
-            application.imds()
-        }
+        val error = assertFailsWith<IllegalStateException> { application.imds() }
         error.message shouldContain "disabled"
     }
 
     @Test
-    fun `injected client creates operations without startup calls and remains application owned`() {
-        val runtime = ImdsKtorPluginConfig().apply {
-            ec2MetadataAsyncClient = client
-            requestTimeout = Duration.ofMillis(750)
-        }.toRuntime()
-        requireNotNull(runtime)
+    fun `runtime closes plugin owned engine once`() {
+        val engine = mockk<CloseableHttpClientEngine>(relaxed = true)
+        val runtime = ImdsKtorRuntime(operations = operations, ownedEngine = engine)
 
-        runtime.operations.shouldBeInstanceOf<ImdsKtorTemplate>()
+        runtime.stop()
         runtime.stop()
 
-        verify(exactly = 0) { client.get(any()) }
-        verify(exactly = 0) { client.close() }
+        verify(exactly = 1) { engine.close() }
     }
 
     @Test
-    fun `runtime closes plugin owned client once`() {
-        val runtime = ImdsKtorRuntime(
-            operations = operations,
-            ownedClient = client,
-        )
+    fun `runtime installation failure closes owned engine and preserves both errors`() {
+        val engine = mockk<CloseableHttpClientEngine>()
+        val cleanupFailure = IllegalStateException("cleanup failed")
+        every { engine.close() } throws cleanupFailure
+        val runtime = ImdsKtorRuntime(operations = operations, ownedEngine = engine)
+        val installFailure = IllegalArgumentException("installation failed")
 
-        runtime.stop()
-        runtime.stop()
+        val error = assertFailsWith<IllegalArgumentException> {
+            installImdsRuntimeWithRollback(runtime) { throw installFailure }
+        }
 
-        verify(exactly = 1) { client.close() }
+        error shouldBeSameInstanceAs installFailure
+        error.suppressed.single() shouldBeSameInstanceAs cleanupFailure
+        verify(exactly = 1) { engine.close() }
     }
 
     @Test
     fun `config validation rejects non positive token ttl`() {
         val error = assertFailsWith<IllegalArgumentException> {
-            ImdsKtorPluginConfig()
-                .apply { tokenTtl = Duration.ZERO }
-                .toRuntime()
+            ImdsKtorPluginConfig().apply { tokenTtl = Duration.ZERO }.toRuntime()
         }
 
         error.message shouldContain "tokenTtl"
@@ -139,9 +120,7 @@ class ImdsKtorPluginTest {
     @Test
     fun `config validation rejects non positive request timeout`() {
         val error = assertFailsWith<IllegalArgumentException> {
-            ImdsKtorPluginConfig()
-                .apply { requestTimeout = Duration.ZERO }
-                .toRuntime()
+            ImdsKtorPluginConfig().apply { requestTimeout = Duration.ZERO }.toRuntime()
         }
 
         error.message shouldContain "requestTimeout"
@@ -150,25 +129,80 @@ class ImdsKtorPluginTest {
     @Test
     fun `config validation rejects negative retries`() {
         val error = assertFailsWith<IllegalArgumentException> {
-            ImdsKtorPluginConfig()
-                .apply { retries = -1 }
-                .toRuntime()
+            ImdsKtorPluginConfig().apply { retries = -1 }.toRuntime()
         }
 
         error.message shouldContain "retries"
     }
 
     @Test
-    fun `client customizer runs for plugin created client`() {
-        val order = mutableListOf<String>()
-        val runtime = ImdsKtorPluginConfig().apply {
-            httpClient = mockk(relaxed = true)
-            endpointMode = EndpointMode.IPV6
-            client { order += "custom" }
-        }.toRuntime()
+    fun `remote insecure endpoint is rejected unless it is AWS default endpoint`() {
+        val error = assertFailsWith<IllegalArgumentException> {
+            ImdsEndpointPolicy.resolve(
+                endpoint = URI("http://metadata.example/") ,
+                endpointMode = EndpointMode.IPv4,
+                allowInsecureLocalHttpEndpoint = false,
+            )
+        }
 
-        order shouldBeEqualTo listOf("custom")
+        error.message shouldContain "HTTPS"
+        ImdsEndpointPolicy.resolve(null, EndpointMode.IPv4, false).toString() shouldBeEqualTo
+            "http://169.254.169.254"
+        ImdsEndpointPolicy.resolve(null, EndpointMode.IPv6, false).toString() shouldBeEqualTo
+            "http://[fd00:ec2::254]"
+    }
 
-        runtime?.stop()
+    @Test
+    fun `loopback http endpoint requires explicit opt in`() {
+        val endpoint = URI("http://127.0.0.1:12345")
+
+        assertFailsWith<IllegalArgumentException> {
+            ImdsEndpointPolicy.resolve(endpoint, EndpointMode.IPv4, false)
+        }
+        ImdsEndpointPolicy.resolve(endpoint, EndpointMode.IPv4, true) shouldBeEqualTo endpoint
+    }
+
+    @Test
+    fun `plugin owned engine disables retries proxies and redirects`() {
+        val engine = ImdsHttpClientFactory.createEngine(Duration.ofMillis(1500)) as ImdsOwnedHttpClientEngine
+        try {
+            engine.client.retryOnConnectionFailure.shouldBeFalse()
+            engine.client.proxy shouldBeEqualTo Proxy.NO_PROXY
+            engine.client.followRedirects.shouldBeFalse()
+            engine.client.followSslRedirects.shouldBeFalse()
+            engine.client.connectTimeoutMillis shouldBeEqualTo 1500
+            engine.client.readTimeoutMillis shouldBeEqualTo 1500
+            engine.client.writeTimeoutMillis shouldBeEqualTo 1500
+        } finally {
+            engine.close()
+        }
+
+        engine.client.dispatcher.executorService.isShutdown.shouldBeTrue()
+    }
+
+    @Test
+    fun `public endpoint configuration uses AWS mode type and safe defaults`() {
+        val config = ImdsKtorPluginConfig()
+
+        config.endpointMode shouldBeEqualTo EndpointMode.IPv4
+        config.allowInsecureLocalHttpEndpoint.shouldBeFalse()
+    }
+
+    @Test
+    fun `retry matrix accepts only server errors and Smithy retryable transport failures`() {
+        ImdsRetryPolicy.shouldRetry(ImdsHttpResponseException(503)).shouldBeTrue()
+        ImdsRetryPolicy.shouldRetry(ImdsHttpResponseException(401)).shouldBeFalse()
+        ImdsRetryPolicy.shouldRetry(ImdsHttpResponseException(302)).shouldBeFalse()
+        ImdsRetryPolicy.shouldRetry(HttpException("temporary", retryable = true)).shouldBeTrue()
+        ImdsRetryPolicy.shouldRetry(HttpException("terminal", retryable = false)).shouldBeFalse()
+    }
+
+    @Test
+    fun `full jitter uses capped exponential bounds and never returns zero`() {
+        (0..8).map(ImdsRetryPolicy::backoffCapMillis) shouldBeEqualTo
+            listOf(200L, 400L, 800L, 1_600L, 3_200L, 6_400L, 12_800L, 20_000L, 20_000L)
+
+        ImdsRetryPolicy.fullJitterMillis(0) { lower, _ -> lower } shouldBeEqualTo 1L
+        ImdsRetryPolicy.fullJitterMillis(0) { _, exclusiveUpper -> exclusiveUpper - 1 } shouldBeEqualTo 200L
     }
 }

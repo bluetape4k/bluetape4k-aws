@@ -66,7 +66,7 @@
 - Task 3 검증: `./gradlew :bluetape4k-aws-ktor:test --tests 'io.bluetape4k.aws.ktor.cloudwatch.*' --tests 'io.bluetape4k.aws.ktor.eventbridge.*' --tests 'io.bluetape4k.aws.ktor.s3.accessgrants.*' --tests 'io.bluetape4k.aws.ktor.s3vectors.*' --tests 'io.bluetape4k.aws.ktor.ses.*' --tests 'io.bluetape4k.aws.ktor.sns.*' --tests 'io.bluetape4k.aws.ktor.sts.*' --tests 'io.bluetape4k.aws.ktor.AwsKtorApplicationResourceLifecycleTest' --tests 'io.bluetape4k.aws.ktor.AwsKtorLifecycleEdgeCasesTest' --no-daemon` 성공. 최신 JUnit XML: 23 suites, 148 tests, 0 failures, 0 skipped. `git diff --check` 성공; CloudWatch/Logs, EventBridge, Access Grants/Vectors, SES/SNS/STS의 `aws-ktor` source/test에서 AWS SDK v2 service package import 0건.
 - 제출 전 독립 리뷰: `$code-review`가 요구하는 `code-reviewer` 및 `architect` lanes를 usage limit 때문에 현재 실행할 수 없다. human review는 N/A (single-developer lane)이지만 독립 코드 리뷰는 대체하지 않았으며 A-08은 `PENDING`; merge-ready 또는 review approval로 표기하지 않는다.
 - Task 3 implementation과 검증 결과는 로컬 한국어 Lore commit으로 기록했다. 독립 최종 리뷰 A-08은 미완료이므로 merge-ready verdict가 아니다.
-- 다음 작업: Task 4 Lore 커밋을 완료하고 Task 5(IMDS Kotlin adapter와 전송 정책)로 진행한다. 전체 영향 모듈 검증과 독립 최종 리뷰는 A-07/A-08에서 계속한다. PR 생성·merge·동기화·정리는 별도 승인 절차를 따른다.
+- 다음 작업: Task 5 IMDS Kotlin adapter와 전송 정책을 검증·커밋하고 Task 6 Kinesis/SQS 이전으로 진행한다. 전체 영향 모듈 검증과 독립 최종 리뷰는 A-07/A-08에서 계속한다. PR 생성·merge·동기화·정리는 별도 승인 절차를 따른다.
 
 ### Task 4 실행 증거
 
@@ -90,3 +90,12 @@
 - 실행 체크리스트 SPW-03 — 한국어 기술 문장과 같은 표현의 일관성을 확인했고, 4개 대상 파일 용어 audit 결과 findings=0을 기록했다. clinic 전용 규칙은 AWS prose에 적용하지 않았다.
 - 실행 체크리스트 SPW-04 — 상태 및 55개 테스트 수치를 최신 Gradle 출력과 대조했다. 코드 리뷰나 전체 A-07 완료를 주장하지 않는다.
 - 실행 체크리스트 SPW-05 — 수정된 plan/checklist Markdown을 다시 읽고 상대 링크·공백·개행을 검사했다. 한국어 용어 감사 findings=0과 최종 `git diff --check`를 확인했다.
+
+### Task 5 실행 증거
+
+- Smithy Kotlin `1.7.9`의 public OkHttp engine config에는 connection retry setter가 없다. 명시적인 `retryOnConnectionFailure(false)` 적용을 위해 사용자가 승인한 대로 `aws-ktor/build.gradle.kts`에 OkHttp `5.5.0`을 `compileOnly`로 추가했다. 해당 artifact는 이미 runtime에 전이되어 runtime dependency footprint는 늘지 않는다.
+- IMDS 구현은 endpoint allowlist/profile precedence, token cache와 TTL, 3xx/401 terminal 처리, cancellation과 cleanup, retry matrix, plugin-owned engine lifecycle을 포함한다. `HttpCall.complete()`의 `@InternalApi` 사용은 내부 adapter 한 경계로 제한했다.
+- `:bluetape4k-aws-ktor:compileKotlin` 성공, IMDS 집중 테스트 41개 통과, 전체 Ktor suite 343개 통과(실패 0, 오류 0, skip 0), `git diff --check` 통과. 독립 Task 5 리뷰는 `APPROVE`, P0/P1/P2=0이다.
+- `detekt`는 플러그인 Kotlin `2.4.10`과 실행 Kotlin Gradle plugin `2.4.20` 불일치로 실패했다. 정적 분석은 미검증으로 남기며 A-07 전체 검증 게이트를 통과한 것으로 간주하지 않는다.
+- workflow receipt는 helper를 통해 probe 복구했고 `verify`가 run `20261020T030129Z-f0647513`, sequence 14, checksum `9870289c34039e8ff38333d818a2cd5e9e7e16831e744b3f8b4a6955672ca2d8`을 확인했다. `resume-check`에는 topology gap과 incomplete replacement가 없으며 실행 중인 main lane은 다음 작업을 수행한다.
+- Task 5 코드·테스트·계획·체크리스트를 한국어 Lore commit으로 기록한다. A-07 전체 영향 모듈/정적 분석과 A-08 최종 6관점 통합 리뷰는 계속 진행한다.

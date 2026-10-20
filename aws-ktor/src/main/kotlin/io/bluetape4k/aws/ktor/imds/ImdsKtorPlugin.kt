@@ -30,9 +30,24 @@ val ImdsKtorPlugin: ApplicationPlugin<ImdsKtorPluginConfig> = createApplicationP
 ) {
     val runtime = pluginConfig.toRuntime()
     if (runtime != null) {
-        application.attributes.put(ImdsKtorRuntimeKey, runtime)
-        application.attributes.put(ImdsKtorOperationsKey, runtime.operations)
-        runtime.registerApplicationResources(application.installApplicationResourceLifecycle())
+        installImdsRuntimeWithRollback(runtime) {
+            application.attributes.put(ImdsKtorRuntimeKey, runtime)
+            application.attributes.put(ImdsKtorOperationsKey, runtime.operations)
+            runtime.registerApplicationResources(application.installApplicationResourceLifecycle())
+        }
+    }
+}
+
+internal inline fun installImdsRuntimeWithRollback(runtime: ImdsKtorRuntime, install: () -> Unit) {
+    try {
+        install()
+    } catch (cause: Throwable) {
+        try {
+            runtime.stop()
+        } catch (cleanupFailure: Throwable) {
+            if (cleanupFailure !== cause) cause.addSuppressed(cleanupFailure)
+        }
+        throw cause
     }
 }
 
