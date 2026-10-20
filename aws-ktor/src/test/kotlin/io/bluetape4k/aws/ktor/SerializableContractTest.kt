@@ -15,10 +15,11 @@ import io.bluetape4k.aws.ktor.sqs.SqsConsumerRuntimeConfig
 import io.bluetape4k.aws.ktor.sqs.SqsFixedFailureVisibilityStrategy
 import io.bluetape4k.aws.ktor.sqs.SqsLinearFailureVisibilityStrategy
 import io.bluetape4k.aws.ktor.sqs.SqsPollBackoff
+import aws.sdk.kotlin.services.kinesis.model.ShardIteratorType as KotlinShardIteratorType
+import aws.sdk.kotlin.services.sqs.model.Message as KotlinSqsMessage
+import aws.sdk.kotlin.services.sqs.model.MessageAttributeValue
+import aws.sdk.kotlin.services.sqs.model.MessageSystemAttributeName
 import org.junit.jupiter.api.Test
-import software.amazon.awssdk.core.SdkBytes
-import software.amazon.awssdk.services.kinesis.model.ShardIteratorType
-import software.amazon.awssdk.services.sqs.model.Message
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.ObjectInputStream
@@ -36,8 +37,13 @@ class SerializableContractTest {
             KinesisShardIteratorRequest(
                 streamName = "orders",
                 shardId = "shardId-000000000000",
-                type = ShardIteratorType.AT_SEQUENCE_NUMBER,
+                type = KotlinShardIteratorType.AtSequenceNumber,
                 startingSequenceNumber = "123",
+            ),
+            KinesisShardIteratorRequest(
+                streamName = "orders",
+                shardId = "shardId-000000000000",
+                type = KotlinShardIteratorType.SdkUnknown("FUTURE_ITERATOR_TYPE"),
             ),
             KinesisRecordFlowRequest(
                 streamName = "orders",
@@ -78,19 +84,25 @@ class SerializableContractTest {
     }
 
     @Test
-    fun javaSdkBytesCurrentlyLoseRequestPayloadDuringSerialization() {
+    fun `Kinesis request payload survives serialization and defensive copying`() {
+        val input = "payload".encodeToByteArray()
         val original = KinesisPutRecordRequest(
             streamName = "orders",
             partitionKey = "customer-1",
-            data = SdkBytes.fromUtf8String("payload"),
+            data = input,
         )
+        input[0] = '!'.code.toByte()
 
         val restored = roundTrip(original)
 
-        original.data.asUtf8String() shouldBeEqualTo "payload"
+        original.data.decodeToString() shouldBeEqualTo "payload"
         restored.streamName shouldBeEqualTo original.streamName
         restored.partitionKey shouldBeEqualTo original.partitionKey
-        restored.data.asByteArray().isEmpty().shouldBeTrue()
+        restored.data.decodeToString() shouldBeEqualTo "payload"
+
+        val exposed = restored.data
+        exposed[0] = '!'.code.toByte()
+        restored.data.decodeToString() shouldBeEqualTo "payload"
     }
 
     @Test
@@ -119,12 +131,18 @@ class SerializableContractTest {
     fun `failure context round trips through Java serialization`() {
         val original = SqsConsumerFailureContext(
             queueUrl = "https://sqs.local/orders",
-            message = Message.builder()
-                .messageId("message-1")
-                .receiptHandle("receipt-1")
-                .body("payload")
-                .attributesWithStrings(mapOf("ApproximateReceiveCount" to "3"))
-                .build(),
+            message = KotlinSqsMessage {
+                messageId = "message-1"
+                receiptHandle = "receipt-1"
+                body = "payload"
+                attributes = mapOf(MessageSystemAttributeName.ApproximateReceiveCount to "3")
+                messageAttributes = mapOf(
+                    "trace-bin" to MessageAttributeValue {
+                        dataType = "Binary"
+                        binaryValue = byteArrayOf(1, 2, 3)
+                    },
+                )
+            },
             cause = IllegalStateException("handler failed"),
             phase = SqsConsumerFailurePhase.Handler,
         )
@@ -137,6 +155,8 @@ class SerializableContractTest {
         restored.cause.message shouldBeEqualTo original.cause.message
         restored.phase shouldBeEqualTo original.phase
         restored.approximateReceiveCount shouldBeEqualTo original.approximateReceiveCount
+        restored.message.messageAttributes?.get("trace-bin")?.binaryValue?.contentEquals(byteArrayOf(1, 2, 3))
+            .shouldBeTrue()
     }
 
     @Test

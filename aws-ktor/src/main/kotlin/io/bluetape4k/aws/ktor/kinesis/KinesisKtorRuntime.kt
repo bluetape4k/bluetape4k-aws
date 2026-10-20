@@ -3,18 +3,18 @@ package io.bluetape4k.aws.ktor.kinesis
 import io.bluetape4k.ktor.core.ApplicationResourceRegistry
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
+import aws.sdk.kotlin.services.kinesis.KinesisClient
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.runInterruptible
-import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
 
 /**
  * Kinesis Ktor 작업과 플러그인이 소유한 클라이언트 수명 주기를 보관하는 런타임입니다.
  */
 class KinesisKtorRuntime(
     val operations: KinesisKtorOperations,
-    private val ownedClient: KinesisAsyncClient? = null,
+    private val ownedClient: KinesisClient? = null,
 ) {
 
     companion object: KLoggingChannel()

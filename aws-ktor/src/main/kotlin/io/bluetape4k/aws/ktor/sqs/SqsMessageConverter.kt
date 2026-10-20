@@ -1,6 +1,6 @@
 package io.bluetape4k.aws.ktor.sqs
 
-import software.amazon.awssdk.services.sqs.model.Message
+import aws.sdk.kotlin.services.sqs.model.Message
 import kotlin.reflect.KClass
 
 /**
@@ -32,7 +32,7 @@ object StringOrByteArraySqsMessageConverter: SqsMessageConverter {
 
     @Suppress("UNCHECKED_CAST")
     override fun <T: Any> convert(message: Message, targetType: KClass<T>): T {
-        val body = message.body().orEmpty()
+        val body = message.body.orEmpty()
         val converted: Any = when (targetType) {
             String::class -> body
             ByteArray::class -> body.encodeToByteArray()

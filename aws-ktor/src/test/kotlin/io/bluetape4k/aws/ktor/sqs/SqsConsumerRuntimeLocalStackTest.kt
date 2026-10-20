@@ -1,10 +1,17 @@
-@file:Suppress("DEPRECATION")
-
 package io.bluetape4k.aws.ktor.sqs
 
+import aws.sdk.kotlin.runtime.auth.credentials.StaticCredentialsProvider
+import aws.sdk.kotlin.services.sqs.SqsClient
+import aws.sdk.kotlin.services.sqs.model.CreateQueueRequest
+import aws.sdk.kotlin.services.sqs.model.DeleteMessageRequest
+import aws.sdk.kotlin.services.sqs.model.DeleteQueueRequest
+import aws.sdk.kotlin.services.sqs.model.Message
+import aws.sdk.kotlin.services.sqs.model.MessageSystemAttributeName
+import aws.sdk.kotlin.services.sqs.model.ReceiveMessageRequest
+import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
-import io.bluetape4k.aws.sqs.SqsClientFactory
+import io.bluetape4k.aws.kotlin.sqs.sqsClientOf
 import io.bluetape4k.junit5.awaitility.untilSuspending
 import io.bluetape4k.junit5.coroutines.SuspendedJobTester
 import io.bluetape4k.junit5.coroutines.runSuspendIO
@@ -12,21 +19,16 @@ import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.testcontainers.aws.AwsEmulatorServer
 import io.bluetape4k.testcontainers.aws.FlociServer
 import io.bluetape4k.testcontainers.aws.LocalStackServer
-import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import io.bluetape4k.utils.Runtimex
 import io.ktor.server.application.install
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.awaitCancellation
-import kotlinx.coroutines.future.await
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.sqs.SqsAsyncClient
-import software.amazon.awssdk.services.sqs.model.Message
 import java.time.Duration
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
@@ -42,11 +44,14 @@ class SqsConsumerRuntimeLocalStackTest {
 
     private val awsEmulator: AwsEmulatorServer by lazy { awsEmulator("sqs") }
 
-    private val sqs: SqsAsyncClient by lazy {
-        SqsClientFactory.Async.create(
-            endpointOverride = awsEmulator.awsEndpoint,
-            region = Region.of(awsEmulator.regionName),
-            credentialsProvider = awsEmulator.getCredentialProvider(),
+    private val sqs: SqsClient by lazy {
+        sqsClientOf(
+            endpointUrl = Url.parse(awsEmulator.awsEndpoint.toString()),
+            region = awsEmulator.regionName,
+            credentialsProvider = StaticCredentialsProvider {
+                accessKeyId = awsEmulator.awsAccessKey
+                secretAccessKey = awsEmulator.awsSecretKey
+            },
         )
     }
 
@@ -117,7 +122,7 @@ class SqsConsumerRuntimeLocalStackTest {
 
             await atMost 30.seconds untilSuspending {
                 val message = receiveOne(queueUrl)
-                if (message?.body() == "slow-message") {
+                if (message?.body == "slow-message") {
                     deleteMessage(queueUrl, message)
                     true
                 } else {
@@ -148,8 +153,8 @@ class SqsConsumerRuntimeLocalStackTest {
 
             await atMost 30.seconds untilSuspending {
                 val deadLetter = receiveOne(deadLetterQueueUrl)
-                val receivedExpectedDeadLetter = deadLetter?.body() == "failed-message" &&
-                        deadLetter.messageAttributes().containsKey("bluetape4k-original-queue-url")
+                val receivedExpectedDeadLetter = deadLetter?.body == "failed-message" &&
+                        deadLetter.messageAttributes.orEmpty().containsKey("bluetape4k-original-queue-url")
 
                 if (receivedExpectedDeadLetter) {
                     deleteMessage(deadLetterQueueUrl, deadLetter)
@@ -172,7 +177,7 @@ class SqsConsumerRuntimeLocalStackTest {
 
         application {
             install(SqsConsumer) {
-                sqsAsyncClient = sqs
+                sqsClient = sqs
                 this.queueUrl = queueUrl
                 coroutines = 2
                 maxMessages = 2
@@ -208,7 +213,7 @@ class SqsConsumerRuntimeLocalStackTest {
     ): SqsConsumerRuntime =
         SqsConsumerRuntime(
             SqsConsumerRuntimeConfig(
-                sqsAsyncClient = sqs,
+                sqsClient = sqs,
                 queueUrl = queueUrl,
                 coroutines = coroutines,
                 maxMessages = 10,
@@ -222,30 +227,30 @@ class SqsConsumerRuntimeLocalStackTest {
         )
 
     private suspend fun createQueue(prefix: String): String =
-        sqs.createQueue {
-            it.queueName("$prefix-${UUID.randomUUID()}")
-        }.await().queueUrl()
+        requireNotNull(sqs.createQueue(CreateQueueRequest { queueName = "$prefix-${UUID.randomUUID()}" }).queueUrl)
 
     private suspend fun deleteQueue(queueUrl: String) {
-        sqs.deleteQueue {
-            it.queueUrl(queueUrl)
-        }.await()
+        sqs.deleteQueue(DeleteQueueRequest { this.queueUrl = queueUrl })
     }
 
     private suspend fun receiveOne(queueUrl: String): Message? =
-        sqs.receiveMessage {
-            it.queueUrl(queueUrl)
-            it.maxNumberOfMessages(1)
-            it.waitTimeSeconds(1)
-            it.messageAttributeNames("All")
-            it.messageSystemAttributeNamesWithStrings("All")
-        }.await().messages().orEmpty().singleOrNull()
+        sqs.receiveMessage(
+            ReceiveMessageRequest {
+                this.queueUrl = queueUrl
+                maxNumberOfMessages = 1
+                waitTimeSeconds = 1
+                messageAttributeNames = listOf("All")
+                messageSystemAttributeNames = listOf(MessageSystemAttributeName.All)
+            },
+        ).messages.orEmpty().singleOrNull()
 
     private suspend fun deleteMessage(queueUrl: String, message: Message) {
-        sqs.deleteMessage {
-            it.queueUrl(queueUrl)
-            it.receiptHandle(message.receiptHandle())
-        }.await()
+        sqs.deleteMessage(
+            DeleteMessageRequest {
+                this.queueUrl = queueUrl
+                receiptHandle = requireNotNull(message.receiptHandle)
+            },
+        )
     }
 
     private fun awsEmulator(vararg services: String): AwsEmulatorServer =

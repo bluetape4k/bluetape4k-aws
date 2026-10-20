@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.ktor.sqs
 
+import aws.sdk.kotlin.services.sqs.SqsClient
 import io.bluetape4k.aws.ktor.awsKtorDefaults
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationPlugin
@@ -22,7 +23,9 @@ val SqsConsumerRuntimeKey: AttributeKey<SqsConsumerRuntime> = AttributeKey("SqsC
  * 계약:
  * - [ApplicationStarted] 이벤트에서 polling을 시작합니다.
  * - [ApplicationStopping] 이벤트에서 polling을 멈추고 처리 중인 handler를 drain합니다.
- * - 주입된 AWS SDK [software.amazon.awssdk.services.sqs.SqsAsyncClient]는 닫지 않습니다.
+ * - 주입된 AWS Kotlin SDK [SqsClient]는 닫지 않습니다.
+ * - SQS 전달은 at-least-once입니다. [SqsConsumerRuntimeConfig.shutdownTimeout] 만료로 handler가 취소되면 진행 중인
+ *   ack/nack이 적용됐는지 확인할 수 없으므로 메시지가 다시 전달될 수 있습니다.
  */
 val SqsConsumer: ApplicationPlugin<SqsConsumerPluginConfig> = createApplicationPlugin(
     name = "SqsConsumer",

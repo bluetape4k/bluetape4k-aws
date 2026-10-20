@@ -8,7 +8,7 @@ import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.ktor.AwsKtorCore
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
-import io.bluetape4k.aws.ktor.AwsKtorKinesisAsyncClientCustomizer
+import io.bluetape4k.aws.ktor.AwsKtorKinesisClientCustomizer
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.KLogging
 import io.ktor.http.Url
@@ -20,14 +20,14 @@ import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
+import aws.sdk.kotlin.services.kinesis.KinesisClient
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class KinesisKtorPluginTest {
 
     companion object: KLogging()
 
-    private val client = mockk<KinesisAsyncClient>(relaxed = true)
+    private val client = mockk<KinesisClient>(relaxed = true)
     private val operations = mockk<KinesisKtorOperations>(relaxed = true)
 
     @BeforeEach
@@ -74,7 +74,7 @@ class KinesisKtorPluginTest {
     @Test
     fun `injected client remains application owned`() = runSuspendIO {
         val runtime = KinesisKtorPluginConfig()
-            .apply { kinesisAsyncClient = client }
+            .apply { kinesisClient = client }
             .toRuntime()
 
         runtime.shouldNotBeNull()
@@ -100,13 +100,13 @@ class KinesisKtorPluginTest {
     fun `service customizer runs after shared customizer`() = runSuspendIO {
         val order = mutableListOf<String>()
         val runtime = KinesisKtorPluginConfig()
-            .apply { kinesisAsyncClient { order += "service" } }
+            .apply { kinesisClient { order += "service" } }
             .toRuntime(
             AwsKtorDefaults(
                 region = "ap-northeast-2",
                 endpointOverride = Url("http://localhost:4566"),
-                kinesisAsyncClientCustomizers = listOf(
-                    AwsKtorKinesisAsyncClientCustomizer { order += "shared" }
+                kinesisClientCustomizers = listOf(
+                    AwsKtorKinesisClientCustomizer { order += "shared" }
                 ),
             )
         )

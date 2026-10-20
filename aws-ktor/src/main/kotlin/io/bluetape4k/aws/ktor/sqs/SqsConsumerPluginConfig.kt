@@ -2,13 +2,14 @@ package io.bluetape4k.aws.ktor.sqs
 
 import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
-import io.bluetape4k.aws.ktor.AwsKtorSqsAsyncClientCustomizer
+import io.bluetape4k.aws.ktor.AwsKtorSqsClientCustomizer
+import io.bluetape4k.aws.kotlin.sqs.sqsClientOf
 import io.bluetape4k.javatimes.seconds
+import aws.sdk.kotlin.services.sqs.SqsClient
+import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
+import aws.smithy.kotlin.runtime.http.engine.HttpClientEngine
+import aws.smithy.kotlin.runtime.net.url.Url
 import kotlinx.coroutines.CoroutineDispatcher
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
-import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.sqs.SqsAsyncClient
-import java.net.URI
 import java.time.Duration
 import kotlin.reflect.KClass
 
@@ -17,13 +18,13 @@ import kotlin.reflect.KClass
  *
  * 계약:
  * - [queueUrl]과 [queueName] 중 정확히 하나만 설정해야 합니다.
- * - [sqsAsyncClient]는 application이 주입한 client이므로 plugin이 닫지 않습니다.
+ * - [sqsClient]는 application이 주입한 client이므로 plugin이 닫지 않습니다.
  * - plugin instance 하나는 handler 하나만 가집니다. 여러 queue가 필요하면 이후 registry-style
  *   integration에서 plugin instance를 추가로 설치합니다.
  *
  * ```kotlin
  * install(SqsConsumer) {
- *     sqsAsyncClient = client
+ *     sqsClient = client
  *     queueName = "orders"
  *     coroutines = 4
  *     onMessage<String> { body -> process(body) }
@@ -32,17 +33,20 @@ import kotlin.reflect.KClass
  */
 class SqsConsumerPluginConfig {
 
-    /** application이 소유하는 AWS SDK v2 async SQS client입니다. */
-    var sqsAsyncClient: SqsAsyncClient? = null
+    /** 애플리케이션이 소유하는 AWS Kotlin SDK SQS client입니다. */
+    var sqsClient: SqsClient? = null
 
     /** plugin이 client를 생성할 때 사용할 선택적 SQS region입니다. */
     var region: String? = null
 
     /** plugin이 client를 생성할 때 사용할 선택적 SQS endpoint override입니다. */
-    var endpointOverride: URI? = null
+    var endpointOverride: Url? = null
 
-    /** plugin이 client를 생성할 때 사용할 선택적 credentials provider입니다. */
-    var credentialsProvider: AwsCredentialsProvider? = null
+    /** 플러그인이 클라이언트를 생성할 때 사용할 선택적인 Smithy credentials provider입니다. */
+    var credentialsProvider: CredentialsProvider? = null
+
+    /** 플러그인이 생성할 클라이언트에 전달할 호출자 소유 Smithy HTTP 엔진입니다. */
+    var httpClient: HttpClientEngine? = null
 
     /** 소비할 queue URL입니다. [queueName]과 동시에 설정할 수 없습니다. */
     var queueUrl: String? = null
@@ -99,12 +103,12 @@ class SqsConsumerPluginConfig {
     private val observers = mutableListOf<SqsConsumerObserver>()
     private var messageType: KClass<out Any>? = null
     private var messageHandler: (suspend SqsMessageContext.(Any) -> Unit)? = null
-    private val clientCustomizers = mutableListOf<AwsKtorSqsAsyncClientCustomizer>()
+    private val clientCustomizers = mutableListOf<AwsKtorSqsClientCustomizer>()
 
     /**
-     * plugin이 생성하는 SQS async client builder에 customization을 추가합니다.
+     * 플러그인이 생성하는 SQS 클라이언트 builder에 customization을 추가합니다.
      */
-    fun sqsAsyncClient(customizer: AwsKtorSqsAsyncClientCustomizer) {
+    fun sqsClient(customizer: AwsKtorSqsClientCustomizer) {
         clientCustomizers += customizer
     }
 
@@ -148,16 +152,16 @@ class SqsConsumerPluginConfig {
 
     internal fun toRuntimeConfig(
         defaults: AwsKtorDefaults = AwsKtorDefaults(),
-        clientFactory: (AwsKtorDefaults) -> SqsAsyncClient = ::createSqsAsyncClient,
+        clientFactory: (AwsKtorDefaults) -> SqsClient = ::createSqsClient,
     ): SqsConsumerRuntimeConfig {
         val type = requireNotNull(messageType) { "onMessage handler must be configured." }
         val handler = requireNotNull(messageHandler) { "onMessage handler must be configured." }
-        val injectedClient = sqsAsyncClient
+        val injectedClient = sqsClient
         val client = injectedClient ?: clientFactory(defaults)
 
         return runCatching {
             SqsConsumerRuntimeConfig(
-                sqsAsyncClient = client,
+                sqsClient = client,
                 ownsClient = injectedClient == null,
                 queueUrl = queueUrl,
                 queueName = queueName,
@@ -191,29 +195,32 @@ class SqsConsumerPluginConfig {
         }
     }
 
-    private fun createSqsAsyncClient(defaults: AwsKtorDefaults): SqsAsyncClient {
+    private fun createSqsClient(defaults: AwsKtorDefaults): SqsClient {
         val effectiveRegion = region?.takeIf { it.isNotBlank() } ?: defaults.region?.takeIf { it.isNotBlank() }
-        val effectiveEndpoint = endpointOverride ?: defaults.javaEndpointOverride
+        val effectiveEndpoint = endpointOverride ?: defaults.endpointOverride?.let { Url.parse(it.toString()) }
         require(effectiveEndpoint == null || !effectiveRegion.isNullOrBlank()) {
             "region must be configured when endpointOverride is configured."
         }
 
-        val builder = SqsAsyncClient.builder()
-        effectiveRegion?.let { builder.region(Region.of(it)) }
-        (credentialsProvider ?: defaults.javaCredentialsProvider)?.let(builder::credentialsProvider)
-        effectiveEndpoint?.let(builder::endpointOverride)
-        defaults.sqsAsyncClientCustomizers.forEach { it.customize(builder) }
-        clientCustomizers.forEach { it.customize(builder) }
-
-        return builder.build()
+        return sqsClientOf(
+            endpointUrl = effectiveEndpoint,
+            region = effectiveRegion,
+            credentialsProvider = credentialsProvider ?: defaults.kotlinCredentialsProvider,
+            httpClient = httpClient ?: defaults.kotlinHttpClient,
+            builder = {
+                defaults.sqsClientCustomizers.forEach { it.customize(this) }
+                clientCustomizers.forEach { it.customize(this) }
+            },
+        )
     }
 
     override fun toString(): String =
         ToStringBuilder(this)
-            .add("sqsAsyncClientConfigured", sqsAsyncClient != null)
+            .add("sqsClientConfigured", sqsClient != null)
             .add("region", region)
             .add("endpointConfigured", endpointOverride != null)
             .add("credentialsProviderConfigured", credentialsProvider != null)
+            .add("httpClientConfigured", httpClient != null)
             .add("queueUrlConfigured", queueUrl != null)
             .add("queueName", queueName)
             .add("coroutines", coroutines)
