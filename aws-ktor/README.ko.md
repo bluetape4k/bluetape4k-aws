@@ -9,10 +9,9 @@ bluetape4k AWS 모듈을 Ktor 3 애플리케이션에 붙이기 위한 통합 �
 
 ## 기능
 
-- region, endpoint override, Java/Kotlin credentials provider, signing clock, client customizer를 애플리케이션 수준에서 공유하는 선택적 `AwsKtorCore`.
+- region, endpoint override, AWS Kotlin credentials provider, signing clock, client customizer를 애플리케이션 수준에서 공유하는 선택적 `AwsKtorCore`.
 - Ktor `HttpClient`용 `AwsSigV4Plugin`.
-- Static, Default, Profile, Session provider를 포함한 AWS SDK Java v2
-  `AwsCredentialsProvider` 연동.
+- AWS Kotlin SDK의 `CredentialsProvider` 연동과 기본 credentials chain.
 - 헤더 서명과 쿼리 문자열 서명.
 - region, service, path normalization, URL encoding, payload signing, clock 주입 옵션.
 - PutObject, GetObject, DeleteObject, ListObjectsV2, multipart upload, presigned GET/PUT URL, content-type 감지, server-side encryption header, client-side envelope encryption, S3 기반 Ktor config object 로딩을 지원하는
@@ -49,18 +48,15 @@ Runtime의 `stop()`을 직접 호출하는 경로와 registry 종료는 같은 i
 
 ## 의존성
 
-`aws-ktor`는 API aggregator입니다. 게시된 POM은 Java/Kotlin wrapper, public plugin/configuration API에서 사용하는 AWS SDK 모듈, Ktor client core를 transitive dependency로 노출합니다. 이는 서비스 SDK를 보통 `compileOnly`로 두고 애플리케이션이 선택하는 일반적인 `bluetape4k-aws-java`·
-`bluetape4k-aws-kotlin` wrapper 규칙과 의도적으로 다릅니다.
+`aws-ktor`는 AWS SDK for Kotlin과 Smithy Kotlin 타입을 공개 plugin API에 사용하는 API aggregator입니다. 게시된 POM은 `bluetape4k-aws-kotlin`, 해당 API에서 쓰는 Kotlin service SDK와 Smithy 타입, Ktor client core를 `compile` dependency로 노출하며 AWS SDK for Java v2 타입은 노출하지 않습니다. 서비스 SDK를 `compileOnly`로 선언하는 별도 wrapper 모듈과 달리, `aws-ktor`는 public API에 필요한 SDK를 `api`로 선언합니다.
 
-| 의존성 그룹                         | `aws-ktor` POM 계약                                                                                                                 | 애플리케이션에서 할 일                                                                        |
-|-------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
-| Bluetape wrapper와 공통 Ktor helper | `bluetape4k-aws-java`, `bluetape4k-aws-kotlin`, `bluetape4k-io`, `bluetape4k-coroutines`, `bluetape4k-ktor-core`가 `compile` 의존성 | `bluetape4k-aws-ktor`만 추가하고, 명시적인 버전 override가 필요하지 않으면 다시 선언하지 않음 |
-| Java SDK public plugin 타입         | AWS auth, CloudWatch/Logs, EventBridge, IMDS, Kinesis, S3 Control/Vectors, SES v2, SNS, SQS, STS가 `compile` 의존성                 | 해당 `aws-ktor` plugin에는 별도의 Java 서비스 SDK를 추가하지 않음                             |
-| Kotlin SDK public plugin 타입       | AWS Kotlin DynamoDB가 `compile` 의존성                                                                                              | `DynamoDbKtorPlugin`에는 별도의 Kotlin DynamoDB SDK를 추가하지 않음                           |
-| Runtime 선택과 선택적 통합          | Ktor engine, content negotiation/Jackson, Micrometer, Exposed, JDBC driver, Spring Boot BOM은 `compileOnly` 또는 애플리케이션 소유  | 애플리케이션이 설치하는 통합과 runtime driver만 추가                                          |
+| 의존성 그룹 | `aws-ktor` POM 계약 | 애플리케이션에서 할 일 |
+|---|---|---|
+| Bluetape wrapper와 공통 Ktor helper | `bluetape4k-aws-kotlin`, `bluetape4k-io`, `bluetape4k-coroutines`, `bluetape4k-ktor-core`가 `compile` 의존성 | `bluetape4k-aws-ktor`를 추가하고 명시적 버전 override가 필요한 경우에만 다시 선언 |
+| AWS Kotlin SDK와 Smithy public types | CloudWatch, CloudWatch Logs, EventBridge, Kinesis, DynamoDB, S3 Control/Vectors, SES v2, SNS, SQS, STS 및 Smithy credential/signing/HTTP 타입이 `compile` 의존성 | 각 plugin에서 노출하는 Kotlin client와 model을 직접 사용 |
+| Runtime 선택과 선택적 통합 | 기본 Smithy signer와 OkHttp engine은 runtime dependency입니다. IMDS transport 설정용 OkHttp `5.5.0` compile-only 참조는 게시된 POM에서 제외됩니다. Ktor engine/serialization, Micrometer, Exposed adapter, JDBC driver와 Spring Boot BOM은 선택 사항입니다. | 실제 설치하거나 직접 사용하는 통합만 애플리케이션에 추가 |
 
-게시된 scope가 기준입니다. `api(...)` 항목은 generated POM에 `compile`
-의존성으로 기록되고, `compileOnly(...)` 항목은 POM에서 빠집니다. 애플리케이션이 직접 추가하는 의존성의 버전은 중앙 `bluetape4k-dependencies` catalog가 소유하도록 유지하세요.
+게시된 scope가 기준입니다. `api(...)` 항목은 generated POM의 compile dependency에 포함되고, `compileOnly(...)` 항목은 제외됩니다. 애플리케이션이 직접 추가하는 의존성의 버전은 중앙 `bluetape4k-dependencies` catalog가 소유하도록 유지하세요.
 
 ```kotlin
 dependencies {
@@ -80,8 +76,7 @@ dependencies {
 }
 ```
 
-예를 들어 `SqsConsumer`는 transitive AWS Java SQS API를 사용하고,
-`DynamoDbKtorPlugin`은 transitive AWS Kotlin DynamoDB API를 사용합니다. 애플리케이션 코드가 해당 SDK를 직접 호출하거나 `aws-ktor`가 의도적으로 선택 사항으로 둔 runtime 통합이 필요할 때만 서비스 SDK를 명시적으로 추가하세요.
+예를 들어 `SqsConsumer`는 AWS Kotlin `SqsClient`와 `Message` model을 노출하고, `DynamoDbKtorPlugin`은 AWS Kotlin DynamoDB client와 model을 노출합니다. 두 service SDK 모두 `aws-ktor`의 public POM dependency입니다. Plugin 바깥에서 사용하는 서비스 SDK와 선택적 Ktor 또는 database 통합은 애플리케이션이 직접 추가합니다.
 
 ## 사용법
 
@@ -96,13 +91,13 @@ import io.bluetape4k.aws.ktor.sqs.SqsConsumer
 import io.ktor.http.Url
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
+import aws.sdk.kotlin.runtime.auth.credentials.DefaultChainCredentialsProvider
 
 fun Application.module() {
     install(AwsKtorCore) {
         region = "ap-northeast-2"
         endpointOverride = Url("http://localhost:4566")
-        javaCredentialsProvider = DefaultCredentialsProvider.builder().build()
+        kotlinCredentialsProvider = DefaultChainCredentialsProvider()
         ktorCore()
     }
 
@@ -116,21 +111,21 @@ fun Application.module() {
 `S3KtorClient`, `SqsConsumer`, `SesKtorPlugin`, `SnsKtorPlugin`,
 `EventBridgeKtorPlugin`, `KinesisKtorPlugin`, `StsKtorPlugin`,
 `CloudWatchKtorPlugin`, `CloudWatchLogsKtorPlugin`, `DynamoDbKtorPlugin`은 공유 기본값을 상속할 수 있습니다. 특정 통합만 다른 대상이 필요하면 서비스 로컬 `region`,
-`endpointOverride` / `endpointUrl`, credentials provider를 설정합니다. Floci 또는 LocalStack 테스트에서는 `http://localhost:4566` 같은 local endpoint와 dummy test credentials를 사용하세요. 운영 배포에서는 default, profile, web-identity, 또는 애플리케이션이 소유한 provider처럼 명시적인 AWS SDK credential provider를 사용해야 합니다. EKS/IRSA 같은 web identity 배포에서는 적절한 AWS SDK credentials provider를
-`AwsKtorCore`에 직접 주입하고, 해당 provider가 STS를 요구한다면 애플리케이션 runtime classpath에 `software.amazon.awssdk:sts` 또는 `aws.sdk.kotlin:sts`를 추가합니다.
+`endpointOverride` / `endpointUrl`, credentials provider를 설정합니다. Floci 또는 LocalStack 테스트에서는 `http://localhost:4566` 같은 local endpoint와 dummy test credentials를 사용하세요. 운영 배포에서는 default, profile, web-identity, 또는 애플리케이션이 소유한 provider처럼 명시적인 AWS Kotlin credential provider를 사용해야 합니다. EKS/IRSA 같은 web identity 배포에서는 적절한 AWS Kotlin credentials provider를
+`AwsKtorCore`에 직접 주입하고, 해당 provider가 STS를 요구한다면 애플리케이션 runtime classpath에 `aws.sdk.kotlin:sts`를 추가합니다.
 
 ```kotlin
 import io.bluetape4k.aws.ktor.client.AwsSigV4Plugin
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.request.get
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
+import aws.sdk.kotlin.runtime.auth.credentials.DefaultChainCredentialsProvider
 
 val client = HttpClient(CIO) {
     install(AwsSigV4Plugin) {
         region = "ap-northeast-2"
         service = "execute-api"
-        credentialsProvider = DefaultCredentialsProvider.builder().build()
+        credentialsProvider = DefaultChainCredentialsProvider()
     }
 }
 
@@ -165,9 +160,9 @@ suspend fun Application.instanceSnapshot(): Map<String, String> =
     )
 ```
 
-테스트나 custom metadata routing 이 필요할 때만 `endpoint` 를 명시합니다. 그 외에는 설정된 `endpointMode` 를 사용합니다. IMDS는 일반 AWS service endpoint가 아니므로
-`AwsKtorCore.endpointOverride` 를 자동 상속하지 않습니다. Credential 조회는
-`DefaultCredentialsProvider`, STS web identity, 또는 명시적 AWS SDK credentials provider에 맡겨야 합니다. `ImdsKtorOperations` 는 IAM role 이름만 노출하고 임시 credential document는 노출하지 않습니다.
+테스트나 사용자 지정 메타데이터 경로가 필요할 때만 `endpoint`를 명시합니다. 그 외에는 설정된 `endpointMode`를 사용합니다. IMDS는 일반 AWS service endpoint가 아니므로
+`AwsKtorCore.endpointOverride`를 자동 상속하지 않습니다. Credential 조회는
+`DefaultChainCredentialsProvider`, STS web identity, 또는 명시적 AWS Kotlin credentials provider에 맡겨야 합니다. `ImdsKtorOperations` 는 IAM role 이름만 노출하고 임시 credential document는 노출하지 않습니다. Plugin 소유 HTTP transport는 EC2 link-local endpoint 또는 테스트용 명시적 loopback endpoint만 허용하고, 원격 HTTP override를 거부하며 redirect와 connection retry를 끄고 system proxy를 우회합니다.
 
 ## Payload 서명
 
@@ -283,12 +278,12 @@ Client-side encryption은 KMS에 직접 의존하지 않고 `S3KtorDataKeyProvid
 
 ### S3 Access Grants
 
-`S3AccessGrantsKtorPlugin`은 AWS SDK Java v2 `S3ControlAsyncClient` 기반 suspend operations facade를 설치합니다. Access Grants는 S3 Control boundary에 두고, object REST 호출은 `S3KtorClient`에 남깁니다. Request 처리 중 필요한 data-access와 discovery 호출만 `application.s3AccessGrants()`로 사용합니다.
+`S3AccessGrantsKtorPlugin`은 AWS Kotlin SDK `S3ControlClient` 기반 suspend operations facade를 설치합니다. Access Grants는 S3 Control boundary에 두고, object REST 호출은 `S3KtorClient`에 남깁니다. Request 처리 중 필요한 data-access와 discovery 호출만 `application.s3AccessGrants()`로 사용합니다.
 
 ![Ktor S3 Access Grants flow](../docs/images/readme-diagrams/aws-ktor-s3-access-grants-flow-01.png)
 
 Plugin은 caller-owned `S3AccessGrantsKtorOperations`, caller-owned
-`S3ControlAsyncClient`, 또는 `AwsKtorCore` 기본값과 service-specific customizer로 만든 plugin-managed client를 사용할 수 있습니다. Administrative create, update, delete operation은 raw S3 Control client에 남겨 두었습니다. Ktor facade는 request handling에 유용한 read/data-access path만 감쌉니다.
+`S3ControlClient`, 또는 `AwsKtorCore` 기본값과 service-specific customizer로 만든 plugin-managed client를 사용할 수 있습니다. Administrative create, update, delete operation은 raw S3 Control client에 남겨 두었습니다. Ktor facade는 request handling에 유용한 read/data-access path만 감쌉니다.
 
 ```kotlin
 import io.bluetape4k.aws.ktor.AwsKtorCore
@@ -296,14 +291,12 @@ import io.bluetape4k.aws.ktor.s3.accessgrants.S3AccessGrantsKtorPlugin
 import io.bluetape4k.aws.ktor.s3.accessgrants.s3AccessGrants
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
-import software.amazon.awssdk.services.s3control.model.GetDataAccessRequest
-import software.amazon.awssdk.services.s3control.model.Permission
-
+import aws.sdk.kotlin.runtime.auth.credentials.DefaultChainCredentialsProvider
+import aws.sdk.kotlin.services.s3control.model.GetDataAccessRequest
 fun Application.module() {
     install(AwsKtorCore) {
         region = "ap-northeast-2"
-        javaCredentialsProvider = DefaultCredentialsProvider.builder().build()
+        kotlinCredentialsProvider = DefaultChainCredentialsProvider()
         ktorCore()
     }
 
@@ -312,17 +305,16 @@ fun Application.module() {
 
 suspend fun Application.readGrantedCredentials(accountId: String, target: String) =
     s3AccessGrants().getDataAccess(
-        GetDataAccessRequest.builder()
-            .accountId(accountId)
-            .target(target)
-            .permission(Permission.READ)
-            .build(),
+        GetDataAccessRequest {
+            this.accountId = accountId
+            this.target = target
+        },
     )
 ```
 
 ### S3 Vectors
 
-`S3VectorsKtorPlugin` 은 공유 `aws-java` coroutine `S3VectorsOperations` facade를 Ktor 애플리케이션에 설치합니다. AWS가 vector 기능을 별도 `s3vectors` 서비스로 제공하므로 기본 S3 object API에는 포함하지 않습니다.
+`S3VectorsKtorPlugin`은 AWS Kotlin SDK `S3VectorsClient` 기반 operations facade를 Ktor 애플리케이션에 설치합니다. AWS가 vector 기능을 별도 `s3vectors` 서비스로 제공하므로 기본 S3 object API에는 포함하지 않습니다.
 
 ```kotlin
 import io.bluetape4k.aws.ktor.AwsKtorCore
@@ -330,13 +322,13 @@ import io.bluetape4k.aws.ktor.s3vectors.S3VectorsKtorPlugin
 import io.bluetape4k.aws.ktor.s3vectors.s3Vectors
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
-import software.amazon.awssdk.services.s3vectors.model.ListIndexesRequest
+import aws.sdk.kotlin.runtime.auth.credentials.DefaultChainCredentialsProvider
+import aws.sdk.kotlin.services.s3vectors.model.ListIndexesRequest
 
 fun Application.module() {
     install(AwsKtorCore) {
         region = "ap-northeast-2"
-        javaCredentialsProvider = DefaultCredentialsProvider.builder().build()
+        kotlinCredentialsProvider = DefaultChainCredentialsProvider()
         ktorCore()
     }
 
@@ -345,35 +337,33 @@ fun Application.module() {
 
 suspend fun Application.listSemanticIndexes(vectorBucketName: String) =
     s3Vectors().listIndexes(
-        ListIndexesRequest.builder()
-            .vectorBucketName(vectorBucketName)
-            .build(),
+        ListIndexesRequest { this.vectorBucketName = vectorBucketName },
     )
 ```
 
-Plugin은 caller-owned `S3VectorsOperations`, caller-owned `S3VectorsAsyncClient`, 또는
+Plugin은 caller-owned `S3VectorsKtorOperations`, caller-owned `S3VectorsClient`, 또는
 `AwsKtorCore` 기본값과 S3 Vectors customizer로 만든 plugin-owned client를 사용할 수 있습니다. 이 plugin은 emulator-backed S3 Vectors 동작을 보장하지 않습니다.
 
 ## EventBridge Server Plugin
 
-`EventBridgeKtorPlugin`은 AWS SDK Java v2 `EventBridgeAsyncClient` 기반 coroutine/future operations facade를 Ktor 애플리케이션에 설치합니다. 애플리케이션이 소유한
+`EventBridgeKtorPlugin`은 AWS Kotlin SDK `EventBridgeClient` 기반 suspend operations facade를 Ktor 애플리케이션에 설치합니다. 애플리케이션이 소유한
 `EventBridgeKtorOperations`, 애플리케이션이 소유한 client, 또는 `AwsKtorCore` 기본값과 EventBridge customizer로 만든 plugin-owned client를 사용할 수 있습니다. 주입한 client는 plugin이 닫지 않습니다.
 
 ![EventBridge Spring Boot and Ktor class map](../docs/images/readme-diagrams/bluetape4k-aws-eventbridge-class-32.png)
 
 ```kotlin
-import io.bluetape4k.aws.eventbridge.model.putEventsRequestEntryOf
+import aws.sdk.kotlin.services.eventbridge.model.PutEventsRequestEntry
 import io.bluetape4k.aws.ktor.AwsKtorCore
 import io.bluetape4k.aws.ktor.eventbridge.EventBridgeKtorPlugin
 import io.bluetape4k.aws.ktor.eventbridge.eventBridge
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
+import aws.sdk.kotlin.runtime.auth.credentials.DefaultChainCredentialsProvider
 
 fun Application.module() {
     install(AwsKtorCore) {
         region = "ap-northeast-2"
-        javaCredentialsProvider = DefaultCredentialsProvider.builder().build()
+        kotlinCredentialsProvider = DefaultChainCredentialsProvider()
         ktorCore()
     }
 
@@ -385,14 +375,14 @@ fun Application.module() {
 suspend fun Application.publishOrderCreated(orderId: String) {
     val response = eventBridge().putEvents(
         listOf(
-            putEventsRequestEntryOf(
-                source = "orders",
-                detailType = "order.created",
-                detail = """{"orderId":"$orderId"}""",
-            )
+            PutEventsRequestEntry {
+                source = "orders"
+                detailType = "order.created"
+                detail = """{"orderId":"$orderId"}"""
+            }
         )
     )
-    require(response.failedEntryCount() == 0) { "EventBridge rejected one or more entries." }
+    require(response.failedEntryCount == 0) { "EventBridge rejected one or more entries." }
 }
 ```
 
@@ -401,7 +391,7 @@ suspend fun Application.publishOrderCreated(orderId: String) {
 
 ## Kinesis And STS Server Plugins
 
-`KinesisKtorPlugin`은 AWS SDK Java v2 `KinesisAsyncClient` 기반 coroutine Kinesis operations를 설치합니다. Consumer API는 의도적으로 명시적입니다. `recordFlow` 하나는 하나의 shard만 읽고, collect 되기 전까지는 실행되지 않으며, lease나 checkpoint를 관리하지 않습니다.
+`KinesisKtorPlugin`은 AWS Kotlin SDK `KinesisClient` 기반 suspend Kinesis operations를 설치합니다. Consumer API는 의도적으로 명시적입니다. `recordFlow` 하나는 하나의 shard만 읽고, collect 되기 전까지는 실행되지 않으며, lease나 checkpoint를 관리하지 않습니다.
 
 ```kotlin
 import io.bluetape4k.aws.ktor.kinesis.KinesisKtorPlugin
@@ -412,8 +402,6 @@ import io.bluetape4k.aws.ktor.kinesis.kinesis
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import kotlinx.coroutines.flow.collect
-import software.amazon.awssdk.core.SdkBytes
-
 fun Application.module() {
     install(KinesisKtorPlugin) {
         streams = mapOf("orders" to KinesisKtorStream(shardCount = 1))
@@ -425,7 +413,7 @@ suspend fun Application.publishOrder(json: String) {
         KinesisPutRecordRequest(
             streamName = "orders",
             partitionKey = "order-1",
-            data = SdkBytes.fromUtf8String(json),
+            data = json.encodeToByteArray(),
         )
     )
 }
@@ -454,7 +442,7 @@ fun Application.module() {
 }
 
 suspend fun Application.currentCallerArn(): String =
-    sts().callerIdentity().arn()
+    sts().callerIdentity().arn.orEmpty()
 
 suspend fun Application.assumeOrdersRole(): String =
     sts().assumeRole(
@@ -462,7 +450,7 @@ suspend fun Application.assumeOrdersRole(): String =
             roleArn = "arn:aws:iam::123456789012:role/orders",
             sessionName = "orders-api",
         )
-    ).credentials().accessKeyId()
+    ).credentials?.accessKeyId.orEmpty()
 ```
 
 ## CloudWatch Metrics And Logs
@@ -474,8 +462,8 @@ import io.bluetape4k.aws.ktor.cloudwatch.CloudWatchKtorPlugin
 import io.bluetape4k.aws.ktor.cloudwatch.cloudWatch
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
-import software.amazon.awssdk.services.cloudwatch.model.MetricDatum
-import software.amazon.awssdk.services.cloudwatch.model.StandardUnit
+import aws.sdk.kotlin.services.cloudwatch.model.MetricDatum
+import aws.sdk.kotlin.services.cloudwatch.model.StandardUnit
 
 fun Application.module() {
     install(CloudWatchKtorPlugin) {
@@ -486,11 +474,11 @@ fun Application.module() {
 
 suspend fun Application.publishLatency(millis: Double) {
     cloudWatch().putMetricDatum(
-        MetricDatum.builder()
-            .metricName("order.latency")
-            .unit(StandardUnit.MILLISECONDS)
-            .value(millis)
-            .build()
+        MetricDatum {
+            metricName = "order.latency"
+            unit = StandardUnit.Milliseconds
+            value = millis
+        }
     )
 }
 ```
@@ -543,7 +531,7 @@ install(CloudWatchLogsKtorPlugin) {
 ## SES And SNS Server Plugins
 
 `SesKtorPlugin` 은 route code가 email을 보낼 수 있도록 coroutine 기반 SES v2 operations facade를 Ktor 애플리케이션에 설치합니다. 플러그인은 애플리케이션이 소유한
-`SesV2AsyncClient`, 애플리케이션이 소유한 operations facade, 또는 `AwsKtorCore`와 서비스 로컬 설정으로 만든 plugin-owned client를 사용할 수 있습니다. 주입한 client는 플러그인이 닫지 않으며, plugin-owned client만 `ApplicationStopped` 에서 닫습니다.
+`SesV2Client`, 애플리케이션이 소유한 operations facade, 또는 `AwsKtorCore`와 서비스 로컬 설정으로 만든 plugin-owned client를 사용할 수 있습니다. 주입한 client는 플러그인이 닫지 않으며, plugin-owned client만 `ApplicationStopped` 에서 닫습니다.
 
 ```kotlin
 import io.bluetape4k.aws.ktor.ses.SesEmailAddressSet
@@ -569,7 +557,7 @@ suspend fun Application.sendOrderEmail(to: String, orderId: String): String =
             subject = "Order $orderId",
             body = SesEmailBody(text = "Your order was accepted."),
         )
-    ).messageId()
+    ).messageId.orEmpty()
 ```
 
 `SnsKtorPlugin` 은 SNS topic/SMS operations와 SNS HTTP endpoint message parser를 설치합니다. HTTP endpoint message parser가 반환한 값은 아직 신뢰할 수 없습니다.
@@ -595,7 +583,7 @@ fun Application.module() {
 suspend fun Application.publishOrderEvent(json: String): String {
     val topicArn = sns().findTopicArn("orders")
         ?: sns().createConfiguredTopic("orders")
-    return sns().publish(topicArn = topicArn, message = json).messageId()
+    return sns().publish(topicArn = topicArn, message = json).messageId.orEmpty()
 }
 
 fun Application.parseSnsMessage(json: String, header: String?): SnsHttpMessage =
@@ -621,18 +609,17 @@ import io.bluetape4k.aws.ktor.sqs.SqsConsumer
 import io.bluetape4k.aws.ktor.sqs.sqsConsumer
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
-import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.sqs.SqsAsyncClient
+import aws.sdk.kotlin.runtime.auth.credentials.DefaultChainCredentialsProvider
+import aws.sdk.kotlin.services.sqs.SqsClient
 
 fun Application.module() {
-    val sqs = SqsAsyncClient.builder()
-        .region(Region.AP_NORTHEAST_2)
-        .credentialsProvider(DefaultCredentialsProvider.builder().build())
-        .build()
+    val sqs = SqsClient {
+        region = "ap-northeast-2"
+        credentialsProvider = DefaultChainCredentialsProvider()
+    }
 
     install(SqsConsumer) {
-        sqsAsyncClient = sqs
+        sqsClient = sqs
         queueName = "orders"
         coroutines = 4
         maxMessages = 10
@@ -659,7 +646,7 @@ import io.bluetape4k.aws.ktor.sqs.SqsFixedFailureVisibilityStrategy
 import io.bluetape4k.aws.ktor.sqs.micrometer
 
 install(SqsConsumer) {
-    sqsAsyncClient = sqs
+    sqsClient = sqs
     queueName = "orders"
     deleteOnSuccess = false
     conversionFailurePolicy = SqsConversionFailurePolicy.HandleAsFailure
@@ -680,7 +667,7 @@ install(SqsConsumer) {
 
 Micrometer observer는 send, receive, invoke, ack, nack, conversion failure, retry/failure event를 `bluetape4k.aws.ktor.sqs.operation` timer로 기록합니다. 기본 tag에는 queue URL, message ID, receipt handle을 넣지 않습니다.
 
-주입한 `SqsAsyncClient`는 애플리케이션이 소유합니다. 플러그인은 client를 닫지 않으므로 애플리케이션 scope 종료 시 직접 닫아야 합니다. client를 주입하지 않으면
+주입한 `SqsClient`는 애플리케이션이 소유합니다. 플러그인은 client를 닫지 않으므로 애플리케이션 scope 종료 시 직접 닫아야 합니다. client를 주입하지 않으면
 `SqsConsumer`가 `AwsKtorCore` 또는 서비스 로컬 설정으로 plugin-owned client를 만들 수 있고, 이 client는 `ApplicationStopping` 시 닫힙니다. consumer runtime은 one-shot으로 동작합니다. 중복 `start()`/`stop()` 호출은 idempotent하게 무시하고, `start()` 전에 호출한 `stop()`은 runtime을 영구적으로 종료합니다. `STOPPED` 이후 `start()`를 호출하면 `IllegalStateException`으로 즉시 실패합니다.
 
 실행 가능한 SQS 예제는
@@ -875,7 +862,7 @@ install(AwsExposedPlugin) {
 |-------------------------|-------:|--------------------------------------------------------------------------------------------|
 | `namespace`             | `null` | namespace를 생략한 metric 호출에 사용할 기본 CloudWatch namespace입니다.                   |
 | `batchSize`             | `1000` | CloudWatch metric batch size이며 `1..1000` 범위로 검증합니다.                              |
-| `cloudWatchAsyncClient` | `null` | 선택적 application-owned CloudWatch client입니다. 주입한 client는 plugin이 닫지 않습니다.  |
+| `cloudWatchClient` | `null` | 선택적 application-owned CloudWatch client입니다. 주입한 client는 plugin이 닫지 않습니다.  |
 | `cloudWatchOperations`  | `null` | 테스트나 custom wrapper에 사용할 수 있는 선택적 application-owned operations facade입니다. |
 
 ### CloudWatch Logs 옵션
@@ -890,7 +877,7 @@ install(AwsExposedPlugin) {
 | `shutdownObserver`               |            `none` | 종료 outcome과 pending/dropped event 수를 관찰할 선택적 observer입니다.                                              |
 | `createLogGroupOnStart`          |           `false` | startup 시 log group을 생성할지 선택합니다. 기본값은 비활성입니다.                                                   |
 | `createLogStreamOnStart`         |           `false` | startup 시 log stream을 생성할지 선택합니다. 기본값은 비활성입니다.                                                  |
-| `cloudWatchLogsAsyncClient`      |            `null` | 선택적 application-owned CloudWatch Logs client입니다. 주입한 client는 plugin이 닫지 않습니다.                       |
+| `cloudWatchLogsClient`      |            `null` | 선택적 application-owned CloudWatch Logs client입니다. 주입한 client는 plugin이 닫지 않습니다.                       |
 | `cloudWatchLogsOperations`       |            `null` | 테스트나 custom wrapper에 사용할 수 있는 선택적 application-owned operations facade입니다.                           |
 
 ### SES And SNS 옵션
@@ -899,10 +886,10 @@ install(AwsExposedPlugin) {
 |--------------------------------------|-------------------:|------------------------------------------------------------------------------------------------|
 | `SesKtorPlugin.defaultFrom`          |             `null` | `from` 을 생략한 simple/template email request에 사용할 기본 sender입니다.                     |
 | `SesKtorPlugin.configurationSetName` |             `null` | simple/template/raw email request에 사용할 기본 SES configuration set입니다.                   |
-| `SesKtorPlugin.sesAsyncClient`       |             `null` | 선택적 application-owned SES v2 async client입니다. 주입한 client는 plugin이 닫지 않습니다.    |
+| `SesKtorPlugin.sesV2Client`       |             `null` | 선택적 application-owned AWS Kotlin SES v2 client입니다. 주입한 client는 plugin이 닫지 않습니다.    |
 | `SesKtorPlugin.sesOperations`        |             `null` | 테스트나 custom wrapper에 사용할 수 있는 선택적 application-owned SES operations facade입니다. |
 | `SnsKtorPlugin.topics`               |       `emptyMap()` | `createConfiguredTopic` 에서 사용하는 named topic 정의입니다.                                  |
-| `SnsKtorPlugin.snsAsyncClient`       |             `null` | 선택적 application-owned SNS async client입니다. 주입한 client는 plugin이 닫지 않습니다.       |
+| `SnsKtorPlugin.snsClient`       |             `null` | 선택적 application-owned AWS Kotlin SNS client입니다. 주입한 client는 plugin이 닫지 않습니다.       |
 | `SnsKtorPlugin.snsOperations`        |             `null` | 테스트나 custom wrapper에 사용할 수 있는 선택적 application-owned SNS operations facade입니다. |
 | `SnsKtorPlugin.snsHttpMessageParser` | strict 기본 parser | SNS HTTP endpoint JSON에 사용할 선택적 application-owned parser입니다.                         |
 
@@ -911,17 +898,17 @@ install(AwsExposedPlugin) {
 | 옵션                                           | 기본값 | 설명                                                                                                   |
 |------------------------------------------------|-------:|--------------------------------------------------------------------------------------------------------|
 | `EventBridgeKtorPlugin.defaultEventBusName`    | `null` | event bus 이름을 생략한 rule, target, list 호출에 사용할 기본 event bus입니다.                         |
-| `EventBridgeKtorPlugin.eventBridgeAsyncClient` | `null` | 선택적 application-owned EventBridge async client입니다. 주입한 client는 plugin이 닫지 않습니다.       |
+| `EventBridgeKtorPlugin.eventBridgeClient` | `null` | 선택적 application-owned AWS Kotlin EventBridge client입니다. 주입한 client는 plugin이 닫지 않습니다.       |
 | `EventBridgeKtorPlugin.eventBridgeOperations`  | `null` | 테스트나 custom wrapper에 사용할 수 있는 선택적 application-owned EventBridge operations facade입니다. |
 
 ### Kinesis And STS 옵션
 
 | 옵션                                   |    기본값 | 설명                                                                                               |
 |----------------------------------------|----------:|----------------------------------------------------------------------------------------------------|
-| `KinesisKtorPlugin.kinesisAsyncClient` |    `null` | 선택적 application-owned Kinesis async client입니다. 주입한 client는 plugin이 닫지 않습니다.       |
+| `KinesisKtorPlugin.kinesisClient` |    `null` | 선택적 application-owned AWS Kotlin Kinesis client입니다. 주입한 client는 plugin이 닫지 않습니다.       |
 | `KinesisKtorPlugin.kinesisOperations`  |    `null` | 테스트나 custom wrapper에 사용할 수 있는 선택적 application-owned Kinesis operations facade입니다. |
 | `KinesisKtorPlugin.streams`            | empty map | `createConfiguredStream`에서 사용할 stream definition입니다.                                       |
-| `StsKtorPlugin.stsAsyncClient`         |    `null` | 선택적 application-owned STS async client입니다. 주입한 client는 plugin이 닫지 않습니다.           |
+| `StsKtorPlugin.stsClient`         |    `null` | 선택적 application-owned AWS Kotlin STS client입니다. 주입한 client는 plugin이 닫지 않습니다.           |
 | `StsKtorPlugin.stsOperations`          |    `null` | 테스트나 custom wrapper에 사용할 수 있는 선택적 application-owned STS operations facade입니다.     |
 
 ### SQS Consumer 옵션

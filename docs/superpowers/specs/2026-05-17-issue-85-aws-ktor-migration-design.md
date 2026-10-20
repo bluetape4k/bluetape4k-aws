@@ -167,3 +167,8 @@ SigV4Plugin, S3KtorClient, SQS Consumer. 이 중 SigV4/S3는 AWS Kotlin SDK에
 동등한 공개 서명 API가 없어 유지하고, SQS는 0.2.0 마이그레이션으로 연기한다.
 
 DynamoDB는 이미 Kotlin-first. 신규 통합은 Kotlin SDK 기본.
+
+
+## 8. 후속 결과 기록 (2026-10-21)
+
+이 문서의 기존 결정은 작성 당시의 설계 기록으로 보존합니다. 이슈 [#659](https://github.com/bluetape4k/bluetape4k-aws/issues/659)는 여기서 Java SDK v2 유지 또는 이관 연기로 기록했던 Ktor public service/plugin 경계를 AWS SDK for Kotlin과 Smithy Kotlin으로 이전하고, SigV4/S3 REST 경계도 Kotlin/Smithy 기반으로 구현했습니다. #659의 consumer migration, ABI·직렬화 비호환, IMDS 전송 제약은 현재 구현과 `CHANGELOG.md`를 기준으로 확인합니다.

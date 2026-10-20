@@ -3,8 +3,11 @@
 English | [한국어](./README.ko.md)
 
 Ktor 3 examples for the `aws-ktor` SQS consumer plugin. The module installs
-`SqsConsumer`, publishes messages through `SqsAsyncClient`, records consumed messages in memory, and exposes queue management routes. The interesting part is the observable consumer contract: manual ack/nack, retry-once redelivery, interceptor events, and observer summaries are all visible through HTTP routes. It uses `bluetape4k-ktor-core` for shared route parameter validation and
+`SqsConsumer`, publishes messages through AWS Kotlin `SqsClient`, records consumed messages in memory, and exposes queue management routes. The interesting part is the observable consumer contract: manual ack/nack, retry-once redelivery, interceptor events, and observer summaries are all visible through HTTP routes. It uses `bluetape4k-ktor-core` for shared route parameter validation and
 `bluetape4k-ktor-testing` for common Ktor response assertions.
+
+The `aws-ktor` API dependencies expose the Kotlin SQS client and models used by
+the plugin. The application chooses its Ktor engine and serialization setup.
 
 ## Architecture
 
@@ -12,11 +15,11 @@ Ktor 3 examples for the `aws-ktor` SQS consumer plugin. The module installs
 
 ## Consumer Setup
 
-`sqsExampleModule` receives an `SqsAsyncClient` and a queue URL, installs Jackson content negotiation, and configures the consumer:
+`sqsExampleModule` receives an AWS Kotlin `SqsClient` and a queue URL, installs Jackson content negotiation, and configures the consumer:
 
 ```kotlin
 install(SqsConsumer) {
-    sqsAsyncClient = sqsClient
+    sqsClient = sqsClient
     this.queueUrl = queueUrl
     coroutines = 2
     maxMessages = 10
@@ -46,7 +49,7 @@ The example registers an interceptor and observer. Interceptor events are availa
 
 ## Configuration
 
-Tests create a Floci-backed `SqsAsyncClient` with `SqsClientFactory.Async`, create a queue with a random name, and pass the generated queue URL into the Ktor application:
+Tests create a Floci-backed AWS Kotlin `SqsClient` with `sqsClientOf` and Kotlin `StaticCredentialsProvider`, create a queue with a random name using the Kotlin SQS helpers, and pass the generated queue URL into the Ktor application:
 
 ```kotlin
 application { sqsExampleModule(sqsClient, queueUrl) }

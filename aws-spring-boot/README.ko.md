@@ -747,11 +747,9 @@ allowlist가 비어 있으면 요청은 `403`으로 거부되고 verifier가 없
 `NotificationStatus`를 제공합니다. 임시 진단 rollback만 필요하면
 `verification-required=false`와 `allow-structural-only=true`를 함께 설정할 수 있지만 signature 검증을 우회하므로 production SNS traffic에는 사용하지 마세요. adapter 전체를 끄려면 `bluetape4k.aws.sns.http-endpoints.enabled=false`를 설정합니다.
 
-### SNS — AWS SDK 래퍼
+### SNS — AWS SDK v2 확장
 
-같은 저장소의 `bluetape4k-aws-java` 확장은 topic ARN, entry ID, 중복 ID와
-`PublishBatch` 10개 제한을 검증하면서 AWS SDK 응답과 예외를 그대로 노출합니다. 동기,
-`CompletableFuture`, coroutine API는 하나의 request 모델을 공유하고 AWS Kotlin SDK 래퍼는 native suspend API를 제공합니다.
+같은 저장소의 Java wrapper 모듈은 topic ARN, entry ID, 중복 ID와 `PublishBatch` 10개 제한을 검증하면서 AWS SDK v2 응답과 예외를 그대로 노출합니다. 동기, `CompletableFuture`, coroutine 확장은 Java SDK request model을 공유합니다.
 
 ```kotlin
 import io.bluetape4k.aws.sns.model.publishBatchRequestEntryOf
@@ -760,29 +758,17 @@ import io.bluetape4k.aws.sns.publishBatch
 import io.bluetape4k.aws.sns.publishBatchAsync
 import io.bluetape4k.aws.sns.publishBatchSuspend
 
-val javaEntries = listOf(
+val entries = listOf(
     publishBatchRequestEntryOf(id = "order-001", message = "created"),
 )
-val request = publishBatchRequestOf(topicArn, javaEntries)
+val request = publishBatchRequestOf(topicArn, entries)
 
-val syncResponse = snsClient.publishBatch(topicArn, javaEntries)
+val syncResponse = snsClient.publishBatch(topicArn, entries)
 val futureResponse = snsAsyncClient.publishBatchAsync(request)
 val suspendResponse = snsAsyncClient.publishBatchSuspend(request)
 ```
 
-AWS Kotlin SDK 래퍼는 native request-entry 모델을 사용합니다.
-
-```kotlin
-import io.bluetape4k.aws.kotlin.sns.model.publishBatchRequestEntryOf
-import io.bluetape4k.aws.kotlin.sns.publishBatch
-
-val kotlinEntries = listOf(
-    publishBatchRequestEntryOf(id = "order-001", message = "created"),
-)
-val kotlinResponse = kotlinSnsClient.publishBatch(topicArn, kotlinEntries)
-```
-
-Raw response에는 성공·실패 entry가 함께 포함될 수 있으므로 entry ID를 기준으로 대조하세요. 이 래퍼는 partial send를 재시도하거나 rollback하지 않으며 cancellation을 전파합니다 (Java coroutine 확장은 underlying future도 취소합니다). FIFO group/deduplication 값과 외부 idempotency key는 호출자의 책임입니다. payload를 숨긴 transport/protocol 예외 경계가 필요하면 아래 Spring API를 사용하세요.
+Raw response에는 성공·실패 entry가 함께 들어올 수 있으므로 entry ID를 기준으로 대조합니다. 이 확장들은 partial send를 재시도하거나 rollback하지 않으며 cancellation을 전파합니다 (coroutine 확장은 underlying future도 취소합니다). FIFO group/deduplication 값과 외부 idempotency key는 호출자 책임입니다. payload를 숨긴 transport/protocol 예외 경계가 필요하면 아래 Spring API를 사용합니다.
 
 #### SNS 배치 발행
 
@@ -806,7 +792,7 @@ val result = sns.publishBatch(
 )
 ```
 
-`result.successful`과 `result.failed`는 각 목록에서 입력 순서를 유지하고 대조에 사용할 entry ID를 포함합니다. 전송·프로토콜 실패는 payload를 노출하지 않는 Spring 예외로 전달하며 cancellation은 원본을 전파하고 자동 재시도는 수행하지 않습니다. FIFO group/deduplication 값과 외부 idempotency는 호출자의 책임입니다. 하위 수준 Java/Kotlin SDK API는 raw SDK 응답과 예외를 그대로 전달하고, 이 Spring template은 안전한 transport/protocol 경계를 제공합니다.
+`result.successful`과 `result.failed`는 각 목록에서 입력 순서를 유지하고 대조에 사용할 entry ID를 포함합니다. 전송·프로토콜 실패는 payload를 노출하지 않는 Spring 예외로 전달하며 cancellation은 원본을 전파하고 자동 재시도는 수행하지 않습니다. FIFO group/deduplication 값과 외부 idempotency는 호출자의 책임입니다. 하위 수준 Java SDK 확장은 raw SDK 응답과 예외를 그대로 전달하고, 이 Spring template은 안전한 transport/protocol 경계를 제공합니다.
 
 `publishBatch`를 재정의하지 않는 기존 `SnsOperations` 구현체는 additive 기본 구현을 사용합니다. 기존 단건 `publish`를 순차 호출하고 첫 번째 non-cancellation 실패에서 중단하며, 성공한 prefix만
 `completedEntryIds`에 기록하고 `maxInFlightBatches`는 1로 처리합니다. partial send를 자동 재시도하거나 rollback하지 않습니다.
@@ -1248,7 +1234,7 @@ TTL은 접근 시 검사하므로 평문의 최대 보존시간을 보장하지 
 
 사용자 정의 `DataKeyCache`와 `KmsOperations`는 호출자가 독립적으로 소유하는 결과를 반환하도록 이관해야 합니다. `put()` 실패 시 새 복사본을 보유하지 않고 생성한 복사본을 소거해야 합니다. 반환 키를 닫은 뒤 다음 캐시 조회가 정상 동작하는지 점검하세요. 기존 생성자·getter·캐시 메서드 서명은 유지하지만 동일 인스턴스를 공유하던 동작은 바뀝니다. 배포와 롤백은 애플리케이션 코드와 라이브러리를 함께 진행하세요. `close()`를 호출하는 새 코드에 구버전 라이브러리를 혼용하면 안 됩니다.
 
-애플리케이션은 Spring context를 닫기 전에 새 KMS 요청을 중단하고 진행 중인 작업의 완료를 기다려야 합니다. `clear()`는 재사용 가능한 정리 연산이므로 종료 뒤 늦은 `put()`은 새 snapshot을 보유할 수 있습니다. 따라서 bean 소멸만으로 캐시의 이후 저장까지 차단하지는 않습니다.
+애플리케이션은 Spring context를 닫기 전에 새 KMS 요청을 중단하고 진행 중인 작업의 완료를 기다려야 합니다. `clear()`는 재사용 가능한 정리 연산이므로 종료 뒤 늦은 `put()`은 새 키 복사본을 보유할 수 있습니다. 따라서 bean 소멸만으로 캐시의 이후 저장까지 차단하지는 않습니다.
 
 배포할 때 애플리케이션 바이트코드와 검증한 AWS 라이브러리 버전을 하나의 불변 배포물로 묶습니다. `close()`를 호출하도록 컴파일한 코드에서 라이브러리 JAR만 구버전으로 교체하지 않습니다. S3 metadata와 암호문 포맷은 같으므로 롤링 배포 중 구버전·신버전 인스턴스가 함께 실행될 수 있습니다. Canary에서 `generateDataKey → close`, cache `get → close → get`, 기존 S3 암호화 객체 읽기를 확인합니다. Linkage 오류, 닫힌 키 재사용 또는 기존 객체 읽기 실패 시 배포를 중단하고 KMS 작업을 종료한 뒤 이전의 완전한 애플리케이션 배포물로 복원합니다. 이 변경으로 객체 재암호화나 스키마 이관이 필요하지는 않습니다.
 

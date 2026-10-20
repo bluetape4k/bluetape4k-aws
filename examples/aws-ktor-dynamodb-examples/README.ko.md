@@ -7,6 +7,10 @@
 
 ## 아키텍처
 
+플러그인은 `aws-ktor` API dependency를 통해 AWS SDK for Kotlin DynamoDB
+client와 model을 공개합니다. Ktor server/runtime engine, serialization 통합과
+애플리케이션에서 사용하는 database driver는 애플리케이션이 선택합니다.
+
 ![aws ktor dynamodb examples Architecture diagram](../../docs/images/readme-diagrams/examples-aws-ktor-dynamodb-examples-architecture-01.png)
 
 ## DynamoDB 모델

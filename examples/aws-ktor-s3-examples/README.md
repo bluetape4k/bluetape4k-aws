@@ -7,6 +7,12 @@ Ktor 3 examples for the `aws-ktor` S3 REST client. The module keeps two usage pa
 
 ## Architecture
 
+`S3KtorClient` sends S3 REST requests through Ktor `HttpClient` and signs them
+with the Smithy SigV4 implementation using AWS Kotlin credentials; it does not
+use an AWS S3 service client. The application selects the Ktor HTTP engine and
+any server/serialization integrations. A client-side encryption provider may
+wrap an application-owned KMS client.
+
 ![aws ktor s3 examples Architecture diagram](../../docs/images/readme-diagrams/examples-aws-ktor-s3-examples-architecture-01.png)
 
 ## Client Example

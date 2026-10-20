@@ -2,15 +2,15 @@
 
 English | [한국어](README.ko.md)
 
-Ktor 3 integration for bluetape4k AWS modules. It provides AWS SigV4 signing for Ktor `HttpClient`, a coroutine-friendly S3 REST client built on that signing path, and server-side plugins that bind SES v2, SNS, SQS, DynamoDB, AWS-backed Exposed registries, S3 Access Grants, S3 Vectors, EventBridge, Kinesis, STS, IMDS, CloudWatch, and CloudWatch Logs to the Ktor application lifecycle without taking ownership away from the application.
+Ktor 3 integration for bluetape4k AWS modules. It uses the AWS SDK for Kotlin and Smithy Kotlin in its public service APIs, provides AWS SigV4 signing for Ktor `HttpClient`, and offers a coroutine-friendly S3 REST client built on that signing path. Server plugins bind SES v2, SNS, SQS, DynamoDB, AWS-backed Exposed registries, S3 Access Grants, S3 Vectors, EventBridge, Kinesis, STS, IMDS, CloudWatch, and CloudWatch Logs to the Ktor application lifecycle while leaving application-owned resources with the application.
 
 ![AWS Ktor Architecture](../docs/images/readme-diagrams/aws-ktor-architecture-01.png)
 
 ## Features
 
-- `AwsKtorCore` for optional application-level AWS defaults: region, endpoint override, Java/Kotlin credentials providers, signing clock, and client customizers.
+- `AwsKtorCore` for optional application-level AWS defaults: region, endpoint override, Smithy credentials provider, signing clock, and AWS Kotlin client customizers.
 - `AwsSigV4Plugin` for Ktor `HttpClient`.
-- AWS SDK Java v2 `AwsCredentialsProvider` integration, including static, default, profile, and session providers.
+- AWS Kotlin SDK and Smithy Kotlin credentials integration, including the default credential chain.
 - Header signing and query-string signing.
 - Deterministic signing options for region, service, path normalization, URL encoding, payload signing, and clock injection.
 - `S3KtorClient` for S3 PutObject, GetObject, DeleteObject, ListObjectsV2, multipart upload, presigned GET/PUT URLs, content-type detection, server-side encryption headers, client-side envelope encryption, and S3-backed Ktor config object loading.
@@ -40,14 +40,13 @@ Shutdown handlers that still need plugin-owned AWS clients must finish in `Appli
 
 ## Dependency
 
-`aws-ktor` is an API aggregator. Its published POM exposes the Java/Kotlin wrappers, the AWS SDK modules used by its public plugin/configuration APIs, and Ktor client core transitively. This is intentionally different from the general `bluetape4k-aws-java` and `bluetape4k-aws-kotlin` wrapper rule, where service SDKs are normally `compileOnly` and are selected by the application.
+`aws-ktor` is an API aggregator. Its published POM exposes `bluetape4k-aws-kotlin`, the AWS SDK for Kotlin service modules and Smithy types used by its public plugin APIs, and Ktor client core. It does not expose AWS SDK v2 types. The separate wrapper modules keep service SDKs `compileOnly`; `aws-ktor` declares the Kotlin service modules needed by its public APIs as `api` dependencies.
 
 | Dependency group                          | `aws-ktor` POM contract                                                                                                                         | Application action                                                                                     |
 |-------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
-| Bluetape wrappers and shared Ktor helpers | `bluetape4k-aws-java`, `bluetape4k-aws-kotlin`, `bluetape4k-io`, `bluetape4k-coroutines`, and `bluetape4k-ktor-core` are `compile` dependencies | Add `bluetape4k-aws-ktor`; do not repeat these modules unless an explicit version override is required |
-| Java SDK public plugin types              | AWS auth, CloudWatch/Logs, EventBridge, IMDS, Kinesis, S3 Control/Vectors, SES v2, SNS, SQS, and STS are `compile` dependencies                 | No extra Java service SDK is needed for the corresponding `aws-ktor` plugin                            |
-| Kotlin SDK public plugin types            | AWS Kotlin DynamoDB is a `compile` dependency                                                                                                   | No extra Kotlin DynamoDB SDK is needed for `DynamoDbKtorPlugin`                                        |
-| Runtime choices and optional integrations | Ktor engines, content negotiation/Jackson, Micrometer, Exposed, JDBC drivers, and the Spring Boot BOM are `compileOnly` or application-owned    | Add only the integration and runtime driver the application installs                                   |
+| Bluetape wrappers and shared Ktor helpers | `bluetape4k-aws-kotlin`, `bluetape4k-io`, `bluetape4k-coroutines`, and `bluetape4k-ktor-core` are `compile` dependencies                                                                  | Add `bluetape4k-aws-ktor`; do not repeat these modules unless an explicit version override is required                       |
+| AWS Kotlin SDK and Smithy public types    | CloudWatch, CloudWatch Logs, EventBridge, Kinesis, DynamoDB, S3 Control/Vectors, SES v2, SNS, SQS, STS, and Smithy credential/signing/HTTP types are `compile` dependencies             | Use the corresponding plugin types directly; these API dependencies arrive through `aws-ktor`                                |
+| Runtime choices and optional integrations | The default Smithy signer and OkHttp engine are runtime dependencies. The OkHttp `5.5.0` compile-only reference used by the IMDS transport is absent from the published POM. Ktor engines/serialization, Micrometer, Exposed adapters, JDBC drivers, and the Spring Boot BOM remain optional | Add only the engine, serialization, observability, database adapter, or driver that the application installs or uses directly |
 
 The published scope is the source of truth: `api(...)` entries are present as
 `compile` dependencies in the generated POM, while `compileOnly(...)` entries are absent. Keep the central `bluetape4k-dependencies` catalog as the version owner for any dependency that the application adds directly.
@@ -70,8 +69,7 @@ dependencies {
 }
 ```
 
-For example, `SqsConsumer` uses the transitive AWS Java SQS API, while
-`DynamoDbKtorPlugin` uses the transitive AWS Kotlin DynamoDB API. Add a service SDK explicitly only when application code calls that SDK directly or needs a runtime integration that `aws-ktor` deliberately leaves optional.
+For example, `SqsConsumer` exposes `aws.sdk.kotlin.services.sqs.SqsClient` and the AWS Kotlin SQS `Message` model; `DynamoDbKtorPlugin` exposes the AWS Kotlin DynamoDB client and models. These service artifacts are public POM dependencies. Add other AWS service artifacts only when application code calls services outside the plugins, and add the optional Ktor or database integrations used by the application.
 
 ## Usage
 
@@ -85,13 +83,13 @@ import io.bluetape4k.aws.ktor.sqs.SqsConsumer
 import io.ktor.http.Url
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
+import aws.sdk.kotlin.runtime.auth.credentials.DefaultChainCredentialsProvider
 
 fun Application.module() {
     install(AwsKtorCore) {
         region = "ap-northeast-2"
         endpointOverride = Url("http://localhost:4566")
-        javaCredentialsProvider = DefaultCredentialsProvider.builder().build()
+        kotlinCredentialsProvider = DefaultChainCredentialsProvider()
         ktorCore()
     }
 
@@ -106,21 +104,20 @@ fun Application.module() {
 `EventBridgeKtorPlugin`, `KinesisKtorPlugin`, `StsKtorPlugin`,
 `CloudWatchKtorPlugin`, `CloudWatchLogsKtorPlugin`, and `DynamoDbKtorPlugin`
 can inherit shared defaults. Set a service-local `region`, `endpointOverride` /
-`endpointUrl`, or credentials provider when one integration needs a different target. Use local endpoints such as `http://localhost:4566` with dummy test credentials for Floci or LocalStack; production deployments should use an explicit AWS SDK credential provider such as default, profile, web-identity, or an application-owned provider. For EKS/IRSA or other web-identity deployments, supply the appropriate AWS SDK credentials provider in `AwsKtorCore`; keep
-`software.amazon.awssdk:sts` or `aws.sdk.kotlin:sts` on the application runtime classpath when that provider requires STS.
+`endpointUrl`, or credentials provider when one integration needs a different target. Use local endpoints such as `http://localhost:4566` with dummy test credentials for Floci or LocalStack; production deployments should use an AWS Kotlin credentials provider such as `DefaultChainCredentialsProvider` or an application-owned provider. For EKS/IRSA or other web-identity deployments, supply the appropriate AWS Kotlin credentials provider in `AwsKtorCore`; keep `aws.sdk.kotlin:sts` on the application runtime classpath when that provider requires STS.
 
 ```kotlin
 import io.bluetape4k.aws.ktor.client.AwsSigV4Plugin
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.request.get
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
+import aws.sdk.kotlin.runtime.auth.credentials.DefaultChainCredentialsProvider
 
 val client = HttpClient(CIO) {
     install(AwsSigV4Plugin) {
         region = "ap-northeast-2"
         service = "execute-api"
-        credentialsProvider = DefaultCredentialsProvider.builder().build()
+        credentialsProvider = DefaultChainCredentialsProvider()
     }
 }
 
@@ -155,7 +152,7 @@ suspend fun Application.instanceSnapshot(): Map<String, String> =
     )
 ```
 
-For tests or custom metadata routing, set `endpoint` explicitly. Otherwise the plugin uses the configured `endpointMode`. `AwsKtorCore.endpointOverride` is not inherited automatically because IMDS is not a normal AWS service endpoint. Credential lookup should stay on `DefaultCredentialsProvider`, STS web identity, or another explicit AWS SDK credentials provider. `ImdsKtorOperations` exposes IAM role names only and does not expose temporary credential documents.
+For tests or custom metadata routing, set `endpoint` explicitly. Otherwise the plugin uses the configured `endpointMode`. `AwsKtorCore.endpointOverride` is not inherited automatically because IMDS is not a normal AWS service endpoint. Credential lookup should use `DefaultChainCredentialsProvider`, STS web identity, or another explicit AWS Kotlin credentials provider. `ImdsKtorOperations` exposes IAM role names only and does not expose temporary credential documents. Its owned HTTP transport accepts the configured EC2 link-local endpoint (or an explicit loopback endpoint for tests), rejects remote HTTP overrides, disables redirects and connection retries, and bypasses system proxies.
 
 ## Payload Signing
 
@@ -271,12 +268,12 @@ Client-side encryption intentionally depends on an injected
 
 ### S3 Access Grants
 
-`S3AccessGrantsKtorPlugin` installs a suspend operations facade backed by AWS SDK Java v2 `S3ControlAsyncClient`. It keeps Access Grants in the S3 Control boundary: object REST calls stay in `S3KtorClient`, while data-access and discovery calls use `application.s3AccessGrants()`.
+`S3AccessGrantsKtorPlugin` installs a suspend operations facade backed by the AWS Kotlin SDK `S3ControlClient`. It keeps Access Grants in the S3 Control boundary: object REST calls stay in `S3KtorClient`, while data-access and discovery calls use `application.s3AccessGrants()`.
 
 ![Ktor S3 Access Grants flow](../docs/images/readme-diagrams/aws-ktor-s3-access-grants-flow-01.png)
 
 The plugin can use caller-owned `S3AccessGrantsKtorOperations`, a caller-owned
-`S3ControlAsyncClient`, or a plugin-managed client created from `AwsKtorCore`
+`S3ControlClient`, or a plugin-managed client created from `AwsKtorCore`
 defaults plus service-specific customizers. Administrative create, update, and delete operations intentionally remain on the raw S3 Control client so the Ktor facade only wraps read/data-access paths that are useful in request handling.
 
 ```kotlin
@@ -285,14 +282,13 @@ import io.bluetape4k.aws.ktor.s3.accessgrants.S3AccessGrantsKtorPlugin
 import io.bluetape4k.aws.ktor.s3.accessgrants.s3AccessGrants
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
-import software.amazon.awssdk.services.s3control.model.GetDataAccessRequest
-import software.amazon.awssdk.services.s3control.model.Permission
+import aws.sdk.kotlin.runtime.auth.credentials.DefaultChainCredentialsProvider
+import aws.sdk.kotlin.services.s3control.model.GetDataAccessRequest
 
 fun Application.module() {
     install(AwsKtorCore) {
         region = "ap-northeast-2"
-        javaCredentialsProvider = DefaultCredentialsProvider.builder().build()
+        kotlinCredentialsProvider = DefaultChainCredentialsProvider()
         ktorCore()
     }
 
@@ -301,18 +297,16 @@ fun Application.module() {
 
 suspend fun Application.readGrantedCredentials(accountId: String, target: String) =
     s3AccessGrants().getDataAccess(
-        GetDataAccessRequest.builder()
-            .accountId(accountId)
-            .target(target)
-            .permission(Permission.READ)
-            .build(),
+        GetDataAccessRequest {
+            this.accountId = accountId
+            this.target = target
+        },
     )
 ```
 
 ### S3 Vectors
 
-`S3VectorsKtorPlugin` installs the shared `aws-java` coroutine
-`S3VectorsOperations` facade into a Ktor application. It keeps S3 Vectors out of the default S3 object API because AWS exposes vectors through the separate
+`S3VectorsKtorPlugin` installs a Ktor operations facade backed by the AWS Kotlin SDK `S3VectorsClient`. It keeps S3 Vectors out of the default S3 object API because AWS exposes vectors through the separate
 `s3vectors` service.
 
 ```kotlin
@@ -321,13 +315,13 @@ import io.bluetape4k.aws.ktor.s3vectors.S3VectorsKtorPlugin
 import io.bluetape4k.aws.ktor.s3vectors.s3Vectors
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
-import software.amazon.awssdk.services.s3vectors.model.ListIndexesRequest
+import aws.sdk.kotlin.runtime.auth.credentials.DefaultChainCredentialsProvider
+import aws.sdk.kotlin.services.s3vectors.model.ListIndexesRequest
 
 fun Application.module() {
     install(AwsKtorCore) {
         region = "ap-northeast-2"
-        javaCredentialsProvider = DefaultCredentialsProvider.builder().build()
+        kotlinCredentialsProvider = DefaultChainCredentialsProvider()
         ktorCore()
     }
 
@@ -336,35 +330,33 @@ fun Application.module() {
 
 suspend fun Application.listSemanticIndexes(vectorBucketName: String) =
     s3Vectors().listIndexes(
-        ListIndexesRequest.builder()
-            .vectorBucketName(vectorBucketName)
-            .build(),
+        ListIndexesRequest { this.vectorBucketName = vectorBucketName },
     )
 ```
 
-The plugin can use a caller-owned `S3VectorsOperations`, a caller-owned
-`S3VectorsAsyncClient`, or a plugin-owned client built from `AwsKtorCore`
+The plugin can use a caller-owned `S3VectorsKtorOperations`, a caller-owned
+`S3VectorsClient`, or a plugin-owned client built from `AwsKtorCore`
 defaults plus S3 Vectors customizers. It does not claim emulator-backed S3 Vectors behavior.
 
 ## EventBridge Server Plugin
 
-`EventBridgeKtorPlugin` installs a coroutine and future-friendly operations facade backed by AWS SDK Java v2 `EventBridgeAsyncClient`. It can use an application-owned `EventBridgeKtorOperations`, an application-owned client, or a plugin-owned client created from `AwsKtorCore` defaults plus EventBridge customizers. Injected clients are not closed by the plugin.
+`EventBridgeKtorPlugin` installs a suspend operations facade backed by the AWS Kotlin SDK `EventBridgeClient`. It can use an application-owned `EventBridgeKtorOperations`, an application-owned client, or a plugin-owned client created from `AwsKtorCore` defaults plus EventBridge customizers. Injected clients are not closed by the plugin.
 
 ![EventBridge Spring Boot and Ktor class map](../docs/images/readme-diagrams/bluetape4k-aws-eventbridge-class-32.png)
 
 ```kotlin
-import io.bluetape4k.aws.eventbridge.model.putEventsRequestEntryOf
+import aws.sdk.kotlin.services.eventbridge.model.PutEventsRequestEntry
 import io.bluetape4k.aws.ktor.AwsKtorCore
 import io.bluetape4k.aws.ktor.eventbridge.EventBridgeKtorPlugin
 import io.bluetape4k.aws.ktor.eventbridge.eventBridge
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
+import aws.sdk.kotlin.runtime.auth.credentials.DefaultChainCredentialsProvider
 
 fun Application.module() {
     install(AwsKtorCore) {
         region = "ap-northeast-2"
-        javaCredentialsProvider = DefaultCredentialsProvider.builder().build()
+        kotlinCredentialsProvider = DefaultChainCredentialsProvider()
         ktorCore()
     }
 
@@ -376,14 +368,14 @@ fun Application.module() {
 suspend fun Application.publishOrderCreated(orderId: String) {
     val response = eventBridge().putEvents(
         listOf(
-            putEventsRequestEntryOf(
-                source = "orders",
-                detailType = "order.created",
-                detail = """{"orderId":"$orderId"}""",
-            )
+            PutEventsRequestEntry {
+                source = "orders"
+                detailType = "order.created"
+                detail = """{"orderId":"$orderId"}"""
+            }
         )
     )
-    require(response.failedEntryCount() == 0) { "EventBridge rejected one or more entries." }
+    require(response.failedEntryCount == 0) { "EventBridge rejected one or more entries." }
 }
 ```
 
@@ -392,7 +384,7 @@ suspend fun Application.publishOrderCreated(orderId: String) {
 
 ## Kinesis And STS Server Plugins
 
-`KinesisKtorPlugin` installs coroutine Kinesis operations backed by AWS SDK Java v2 `KinesisAsyncClient`. The consumer API is intentionally explicit: each
+`KinesisKtorPlugin` installs suspend Kinesis operations backed by the AWS Kotlin SDK `KinesisClient`. The consumer API is intentionally explicit: each
 `recordFlow` call reads one shard, is cold until collected, and does not manage leases or checkpoints.
 
 ```kotlin
@@ -404,7 +396,7 @@ import io.bluetape4k.aws.ktor.kinesis.kinesis
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import kotlinx.coroutines.flow.collect
-import software.amazon.awssdk.core.SdkBytes
+
 
 fun Application.module() {
     install(KinesisKtorPlugin) {
@@ -417,7 +409,7 @@ suspend fun Application.publishOrder(json: String) {
         KinesisPutRecordRequest(
             streamName = "orders",
             partitionKey = "order-1",
-            data = SdkBytes.fromUtf8String(json),
+            data = json.encodeToByteArray(),
         )
     )
 }
@@ -446,7 +438,7 @@ fun Application.module() {
 }
 
 suspend fun Application.currentCallerArn(): String =
-    sts().callerIdentity().arn()
+    sts().callerIdentity().arn.orEmpty()
 
 suspend fun Application.assumeOrdersRole(): String =
     sts().assumeRole(
@@ -454,7 +446,7 @@ suspend fun Application.assumeOrdersRole(): String =
             roleArn = "arn:aws:iam::123456789012:role/orders",
             sessionName = "orders-api",
         )
-    ).credentials().accessKeyId()
+    ).credentials?.accessKeyId.orEmpty()
 ```
 
 ## CloudWatch Metrics And Logs
@@ -466,8 +458,8 @@ import io.bluetape4k.aws.ktor.cloudwatch.CloudWatchKtorPlugin
 import io.bluetape4k.aws.ktor.cloudwatch.cloudWatch
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
-import software.amazon.awssdk.services.cloudwatch.model.MetricDatum
-import software.amazon.awssdk.services.cloudwatch.model.StandardUnit
+import aws.sdk.kotlin.services.cloudwatch.model.MetricDatum
+import aws.sdk.kotlin.services.cloudwatch.model.StandardUnit
 
 fun Application.module() {
     install(CloudWatchKtorPlugin) {
@@ -478,11 +470,11 @@ fun Application.module() {
 
 suspend fun Application.publishLatency(millis: Double) {
     cloudWatch().putMetricDatum(
-        MetricDatum.builder()
-            .metricName("order.latency")
-            .unit(StandardUnit.MILLISECONDS)
-            .value(millis)
-            .build()
+        MetricDatum {
+            metricName = "order.latency"
+            unit = StandardUnit.Milliseconds
+            value = millis
+        }
     )
 }
 ```
@@ -535,7 +527,7 @@ Use `CloudWatchKtorMeterPublishingTemplate` when a service wants to publish a on
 ## SES And SNS Server Plugins
 
 `SesKtorPlugin` installs a coroutine SES v2 operations facade for application routes that send email. The plugin can use an injected application-owned
-`SesV2AsyncClient`, an injected operations facade, or a plugin-owned client created from `AwsKtorCore` and service-local settings. Injected clients are not closed by the plugin; plugin-owned clients are closed on `ApplicationStopped`.
+`SesV2Client`, an injected operations facade, or a plugin-owned client created from `AwsKtorCore` and service-local settings. Injected clients are not closed by the plugin; plugin-owned clients are closed on `ApplicationStopped`.
 
 ```kotlin
 import io.bluetape4k.aws.ktor.ses.SesEmailAddressSet
@@ -561,7 +553,7 @@ suspend fun Application.sendOrderEmail(to: String, orderId: String): String =
             subject = "Order $orderId",
             body = SesEmailBody(text = "Your order was accepted."),
         )
-    ).messageId()
+    ).messageId.orEmpty()
 ```
 
 `SnsKtorPlugin` installs SNS topic/SMS operations and an SNS HTTP endpoint message parser. Parsed HTTP endpoint messages are intentionally untrusted:
@@ -587,7 +579,7 @@ fun Application.module() {
 suspend fun Application.publishOrderEvent(json: String): String {
     val topicArn = sns().findTopicArn("orders")
         ?: sns().createConfiguredTopic("orders")
-    return sns().publish(topicArn = topicArn, message = json).messageId()
+    return sns().publish(topicArn = topicArn, message = json).messageId.orEmpty()
 }
 
 fun Application.parseSnsMessage(json: String, header: String?): SnsHttpMessage =
@@ -614,18 +606,17 @@ import io.bluetape4k.aws.ktor.sqs.SqsConsumer
 import io.bluetape4k.aws.ktor.sqs.sqsConsumer
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
-import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.sqs.SqsAsyncClient
+import aws.sdk.kotlin.runtime.auth.credentials.DefaultChainCredentialsProvider
+import aws.sdk.kotlin.services.sqs.SqsClient
 
 fun Application.module() {
-    val sqs = SqsAsyncClient.builder()
-        .region(Region.AP_NORTHEAST_2)
-        .credentialsProvider(DefaultCredentialsProvider.builder().build())
-        .build()
+    val sqs = SqsClient {
+        region = "ap-northeast-2"
+        credentialsProvider = DefaultChainCredentialsProvider()
+    }
 
     install(SqsConsumer) {
-        sqsAsyncClient = sqs
+        sqsClient = sqs
         queueName = "orders"
         coroutines = 4
         maxMessages = 10
@@ -653,7 +644,7 @@ import io.bluetape4k.aws.ktor.sqs.SqsFixedFailureVisibilityStrategy
 import io.bluetape4k.aws.ktor.sqs.micrometer
 
 install(SqsConsumer) {
-    sqsAsyncClient = sqs
+    sqsClient = sqs
     queueName = "orders"
     deleteOnSuccess = false
     conversionFailurePolicy = SqsConversionFailurePolicy.HandleAsFailure
@@ -674,7 +665,7 @@ install(SqsConsumer) {
 
 The Micrometer observer records `bluetape4k.aws.ktor.sqs.operation` timers for send, receive, invoke, ack, nack, conversion failure, and retry/failure events. Default tags avoid queue URLs, message IDs, and receipt handles.
 
-The application owns the injected `SqsAsyncClient`; the plugin never closes it. Close the client when the application scope ends. When no client is injected,
+The application owns the injected `SqsClient`; the plugin never closes it. Close the client when the application scope ends. When no client is injected,
 `SqsConsumer` can create a plugin-owned client from `AwsKtorCore` or service-local settings and closes that client on `ApplicationStopping`. The consumer runtime is one-shot: repeated `start()`/`stop()` calls are idempotent, `stop()` before `start()` permanently stops the runtime, and a
 `start()` after `STOPPED` fails fast with `IllegalStateException`.
 
@@ -874,7 +865,7 @@ Password values are represented by `AwsSecretString` after configuration and ren
 |-------------------------|--------:|----------------------------------------------------------------------------------------------|
 | `namespace`             |  `null` | Default CloudWatch namespace for metric calls that omit a namespace.                         |
 | `batchSize`             |  `1000` | CloudWatch metric batch size, validated as `1..1000`.                                        |
-| `cloudWatchAsyncClient` |  `null` | Optional application-owned CloudWatch client. Injected clients are not closed by the plugin. |
+| `cloudWatchClient` |  `null` | Optional application-owned CloudWatch client. Injected clients are not closed by the plugin. |
 | `cloudWatchOperations`  |  `null` | Optional application-owned operations facade, useful for tests or custom wrappers.           |
 
 ### CloudWatch Logs Options
@@ -889,7 +880,7 @@ Password values are represented by `AwsSecretString` after configuration and ren
 | `shutdownObserver`               |            `none` | Optional observer for shutdown outcome and pending/dropped event counts.                                   |
 | `createLogGroupOnStart`          |           `false` | Opt-in startup log group creation. Disabled by default.                                                    |
 | `createLogStreamOnStart`         |           `false` | Opt-in startup log stream creation. Disabled by default.                                                   |
-| `cloudWatchLogsAsyncClient`      |            `null` | Optional application-owned CloudWatch Logs client. Injected clients are not closed by the plugin.          |
+| `cloudWatchLogsClient`      |            `null` | Optional application-owned CloudWatch Logs client. Injected clients are not closed by the plugin.          |
 | `cloudWatchLogsOperations`       |            `null` | Optional application-owned operations facade, useful for tests or custom wrappers.                         |
 
 ### SES And SNS Options
@@ -898,10 +889,10 @@ Password values are represented by `AwsSecretString` after configuration and ren
 |--------------------------------------|----------------------:|------------------------------------------------------------------------------------------------|
 | `SesKtorPlugin.defaultFrom`          |                `null` | Default sender for simple and template email requests that omit `from`.                        |
 | `SesKtorPlugin.configurationSetName` |                `null` | Default SES configuration set for simple, template, and raw email requests.                    |
-| `SesKtorPlugin.sesAsyncClient`       |                `null` | Optional application-owned SES v2 async client. Injected clients are not closed by the plugin. |
+| `SesKtorPlugin.sesV2Client`       |                `null` | Optional application-owned AWS Kotlin SES v2 client. Injected clients are not closed by the plugin. |
 | `SesKtorPlugin.sesOperations`        |                `null` | Optional application-owned SES operations facade, useful for tests or custom wrappers.         |
 | `SnsKtorPlugin.topics`               |          `emptyMap()` | Named topic definitions used by `createConfiguredTopic`.                                       |
-| `SnsKtorPlugin.snsAsyncClient`       |                `null` | Optional application-owned SNS async client. Injected clients are not closed by the plugin.    |
+| `SnsKtorPlugin.snsClient`       |                `null` | Optional application-owned AWS Kotlin SNS client. Injected clients are not closed by the plugin.    |
 | `SnsKtorPlugin.snsOperations`        |                `null` | Optional application-owned SNS operations facade, useful for tests or custom wrappers.         |
 | `SnsKtorPlugin.snsHttpMessageParser` | strict default parser | Optional application-owned parser for SNS HTTP endpoint JSON.                                  |
 
@@ -910,17 +901,17 @@ Password values are represented by `AwsSecretString` after configuration and ren
 | Option                                         | Default | Description                                                                                         |
 |------------------------------------------------|--------:|-----------------------------------------------------------------------------------------------------|
 | `EventBridgeKtorPlugin.defaultEventBusName`    |  `null` | Default event bus for rule, target, and list calls that omit one.                                   |
-| `EventBridgeKtorPlugin.eventBridgeAsyncClient` |  `null` | Optional application-owned EventBridge async client. Injected clients are not closed by the plugin. |
+| `EventBridgeKtorPlugin.eventBridgeClient` |  `null` | Optional application-owned AWS Kotlin EventBridge client. Injected clients are not closed by the plugin. |
 | `EventBridgeKtorPlugin.eventBridgeOperations`  |  `null` | Optional application-owned EventBridge operations facade, useful for tests or custom wrappers.      |
 
 ### Kinesis And STS Options
 
 | Option                                 |   Default | Description                                                                                     |
 |----------------------------------------|----------:|-------------------------------------------------------------------------------------------------|
-| `KinesisKtorPlugin.kinesisAsyncClient` |    `null` | Optional application-owned Kinesis async client. Injected clients are not closed by the plugin. |
+| `KinesisKtorPlugin.kinesisClient` |    `null` | Optional application-owned AWS Kotlin Kinesis client. Injected clients are not closed by the plugin. |
 | `KinesisKtorPlugin.kinesisOperations`  |    `null` | Optional application-owned Kinesis operations facade, useful for tests or custom wrappers.      |
 | `KinesisKtorPlugin.streams`            | empty map | Stream definitions used by `createConfiguredStream`.                                            |
-| `StsKtorPlugin.stsAsyncClient`         |    `null` | Optional application-owned STS async client. Injected clients are not closed by the plugin.     |
+| `StsKtorPlugin.stsClient`         |    `null` | Optional application-owned AWS Kotlin STS client. Injected clients are not closed by the plugin.     |
 | `StsKtorPlugin.stsOperations`          |    `null` | Optional application-owned STS operations facade, useful for tests or custom wrappers.          |
 
 ### SQS Consumer Options

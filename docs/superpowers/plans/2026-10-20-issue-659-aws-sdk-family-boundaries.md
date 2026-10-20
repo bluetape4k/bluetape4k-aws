@@ -96,7 +96,7 @@
 - [x] **2단계: 설정 우선순위와 retry test를 추가한다.** profile/environment/system-property precedence, profile file section·merge, timeout parsing/rounding, retry 횟수·retryable transport를 fixture와 주입된 clock/random으로 검증했다.
 - [x] **3단계: 저장소 소유 `ImdsProfileResolver`를 구현한다.** 승인된 세 scalar key만 읽고, profile/file precedence·missing/unreadable file·`~/` 확장·timeout parsing을 구현했다. 다른 profile credential/role/SSO resolution은 추가하지 않았다.
 - [x] **4단계: 작은 내부 adapter를 구현한다.** Smithy `SdkHttpClient.call()` 경계에 응답 body와 `HttpCall` 정리를 모으고, `HttpCall.complete()`의 `@InternalApi` opt-in을 국소화했다. cancellation은 재시도하지 않고 전파한다.
-- [x] **5단계: plugin 소유 engine을 구현한다.** OkHttp redirect·connection retry를 끄고 `ProxySelector.NoProxy`를 적용했다. endpoint allowlist와 opt-in loopback HTTP를 지키며 system/environment proxy와 임의 engine injection은 받지 않는다. Smithy `1.7.9`의 공개 config에는 connection retry setter가 없어 `aws-ktor/build.gradle.kts`에 `compileOnly("com.squareup.okhttp3:okhttp:5.5.0")`를 추가했다. 해당 OkHttp artifact는 이미 runtime에 전이되어 compile-only 선언은 runtime dependency를 추가하지 않는다.
+- [x] **5단계: plugin 소유 engine을 구현한다.** OkHttp redirect·connection retry를 끄고 `ProxySelector.NoProxy`를 적용했다. endpoint allowlist와 opt-in loopback HTTP를 지키며 system/environment proxy와 임의 engine injection은 받지 않는다. Smithy `1.7.9`의 공개 config에는 connection retry setter가 없어 `aws-ktor/build.gradle.kts`에 `compileOnly("com.squareup.okhttp3:okhttp:5.5.0")`를 추가했다. 해당 OkHttp artifact는 이미 runtime에 전이되어 compile-only 선언은 runtime dependency를 추가하지 않는다. 2026-10-21 사용자 선택으로 이 compile-only 참조를 유지하는 Task 5 파일 범위를 승인했다.
 - [x] **6단계: 고정 retry matrix를 구현한다.** 5xx와 metadata상 retryable transport만 재시도한다. 3xx, 401/기타 4xx, 다른 status, terminal exception, cancellation은 재시도하지 않는다. full jitter 상한은 200/400/800/1600/3200/6400/12800ms 후 20초이며 각 실제 delay는 1ms부터 상한 사이다.
 - [x] **7단계: IMDS 테스트를 실행한다.** 집중 테스트 41개와 전체 Ktor suite 343개가 통과했고 skip/failure/error는 모두 0이었다. `compileKotlin`과 `git diff --check`도 통과했다. 독립 Task 5 재리뷰는 `APPROVE`, P0/P1/P2=0이다. `detekt`는 Kotlin `2.4.10`/`2.4.20` toolchain 불일치로 실행되지 않아 A-07 정적 분석 증거에는 사용하지 않는다.
 - [x] **8단계: IMDS 경계를 커밋한다.** 원격 HTTP·proxy 차단, redirect/retry 제한, 검증 결과와 detekt 공백을 한국어 Lore commit에 기록한다.
@@ -140,7 +140,7 @@
 - [x] **4단계: 예제 build/source/test를 이전한다.** 다섯 예제의 AWS 서비스 SDK 직접 의존과 모델 호출을 AWS Kotlin SDK로 옮겼다. Exposed 예제는 공용 설정 클래스가 있는 `bluetape4k-aws-exposed`를 유지하고, 사용하지 않는 Java RDS IAM adapter 의존성만 제외했다. 제거 후 6개 테스트에서 `NoopAwsDatabaseSettingsResolver`가 없어짐을 확인해 모듈 자체는 복구했다.
 - [x] **5단계: 각 예제 classpath와 발행 metadata를 검증한다.** 다섯 예제의 main `compileClasspath`/`runtimeClasspath` 10개와 `awsKtorSqsConsumerFixtureClasspath`에서 `software.amazon.awssdk` 및 `bluetape4k-aws-java`가 0건이다. 생성 POM의 실제 top-level dependencies에도 AWS Java와 Exposed compileOnly가 없고, Gradle `apiElements`는 AWS Kotlin/Smithy API를 제공하면서 signer·OkHttp engine implementation을 포함하지 않는다. POM의 `dependencyManagement` 카탈로그는 발행 의존성으로 세지 않았다.
 - [x] **6단계: fixture와 예제 컴파일·테스트를 실행한다.** 통합 compile 명령이 `BUILD SUCCESSFUL`로 끝났다. 다섯 예제 테스트를 Docker 공유 emulator가 겹치지 않도록 개별 순차 실행해 DynamoDB 2개, Exposed 6개, S3 3개, 서비스 커버리지 6개, SQS 5개가 통과했다(총 22개, 실패/오류/skip 0). Floci 테스트는 셸의 managed `DOCKER_HOST`와 socket override를 상속해 실행했고 DynamoDB 테스트는 loopback HTTP를 명시적으로 허용했다.
-- [ ] **7단계: 예제 경계를 커밋한다.** 각 예제의 소비자 의존성과 검증 결과를 한국어 Lore commit에 기록한다.
+- [x] **7단계: 예제 경계를 커밋한다.** `82285b6e`에 Ktor API, AWS Kotlin consumer fixture, 다섯 예제의 SDK 경계와 compile·test·classpath·발행 metadata 검증 결과를 한국어 Lore 형식으로 기록했다.
 
 #### 작업 7 계획 갱신 writer DoD (2026-10-21)
 
@@ -148,7 +148,7 @@
 - [x] **SPW-02 — 계획 계약 충족:** Task 7의 fixture 이동, Java bridge 제거, 예제 의존성, main classpath, 발행 metadata, 순차 테스트 및 미완료 commit을 순서대로 기록했다. PR·merge·sync·cleanup은 완료 범위에 넣지 않았다.
 - [x] **SPW-03 — 한국어 기술 문체:** `KO-01`–`KO-05` PASS(식별자·수치 보존, 검증 결과 중심 기술, 번역투와 불필요한 수식어 제거, 일관된 용어 사용, 비유 없음). `KO-06` N/A(계획은 단일 한국어 artifact이며 locale 페이지나 시각 자산을 변경하지 않음). `KO-07` PASS — `audit-korean-terms.mjs --rules .../terminology-rules.json` 결과 1 file, `series=clinic-appointment`, `findings=0`; 현재 rule set에 AWS 특화 규칙은 없다.
 - [x] **SPW-04 — 기술 의미·추적성 검증:** 컴파일 task, 다섯 예제 JUnit XML, 10개 main classpath와 consumer fixture classpath, 생성 POM 및 `apiElements`를 실행 결과와 대조했다. POM의 `dependencyManagement` 카탈로그와 실제 dependencies를 구분했다.
-- [x] **SPW-05 — 최종 읽기·DoD:** 계획의 Task 7 행과 writer DoD를 다시 읽고 `git diff --check`를 확인했다. Task 7 commit은 아직 수행 전이므로 7단계는 미완료 상태로 남겼다.
+- [x] **SPW-05 — 최종 읽기·DoD:** 계획의 Task 7 행과 writer DoD를 다시 읽고 `git diff --check`를 확인했다. Task 7은 `82285b6e`에 커밋했다.
 
 ### 작업 8: 마이그레이션 문서와 과거 결정 연결
 
@@ -158,11 +158,19 @@
 - 수정: `examples/aws-ktor-dynamodb-examples/README.md`, `README.ko.md`; `examples/aws-ktor-exposed-examples/README.md`, `README.ko.md`; `examples/aws-ktor-s3-examples/README.md`, `README.ko.md`; `examples/aws-ktor-service-coverage-examples/README.md`, `README.ko.md`; `examples/aws-ktor-sqs-examples/README.md`, `README.ko.md`.
 - 수정: `docs/superpowers/specs/2026-05-17-issue-85-aws-ktor-migration-design.md`.
 
-- [ ] **1단계: 문서 assertion 목록을 작성한다.** bilingual README에서 각 SDK 경계, 공개 타입 예시, consumer runtime dependency 책임이 같은 뜻인지 확인한다.
-- [ ] **2단계: README를 갱신한다.** Ktor 문서에서 Java SDK 전이 의존 설명을 제거하고 Kotlin SDK/Smithy 서비스 사용법을 기록한다. Spring README는 Java SDK를 설명하고 Kotlin SDK 참조가 없어야 한다. 루트 README의 예제 목록과 모듈 소개를 반영한다.
-- [ ] **3단계: CHANGELOG와 역사 문서를 갱신한다.** `CHANGELOG.md`의 `[미출시]` / `변경` 아래에 제거되는 Java API, Kotlin 대체 타입, consumer migration, 직렬화 bytes 비호환, IMDS remote HTTP/proxy 제한을 한국어로 기록한다. Issue #85 문서에는 그 당시 결정 기록을 보존한 채 이슈 #659가 해당 경계를 대체한다는 링크만 추가한다.
-- [ ] **4단계: 문서 계약을 확인한다.** Kotlin SDK service alias와 `bluetape4k-aws-java` 문자열을 Ktor README/example 안내에서 검색하고 의도된 CHANGELOG migration 설명만 남았는지 확인한다. 영어/한국어 headings, links, anchors와 코드 예시를 대조한다.
+- [x] **1단계: 문서 assertion 목록을 작성한다.** bilingual README는 다음 assertion을 함께 전달해야 한다: (a) Ktor plugin 공개 타입은 AWS SDK for Kotlin/Smithy Kotlin이며 기존 Java SDK v2 public API는 제거되었다, (b) 예제별 공개 클라이언트·요청 모델은 실제 AWS Kotlin 타입과 일치한다, (c) Ktor POM의 Kotlin/Smithy `api` dependency와 애플리케이션이 추가하는 Ktor engine·serialization·DB driver 선택 사항을 구분한다, (d) Spring Boot 문서는 AWS SDK v2 서비스 및 compileOnly 소비자 의존성만 설명한다, (e) CHANGELOG는 API/직렬화 bytes 비호환과 IMDS HTTP/proxy 제약을 기록하고 Issue #85 문서는 원래 결정을 보존한 채 #659로 연결한다. 소스, Gradle 선언, 생성 POM, Task 7 compile/test 결과를 사실 근거로 고정했다.
+- [x] **2단계: README를 갱신한다.** `aws-ktor`의 English/한국어 안내와 코드 예제를 AWS Kotlin/Smithy API에 맞추고, `aws-spring-boot`의 SNS sibling-module 절을 Java SDK v2 전용으로 정리했다. 루트 README와 다섯 예제 README 쌍에 plugin 공개 model/client와 애플리케이션 선택 의존성 경계를 기록했다.
+- [x] **3단계: CHANGELOG와 역사 문서를 갱신한다.** `CHANGELOG.md`의 `[미출시]` / `변경` 아래에 Java API 대체, consumer migration, ABI·직렬화 bytes 비호환, IMDS remote HTTP/proxy 제한을 한국어로 기록했다. Issue #85의 기존 기록은 보존하고 #659 후속 결과를 추가했다.
+- [x] **4단계: 문서 계약을 확인한다.** Ktor README 및 다섯 예제 README에서 Java SDK v2 클래스·모듈 참조와 오래된 generated-model 호출을 검색해 결과 0건을 확인했다. Spring Boot README에는 AWS Kotlin SDK 참조가 없다. 19개 Markdown 파일의 상대 경로 링크와 내부 heading anchor가 모두 확인됐고, 8개 bilingual README 쌍의 heading·code fence 수가 일치한다. 영어·한국어 코드 예제는 Kotlin service client/model과 Gradle dependency scope에 맞는다. 11개 한국어 문서의 용어 감사 결과는 `findings=0`이며 `git diff --check`가 통과했다.
 - [ ] **5단계: 문서를 커밋한다.** 사용자-facing prose는 한국어로 쓰고 API·command·identifier는 원문을 유지한다.
+
+#### 작업 8 문서·기술 artifact writer DoD (2026-10-21)
+
+- [x] **SPW-01 — 독자·목적·근거 고정:** 계획 독자는 이슈 #659 구현·검증 담당 유지보수자이며, 목적은 문서 검증 및 제출 전 작업을 정확히 추적하는 것이다. Issue #85 설계 기록의 독자는 과거 마이그레이션 결정을 조회하는 유지보수자이며, 목적은 당시 결정을 보존하면서 #659의 실제 후속 결과를 연결하는 것이다. 근거는 이 계획, Issue #85 설계 문서, 현재 Ktor/Spring source와 Gradle 설정, 변경된 README·CHANGELOG, 상대 링크/용어 감사 결과다.
+- [x] **SPW-02 — artifact 계약 충족:** 계획은 문서 파일 목록, 사실 assertion, 완료된 편집·검증과 아직 실행하지 않은 통합 검증·commit을 분리한다. Issue #85 기록은 기존 결론을 수정하지 않고 #659 구현 결과를 새 섹션으로 추가한다.
+- [x] **SPW-03 — 한국어 기술 문체:** 두 문서의 `KO-01`–`KO-05`를 사실·식별자 보존, 구체적인 동사와 상태, 기술 register, 용어 일관성, 비유 여부로 재검토했다. `KO-06`은 두 문서가 단일 한국어 계획/설계 artifact여서 N/A다. `KO-07`은 11개 한국어 변경 문서 감사 결과 `findings=0`으로 통과했다.
+- [x] **SPW-04 — 기술 의미·추적성 검증:** README의 Kotlin client/model과 dependency 설명을 현재 Ktor source 및 POM/Gradle 경계와 대조했다. Task 5의 OkHttp `5.5.0` compile-only 참조는 전이 runtime에 이미 존재하고 게시 POM에서는 제외됨을 기록했으며, 2026-10-21 사용자가 이 파일 범위를 선택했다. IMDS 전송 정책과 ABI/직렬화 비호환은 CHANGELOG와 구현 계약에 맞는다.
+- [x] **SPW-05 — 최종 읽기·DoD:** 계획과 Issue #85 설계 문서, bilingual README, CHANGELOG를 다시 읽었다. 19개 상대 링크, 오래된 SDK API 참조, 용어 감사, whitespace를 확인했다. 문서 commit은 다음 단계로 남긴다.
 
 ### 작업 9: 통합 검증 및 제출 전 독립 리뷰
 
