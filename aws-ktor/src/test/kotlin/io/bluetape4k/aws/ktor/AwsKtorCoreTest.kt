@@ -11,7 +11,10 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.Url
 import io.ktor.server.application.install
 import io.ktor.server.testing.testApplication
+import io.mockk.mockk
 import org.junit.jupiter.api.Test
+import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
+import aws.smithy.kotlin.runtime.http.engine.HttpClientEngine
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import java.time.Clock
@@ -51,13 +54,18 @@ class AwsKtorCoreTest {
     @Test
     fun `application stores shared AWS defaults`() = testApplication {
         val javaCredentials = StaticCredentialsProvider.create(AwsBasicCredentials.create("ak", "sk"))
+        val kotlinCredentials = mockk<CredentialsProvider>()
+        val smithyHttpClient = mockk<HttpClientEngine>()
         val clock = Clock.fixed(Instant.parse("2026-05-26T01:02:03Z"), ZoneOffset.UTC)
 
         application {
             install(AwsKtorCore) {
                 region = "ap-northeast-2"
                 endpointOverride = Url("http://localhost:4566")
+                allowInsecureLocalHttpEndpoint = true
                 javaCredentialsProvider = javaCredentials
+                kotlinCredentialsProvider = kotlinCredentials
+                kotlinHttpClient = smithyHttpClient
                 signingClock = clock
             }
         }
@@ -69,8 +77,55 @@ class AwsKtorCoreTest {
         log.debug { "defaults=$defaults" }
         defaults.region shouldBeEqualTo "ap-northeast-2"
         defaults.endpointOverride.toString() shouldBeEqualTo "http://localhost:4566"
+        defaults.allowInsecureLocalHttpEndpoint shouldBeEqualTo true
         defaults.javaCredentialsProvider shouldBeSameInstanceAs javaCredentials
+        defaults.kotlinCredentialsProvider shouldBeSameInstanceAs kotlinCredentials
+        defaults.kotlinHttpClient shouldBeSameInstanceAs smithyHttpClient
         defaults.signingClock shouldBeSameInstanceAs clock
+    }
+
+    @Test
+    fun `core stores AWS Kotlin service customizers in registration order`() = testApplication {
+        val cloudWatchFirst = AwsKtorCloudWatchClientCustomizer { }
+        val cloudWatchSecond = AwsKtorCloudWatchClientCustomizer { }
+        val cloudWatchLogs = AwsKtorCloudWatchLogsClientCustomizer { }
+        val eventBridge = AwsKtorEventBridgeClientCustomizer { }
+        val kinesis = AwsKtorKinesisClientCustomizer { }
+        val s3Control = AwsKtorS3ControlClientCustomizer { }
+        val s3Vectors = AwsKtorS3VectorsClientCustomizer { }
+        val sesV2 = AwsKtorSesV2ClientCustomizer { }
+        val sns = AwsKtorSnsClientCustomizer { }
+        val sqs = AwsKtorSqsClientCustomizer { }
+        val sts = AwsKtorStsClientCustomizer { }
+
+        application {
+            install(AwsKtorCore) {
+                cloudWatchClient(cloudWatchFirst)
+                cloudWatchClient(cloudWatchSecond)
+                cloudWatchLogsClient(cloudWatchLogs)
+                eventBridgeClient(eventBridge)
+                kinesisClient(kinesis)
+                s3ControlClient(s3Control)
+                s3VectorsClient(s3Vectors)
+                sesV2Client(sesV2)
+                snsClient(sns)
+                sqsClient(sqs)
+                stsClient(sts)
+            }
+        }
+        startApplication()
+
+        val defaults = application.awsKtorDefaults()
+        defaults.cloudWatchClientCustomizers shouldBeEqualTo listOf(cloudWatchFirst, cloudWatchSecond)
+        defaults.cloudWatchLogsClientCustomizers shouldBeEqualTo listOf(cloudWatchLogs)
+        defaults.eventBridgeClientCustomizers shouldBeEqualTo listOf(eventBridge)
+        defaults.kinesisClientCustomizers shouldBeEqualTo listOf(kinesis)
+        defaults.s3ControlClientCustomizers shouldBeEqualTo listOf(s3Control)
+        defaults.s3VectorsClientCustomizers shouldBeEqualTo listOf(s3Vectors)
+        defaults.sesV2ClientCustomizers shouldBeEqualTo listOf(sesV2)
+        defaults.snsClientCustomizers shouldBeEqualTo listOf(sns)
+        defaults.sqsClientCustomizers shouldBeEqualTo listOf(sqs)
+        defaults.stsClientCustomizers shouldBeEqualTo listOf(sts)
     }
 
     @Test

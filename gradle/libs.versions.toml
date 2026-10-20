@@ -7,7 +7,7 @@
 # AWS SDK v2 (Java)
 
 # AWS Kotlin SDK
-aws-smithy-kotlin = "1.6.14"  # https://mvnrepository.com/artifact/aws.smithy.kotlin/http-jvm
+aws-smithy-kotlin = "1.7.9"  # https://mvnrepository.com/artifact/aws.smithy.kotlin/http-client
 
 # Spring
 
@@ -132,7 +132,9 @@ aws-kotlin-bedrock-runtime = { module = "aws.sdk.kotlin:bedrockruntime" }
 aws-kotlin-dynamodb = { module = "aws.sdk.kotlin:dynamodb" }
 aws-kotlin-dynamodbstreams = { module = "aws.sdk.kotlin:dynamodbstreams" }
 aws-kotlin-s3 = { module = "aws.sdk.kotlin:s3" }
+aws-kotlin-s3control = { module = "aws.sdk.kotlin:s3control" }
 aws-kotlin-s3tables = { module = "aws.sdk.kotlin:s3tables" }
+aws-kotlin-s3vectors = { module = "aws.sdk.kotlin:s3vectors" }
 aws-kotlin-ses = { module = "aws.sdk.kotlin:ses" }
 aws-kotlin-sesv2 = { module = "aws.sdk.kotlin:sesv2" }
 aws-kotlin-secretsmanager = { module = "aws.sdk.kotlin:secretsmanager" }
@@ -151,6 +153,11 @@ aws-kotlin-sts = { module = "aws.sdk.kotlin:sts" }
 aws-kotlin-http-client-engine-crt = { module = "aws.sdk.kotlin:http-client-engine-crt" }
 
 # AWS Smithy Kotlin
+aws-smithy-aws-credentials = { module = "aws.smithy.kotlin:aws-credentials", version.ref = "aws-smithy-kotlin" }
+aws-smithy-aws-signing-common = { module = "aws.smithy.kotlin:aws-signing-common", version.ref = "aws-smithy-kotlin" }
+aws-smithy-aws-signing-default = { module = "aws.smithy.kotlin:aws-signing-default", version.ref = "aws-smithy-kotlin" }
+aws-smithy-http-client = { module = "aws.smithy.kotlin:http-client", version.ref = "aws-smithy-kotlin" }
+aws-smithy-http-client-engine-okhttp = { module = "aws.smithy.kotlin:http-client-engine-okhttp", version.ref = "aws-smithy-kotlin" }
 
 # Test
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
