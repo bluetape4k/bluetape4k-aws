@@ -157,7 +157,6 @@ aws-smithy-aws-credentials = { module = "aws.smithy.kotlin:aws-credentials", ver
 aws-smithy-aws-signing-common = { module = "aws.smithy.kotlin:aws-signing-common", version.ref = "aws-smithy-kotlin" }
 aws-smithy-aws-signing-default = { module = "aws.smithy.kotlin:aws-signing-default", version.ref = "aws-smithy-kotlin" }
 aws-smithy-http-client = { module = "aws.smithy.kotlin:http-client", version.ref = "aws-smithy-kotlin" }
-aws-smithy-kotlin-http-client-engine-okhttp = { module = "aws.smithy.kotlin:http-client-engine-okhttp", version.ref = "aws-smithy-kotlin" }
 
 # Test
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
