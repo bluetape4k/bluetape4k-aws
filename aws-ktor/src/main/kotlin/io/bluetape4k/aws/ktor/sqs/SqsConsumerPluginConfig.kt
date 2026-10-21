@@ -1,5 +1,10 @@
 package io.bluetape4k.aws.ktor.sqs
 
+import aws.sdk.kotlin.services.sqs.endpoints.DefaultSqsEndpointProvider
+import aws.sdk.kotlin.services.sqs.endpoints.SqsEndpointProvider
+import io.bluetape4k.aws.ktor.AwsKotlinEndpointPolicyInterceptor
+import io.bluetape4k.aws.ktor.checkedAwsKotlinEndpointProvider
+import io.bluetape4k.aws.ktor.requireAwsKotlinEndpointProviderUnset
 import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.AwsKtorSqsClientCustomizer
@@ -19,6 +24,7 @@ import kotlin.reflect.KClass
  * 계약:
  * - [queueUrl]과 [queueName] 중 정확히 하나만 설정해야 합니다.
  * - [sqsClient]는 application이 주입한 client이므로 plugin이 닫지 않습니다.
+ * - 주입된 client에는 플러그인의 endpoint 정책 검사가 적용되지 않으므로 호출자가 전송 endpoint를 보호해야 합니다.
  * - plugin instance 하나는 handler 하나만 가집니다. 여러 queue가 필요하면 이후 registry-style
  *   integration에서 plugin instance를 추가로 설치합니다.
  *
@@ -107,6 +113,7 @@ class SqsConsumerPluginConfig {
 
     /**
      * 플러그인이 생성하는 SQS 클라이언트 builder에 customization을 추가합니다.
+     * 동적 endpoint provider는 허용되지 않습니다. 고정 endpoint에는 [endpointOverride]를 사용합니다.
      */
     fun sqsClient(customizer: AwsKtorSqsClientCustomizer) {
         clientCustomizers += customizer
@@ -210,6 +217,20 @@ class SqsConsumerPluginConfig {
             builder = {
                 defaults.sqsClientCustomizers.forEach { it.customize(this) }
                 clientCustomizers.forEach { it.customize(this) }
+                requireAwsKotlinEndpointProviderUnset(endpointProvider)
+                endpointProvider = checkedAwsKotlinEndpointProvider(
+                    provider = endpointProvider ?: DefaultSqsEndpointProvider(),
+                    region = { it.region },
+                    allowInsecureLocalHttpEndpoint = defaults.allowInsecureLocalHttpEndpoint,
+                    create = { resolver -> SqsEndpointProvider { parameters -> resolver(parameters) } },
+                )
+                interceptors.add(
+                    AwsKotlinEndpointPolicyInterceptor(
+                        configuredEndpoint = this.endpointUrl?.toString(),
+                        region = this.region,
+                        allowInsecureLocalHttpEndpoint = defaults.allowInsecureLocalHttpEndpoint,
+                    ),
+                )
             },
         )
     }

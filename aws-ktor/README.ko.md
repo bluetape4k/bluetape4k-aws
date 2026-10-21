@@ -114,6 +114,8 @@ fun Application.module() {
 `endpointOverride` / `endpointUrl`, credentials provider를 설정합니다. Floci 또는 LocalStack 테스트에서는 `http://localhost:4566` 같은 local endpoint와 dummy test credentials를 사용하세요. 운영 배포에서는 default, profile, web-identity, 또는 애플리케이션이 소유한 provider처럼 명시적인 AWS Kotlin credential provider를 사용해야 합니다. EKS/IRSA 같은 web identity 배포에서는 적절한 AWS Kotlin credentials provider를
 `AwsKtorCore`에 직접 주입하고, 해당 provider가 STS를 요구한다면 애플리케이션 runtime classpath에 `aws.sdk.kotlin:sts`를 추가합니다.
 
+플러그인이 생성하는 client는 client 구성 중 사용자 정의 `endpointProvider`를 거부하며, DynamoDB는 `endpointDiscoverer`도 거부합니다. 이 설정은 자격 증명을 조회하기 전에 endpoint 정책 위반으로 빠르게 실패하게 합니다. 고정 대상은 `endpointOverride` 또는 `endpointUrl`로 지정하세요. `allowInsecureLocalHttpEndpoint`를 명시한 literal loopback HTTP 외에는 HTTPS를 사용해야 합니다. 애플리케이션이 주입한 client에는 플러그인의 endpoint 검사가 적용되지 않으므로 소유자가 같은 정책을 지켜야 합니다.
+
 ```kotlin
 import io.bluetape4k.aws.ktor.client.AwsSigV4Plugin
 import io.ktor.client.HttpClient

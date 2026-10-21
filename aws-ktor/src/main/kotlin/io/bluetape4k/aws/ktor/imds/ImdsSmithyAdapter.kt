@@ -15,8 +15,10 @@ import aws.smithy.kotlin.runtime.http.request.url
 import aws.smithy.kotlin.runtime.http.response.HttpResponse
 import aws.smithy.kotlin.runtime.net.url.Url
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.IOException
@@ -223,6 +225,8 @@ internal class ImdsOwnedHttpClientEngine(
 }
 
 @OptIn(InternalApi::class)
-private suspend fun completeHttpCall(call: aws.smithy.kotlin.runtime.http.HttpCall) {
-    call.complete()
+internal suspend fun completeHttpCall(call: aws.smithy.kotlin.runtime.http.HttpCall) {
+    withContext(NonCancellable) {
+        call.complete()
+    }
 }

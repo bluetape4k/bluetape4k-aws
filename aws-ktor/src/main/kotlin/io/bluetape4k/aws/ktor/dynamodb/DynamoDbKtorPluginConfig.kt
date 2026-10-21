@@ -13,7 +13,8 @@ import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.aws.kotlin.dynamodb.dynamoDbClientOf
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.AwsKotlinEndpointPolicyInterceptor
-import io.bluetape4k.aws.ktor.validateAwsKotlinServiceEndpoint
+import io.bluetape4k.aws.ktor.checkedAwsKotlinEndpointProvider
+import io.bluetape4k.aws.ktor.requireAwsKotlinEndpointProviderUnset
 import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.requireNotEmpty
 import kotlin.time.Duration
@@ -26,7 +27,8 @@ import kotlin.time.Duration.Companion.seconds
  * - 주입된 [dynamoDbClient] 인스턴스는 애플리케이션이 계속 소유하며 플러그인은 닫지 않습니다.
  *   주입 client에는 플러그인의 요청 endpoint 검사가 적용되지 않으므로 호출자가 전송 endpoint를 보호해야 합니다.
  * - 클라이언트를 주입하지 않으면 [region]이 필요하고 플러그인이 AWS Kotlin SDK [DynamoDbClient]를 생성합니다.
- *   생성한 client는 endpoint provider 반환 뒤 endpoint discovery가 host를 변경한 경우까지 전송 직전에 검사합니다.
+ *   고정 `endpointUrl`은 요청 시작 시 자격 증명 조회 전에 검사합니다. 사용자 지정 endpoint provider와 discovery는
+ *   이 검사 전에 endpoint를 바꿀 수 있으므로 허용하지 않으며, 최종 요청 endpoint는 서명 전에 다시 검사합니다.
  * - [httpClient] 또는 공유 [AwsKtorDefaults.kotlinHttpClient]를 지정하면 호출자가 엔진을 소유합니다.
  *   DynamoDB 클라이언트를
  *   먼저 닫고 공유 엔진을 마지막에 닫아야 합니다.
@@ -68,6 +70,7 @@ class DynamoDbKtorPluginConfig {
 
     /**
      * 플러그인이 생성한 클라이언트에 추가 AWS Kotlin SDK 클라이언트 구성을 적용합니다.
+     * `endpointProvider`와 `endpointDiscoverer`는 허용되지 않습니다. 고정 endpoint에는 [endpointUrl]을 사용합니다.
      */
     fun client(builder: DynamoDbClient.Config.Builder.() -> Unit) {
         clientBuilder = builder
@@ -113,23 +116,23 @@ class DynamoDbKtorPluginConfig {
                 builder = {
                     defaults.dynamoDbClientCustomizers.forEach { it.customize(this) }
                     clientBuilder()
-                    val configuredEndpointProvider =
-                        this.endpointProvider ?: DefaultDynamoDbEndpointProvider()
-                    this.endpointProvider = DynamoDbEndpointProvider { parameters ->
-                        val endpoint = configuredEndpointProvider.resolveEndpoint(parameters)
-                        validateAwsKotlinServiceEndpoint(
-                            endpoint = endpoint.uri.toString(),
-                            region = parameters.region,
-                            allowInsecureLocalHttpEndpoint = defaults.allowInsecureLocalHttpEndpoint,
-                        )
-                        endpoint
+                    requireAwsKotlinEndpointProviderUnset(endpointProvider)
+                    require(endpointDiscoverer == null) {
+                        "DynamoDB endpoint discovery is not supported by Ktor service clients; configure endpointUrl instead."
                     }
-                    interceptors.add(
-                        AwsKotlinEndpointPolicyInterceptor(
-                            region = clientRegion,
-                            allowInsecureLocalHttpEndpoint = defaults.allowInsecureLocalHttpEndpoint,
-                        ),
+                    this.endpointProvider = checkedAwsKotlinEndpointProvider(
+                        provider = this.endpointProvider ?: DefaultDynamoDbEndpointProvider(),
+                        region = { it.region },
+                        allowInsecureLocalHttpEndpoint = defaults.allowInsecureLocalHttpEndpoint,
+                        create = { resolver -> DynamoDbEndpointProvider { parameters -> resolver(parameters) } },
                     )
+                    interceptors.add(
+                    AwsKotlinEndpointPolicyInterceptor(
+                        configuredEndpoint = this.endpointUrl?.toString(),
+                        region = this.region,
+                        allowInsecureLocalHttpEndpoint = defaults.allowInsecureLocalHttpEndpoint,
+                    ),
+                )
                 },
             )
         }

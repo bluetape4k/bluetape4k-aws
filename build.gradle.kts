@@ -33,6 +33,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 import java.security.MessageDigest
 import java.util.jar.JarFile
+import java.util.jar.JarOutputStream
 import java.util.concurrent.TimeUnit
 
 abstract class VerifyDetektCoverage : DefaultTask() {
@@ -1744,6 +1745,14 @@ subprojects {
                 }
             }
         }
+        repositories {
+            if (project.path == ":bluetape4k-aws-ktor") {
+                maven {
+                    name = "issue659AwsKtorConsumer"
+                    url = uri(rootProject.layout.buildDirectory.dir("repositories/issue659-aws-ktor"))
+                }
+            }
+        }
     }
 
     tasks.withType<GenerateMavenPom>().configureEach {
@@ -1753,6 +1762,87 @@ subprojects {
     }
 
     configurePublishingSigning("BluetapeAws")
+}
+
+val awsKtorProject = project(":bluetape4k-aws-ktor")
+val awsKtorConsumerRepository = layout.buildDirectory.dir("repositories/issue659-aws-ktor")
+val awsKtorPublicationMetadata = awsKtorProject.layout.buildDirectory.file("publications/BluetapeAws/module.json")
+val prepareIssue659AwsKtorConsumerRepository = tasks.register("prepareIssue659AwsKtorConsumerRepository") {
+    group = "verification"
+    description = "Creates isolated first-party stubs for the published aws-ktor Gradle metadata consumer fixture."
+    dependsOn(awsKtorProject.tasks.named("generateMetadataFileForBluetapeAwsPublication"))
+    inputs.file(awsKtorPublicationMetadata)
+    outputs.dir(awsKtorConsumerRepository)
+    doLast {
+        val repository = awsKtorConsumerRepository.get().asFile
+        val metadata = groovy.json.JsonSlurper().parse(awsKtorPublicationMetadata.get().asFile) as Map<*, *>
+        val apiVariant = (metadata["variants"] as List<*>).asSequence()
+            .map { it as Map<*, *> }
+            .first { it["name"] == "apiElements" }
+        val apiDependencies = (apiVariant["dependencies"] as? List<*>).orEmpty()
+            .asSequence()
+            .map { it as Map<*, *> }
+            .toList()
+        val leakedJavaDependencies = apiDependencies.filter { dependency ->
+            val group = dependency["group"] as? String
+            val module = dependency["module"] as? String
+            group == "software.amazon.awssdk" ||
+                (group.orEmpty().startsWith("io.github.bluetape4k") && module == "bluetape4k-aws-java")
+        }
+        if (leakedJavaDependencies.isNotEmpty()) {
+            throw GradleException(
+                "Published aws-ktor API metadata must not expose AWS Java SDK dependencies: $leakedJavaDependencies",
+            )
+        }
+        val internalDependencies = apiDependencies.asSequence()
+            .filter { (it["group"] as? String).orEmpty().startsWith("io.github.bluetape4k") }
+            .mapNotNull { dependency ->
+                val group = dependency["group"] as? String ?: return@mapNotNull null
+                val module = dependency["module"] as? String ?: return@mapNotNull null
+                val version = (dependency["version"] as? Map<*, *>)?.get("requires") as? String
+                    ?: return@mapNotNull null
+                Triple(group, module, version)
+            }
+            .toList()
+
+        repository.deleteRecursively()
+        internalDependencies.forEach { (group, module, version) ->
+            val artifactDirectory = repository.resolve(group.replace('.', '/')).resolve(module).resolve(version)
+            artifactDirectory.mkdirs()
+            artifactDirectory.resolve("$module-$version.pom").writeText(
+                """<?xml version="1.0" encoding="UTF-8"?>
+                    |<project xmlns="http://maven.apache.org/POM/4.0.0">
+                    |  <modelVersion>4.0.0</modelVersion>
+                    |  <groupId>$group</groupId>
+                    |  <artifactId>$module</artifactId>
+                    |  <version>$version</version>
+                    |</project>
+                    |""".trimMargin(),
+            )
+            JarOutputStream(artifactDirectory.resolve("$module-$version.jar").outputStream()).use { }
+        }
+    }
+}
+
+val publishIssue659AwsKtorConsumerModule =
+    awsKtorProject.tasks.named("publishBluetapeAwsPublicationToIssue659AwsKtorConsumerRepository")
+publishIssue659AwsKtorConsumerModule.configure {
+    dependsOn(prepareIssue659AwsKtorConsumerRepository)
+}
+tasks.register<GradleBuild>("verifyAwsKtorPublishedConsumer") {
+    group = "verification"
+    description = "Resolves published aws-ktor Gradle metadata from an isolated external consumer build."
+    dependsOn(prepareIssue659AwsKtorConsumerRepository, publishIssue659AwsKtorConsumerModule)
+    dir = file("aws-ktor/src/consumerFixture/published-consumer")
+    tasks = listOf("resolveAwsKtorPublishedApi")
+    startParameter.projectProperties = mapOf(
+        "awsKtorConsumerRepository" to awsKtorConsumerRepository.get().asFile.absolutePath,
+        "awsKtorGroup" to awsKtorProject.group.toString(),
+        "awsKtorVersion" to awsKtorProject.version.toString(),
+        // Keep the standalone consumer fixture on a published BOM version.
+        "awsKtorCentralBom" to "io.github.bluetape4k:bluetape4k-dependencies:2.0.0",
+        "awsKotlinVersion" to bt4kVersion("aws-kotlin"),
+    )
 }
 
 extensions.configure<NmcpAggregationExtension>("nmcpAggregation") {

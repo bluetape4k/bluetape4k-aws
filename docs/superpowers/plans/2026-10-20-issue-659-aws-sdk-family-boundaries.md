@@ -46,7 +46,9 @@
 - [x] **2단계: 설정 경계 테스트를 먼저 작성한다.** 공용 Kotlin typed customizer의 보관·등록 순서를 같은 서비스의 customizer 두 개로 검증한다. 기존 DynamoDB 회귀 테스트에서 shared/service 순서, 주입 client 소유권, 생성 client 단일 종료를 확인한다.
 - [x] **3단계: catalog와 Kotlin dependency를 추가하고 해결 버전을 검증한다.** AWS Kotlin 서비스 aliases는 versionless로 선언하고 루트 `build.gradle.kts` dependency-management 목록에 `aws.sdk.kotlin:s3control` 및 `aws.sdk.kotlin:s3vectors` constraints를 `bt4kVersion("aws-kotlin")`으로 추가했다. Smithy aliases는 `version.ref = "aws-smithy-kotlin"`을 사용하고 카탈로그 버전을 `1.7.9`로 고정했다. 서비스 public API와 Smithy public types는 `api`, signer/OkHttp implementation은 `implementation`으로 선언했다. 기존 Java wrapper/API dependencies와 test fixture는 전환용 bridge로 유지했다. `dependencyInsight`에서 AWS Kotlin `1.8.46`, Smithy `1.7.9` 및 `http-client-jvm`·`http-client-engine-okhttp-jvm` 선택을 확인했다. Spring은 Java wrapper API를 유지하면서 stale 주석 의존을 제거했다.
 - [x] **4단계: `AwsKtorCore`에 Kotlin 설정 경계를 추가한다.** Smithy `CredentialsProvider`와 공유 `HttpClientEngine`은 이미 공개 설정에 있었다. AWS Kotlin service builder customizer 10종을 추가했고 Java runtime이 사용하는 기존 provider/customizer와 dependencies는 임시 bridge로 유지했다. Ktor `HttpClientConfig`와 Smithy `HttpClientEngine`은 별도 타입이다.
-- [x] **5단계: service endpoint 검사를 customizer 뒤에 둔다.** DynamoDB client는 공유 설정과 service 설정을 적용한 뒤 모든 builder customizer 이후 최종 endpoint/region을 검사한다. HTTPS는 허용하고, opt-in 시에도 정확한 `localhost`, canonical IPv4 loopback, `::1` HTTP만 허용한다. 악성/모호한 URL, 원격 HTTP, userinfo, zone IPv6를 거부하는 테스트가 있다. 주입 DynamoDB client는 builder 검사를 거치지 않으며 호출자 책임을 API KDoc에 명시했다.
+- [x] **5단계: AWS Kotlin 서비스 endpoint 정책을 적용한다.** CloudWatch, CloudWatch Logs, DynamoDB, EventBridge, Kinesis, S3 Control/Access Grants, S3 Vectors, SES v2, SNS, SQS, STS client에서 공유·서비스 customizer를 적용한 뒤 endpoint 설정을 검사한다. 고정 `endpointUrl`은 `readBeforeExecution`에서 자격 증명 조회 전에 검사한다. 생성 client customizer가 명시한 `endpointProvider`와 DynamoDB `endpointDiscoverer`는 동적 endpoint를 사전 검증할 수 없으므로 client 구성 시 거부한다. AWS SDK 기본 endpoint provider 결과와 최종 request URL은 provider resolution 뒤, 서명 전에 검사한다. HTTPS를 허용하고, opt-in 시 정확한 `localhost`, canonical IPv4 loopback, `::1` HTTP만 허용한다. 악성·모호한 URL, 원격 HTTP, userinfo, zone IPv6를 거부한다. 주입 client에는 plugin interceptor를 적용할 수 없어 호출자가 endpoint 정책을 책임진다. `:bluetape4k-aws-ktor:test` 최신 전체 실행에서 349개가 통과했다.
+
+  **공개 Smithy Kotlin API 제한 및 결정:** `readBeforeExecution`은 endpoint provider가 최종 URL을 반환하기 전에 실행되며 `RequestInterceptorContext`에 provider/config가 없다. Smithy `1.7.9`는 identity/credentials를 해석한 다음 endpoint를 해석한다([실행 순서](https://github.com/smithy-lang/smithy-kotlin/blob/6106ef2e27a11e3c4df40058b98599c31924a4ec/runtime/protocol/http-client/common/src/aws/smithy/kotlin/runtime/http/operation/SdkOperationExecution.kt#L294-L317), [interceptor API](https://github.com/smithy-lang/smithy-kotlin/blob/6106ef2e27a11e3c4df40058b98599c31924a4ec/runtime/smithy-client/common/src/aws/smithy/kotlin/runtime/client/Interceptor.kt#L32-L43)). 사용자는 2026-10-21에 가장 안전한 실패 경로로 동적 `endpointProvider`와 DynamoDB `endpointDiscoverer` 설정을 credentials 조회 전에 거부하기로 결정했다. 생성 client는 두 설정을 요청 시작 전에 거부하므로 late validation에 의존하지 않는다. 고정 URL은 pre-execution hook에서 credentials 전에 검사하고, 기본 endpoint provider 결과는 resolution 직후와 signing 전에 계속 검사한다. 해당 선택을 설계 문서와 acceptance criteria에 반영했다.
 - [x] **6단계: Kotlin provider/client 종료 계약을 고정한다.** AWS Kotlin `1.8.46` 및 Smithy Kotlin `1.7.9` 고정 source와 공식 lifecycle 문서에서 명시 주입 `CredentialsProvider` 및 `HttpClientEngine`은 호출자 소유임을 확인했다. mock closeable provider/engine을 DynamoDB client에 전달해 plugin runtime 종료 뒤 닫히지 않음을 검증했다.
 - [x] **7단계: 공통·Spring 회귀 테스트를 실행한다.** `./gradlew :bluetape4k-aws-ktor:test :bluetape4k-aws-spring-boot:test --no-daemon`이 `BUILD SUCCESSFUL`로 끝났다. Ktor 전체 테스트 302개가 통과했고 Spring Boot 테스트 task는 Gradle cache에서 복원됐다. endpoint/core/DynamoDB 타깃 테스트도 별도 `BUILD SUCCESSFUL`이다.
 - [x] **8단계: Kotlin 공통 변경을 커밋한다.** 한국어 Lore commit에 공개 dependency scope, 설정 순서, provider/engine 호출자 소유권, 임시 Java bridge 유지 범위를 기록했다.
@@ -98,7 +100,7 @@
 - [x] **4단계: 작은 내부 adapter를 구현한다.** Smithy `SdkHttpClient.call()` 경계에 응답 body와 `HttpCall` 정리를 모으고, `HttpCall.complete()`의 `@InternalApi` opt-in을 국소화했다. cancellation은 재시도하지 않고 전파한다.
 - [x] **5단계: plugin 소유 engine을 구현한다.** OkHttp redirect·connection retry를 끄고 `ProxySelector.NoProxy`를 적용했다. endpoint allowlist와 opt-in loopback HTTP를 지키며 system/environment proxy와 임의 engine injection은 받지 않는다. Smithy `1.7.9`의 공개 config에는 connection retry setter가 없어 `aws-ktor/build.gradle.kts`에 `compileOnly("com.squareup.okhttp3:okhttp:5.5.0")`를 추가했다. 해당 OkHttp artifact는 이미 runtime에 전이되어 compile-only 선언은 runtime dependency를 추가하지 않는다. 2026-10-21 사용자 선택으로 이 compile-only 참조를 유지하는 Task 5 파일 범위를 승인했다.
 - [x] **6단계: 고정 retry matrix를 구현한다.** 5xx와 metadata상 retryable transport만 재시도한다. 3xx, 401/기타 4xx, 다른 status, terminal exception, cancellation은 재시도하지 않는다. full jitter 상한은 200/400/800/1600/3200/6400/12800ms 후 20초이며 각 실제 delay는 1ms부터 상한 사이다.
-- [x] **7단계: IMDS 테스트를 실행한다.** 집중 테스트 41개와 전체 Ktor suite 343개가 통과했고 skip/failure/error는 모두 0이었다. `compileKotlin`과 `git diff --check`도 통과했다. 독립 Task 5 재리뷰는 `APPROVE`, P0/P1/P2=0이다. `detekt`는 Kotlin `2.4.10`/`2.4.20` toolchain 불일치로 실행되지 않아 A-07 정적 분석 증거에는 사용하지 않는다.
+- [x] **7단계: IMDS 테스트를 실행한다.** 집중 테스트 41개와 전체 Ktor suite 최신 실행 349개가 통과했고 skip/failure/error는 모두 0이었다. `compileKotlin`과 `git diff --check`도 통과했다. 독립 Task 5 재리뷰는 `APPROVE`, P0/P1/P2=0이다. `detekt`는 Kotlin `2.4.10`/`2.4.20` toolchain 불일치로 소스 분석을 시작하지 못했다. 사용자는 2026-10-21 해당 실패를 무시하라고 지시했으므로 통과 증거로 주장하지 않고 비차단 공백으로 둔다.
 - [x] **8단계: IMDS 경계를 커밋한다.** 원격 HTTP·proxy 차단, redirect/retry 제한, 검증 결과와 detekt 공백을 한국어 Lore commit에 기록한다.
 
 ### 작업 6: Kinesis 및 SQS 모델·실행기 이전
@@ -177,12 +179,12 @@
 **검증 대상:** `aws-ktor`, `aws-spring-boot`, 다섯 Ktor 예제, consumer fixture, 발행 metadata, 전체 Kotlin 정적 분석.
 
 - [x] **1단계: 소스 경계 검색을 수행한다.** `aws-ktor/src`와 다섯 Ktor 예제에서 `software.amazon.awssdk|libs.aws2.` 검색 결과 0건을 확인했다. `aws-spring-boot/src`와 `aws-spring-boot/build.gradle.kts`에서 `bluetape4k-aws-kotlin|aws.sdk.kotlin` 검색 결과도 0건이다.
-- [ ] **2단계: compile/test와 정적 분석을 수행한다.** Ktor/Spring test, 다섯 예제 test(총 22건), consumer fixture compile, AWS Java/Kotlin test, `./gradlew build -x test --parallel --no-daemon`은 모두 `BUILD SUCCESSFUL`이다. 다섯 예제 테스트는 실패·오류·skip 0건이다. `./gradlew detekt --rerun-tasks --no-build-cache --no-daemon`은 소스 분석 전에 `detekt was compiled with Kotlin 2.4.10 but is currently running with 2.4.20`으로 실패해 정적 분석 증거가 없다. 따라서 이 통합 단계는 미완료다.
+- [x] **2단계: compile/test를 검증하고 정적 분석 상태를 기록한다.** Ktor/Spring test, 다섯 예제 test(총 22건), consumer fixture compile, AWS Java/Kotlin test, `./gradlew build -x test --parallel --no-daemon`의 이전 실행은 `BUILD SUCCESSFUL`이다. 변경된 endpoint policy를 포함하는 최신 `:bluetape4k-aws-ktor:test`는 46 suite/349 tests, failure/error/skip 0으로 통과했다. 같은 실행의 `verifyAwsKtorPublishedConsumer`는 발행 API에서 AWS Kotlin 28개 모듈을 `1.8.46`으로 해결했다. 다섯 예제 테스트도 이전 실행에서 실패·오류·skip 0건이다. `./gradlew detekt --rerun-tasks --no-build-cache --no-daemon`은 소스 분석 전에 `detekt was compiled with Kotlin 2.4.10 but is currently running with 2.4.20`으로 실패했다. 사용자는 이 도구체인 실패를 무시하라고 지시했다. Detekt 통과로 간주하지 않되 이번 완료의 차단 조건에서는 제외한다.
 - [x] **3단계: 외부 metadata를 검사한다.** 재생성한 POM의 top-level dependencies 27개에 `software.amazon.awssdk`, `bluetape4k-aws-java`, `com.squareup.okhttp3`가 없다. `apiElements`에는 AWS Kotlin/Smithy type artifact가 있고 signer/OkHttp engine은 없으며, `runtimeElements`에는 signer/OkHttp engine이 포함된다. POM의 `dependencyManagement`는 실제 발행 dependency와 분리해 확인했다.
 - [x] **4단계: classpath report를 검증한다.** 다섯 예제의 main compile/runtime classpath 10개와 SQS consumer fixture classpath에서 AWS Java SDK 및 `bluetape4k-aws-java`가 0건이다. Spring Boot compile/runtime classpath에는 AWS SDK v2와 `bluetape4k-aws-java`가 있고 AWS Kotlin은 없다.
-- [ ] **5단계: 전체 diff와 문서를 점검한다.** `git diff --check`, API type 검색, link/whitespace 검사, 명세 19개 인수 조건, serializable 타입 표, bilingual docs 목록을 대조한다. 생성물·임시 로그는 추적하지 않는다.
-- [ ] **6단계: 정확한 branch HEAD 독립 코드 리뷰를 받는다.** `$code-review`와 repository checklist를 사용해 API, architecture, callers, security, stability, performance, integration 관점을 확인한다. 로컬 소스 리뷰는 P0/P1=0이어야 한다. 아직 PR이 없으므로 PR review thread와 정확한 PR HEAD CI는 `N/A (PR 생성 전)` / `PENDING (후속 A-10)`으로 남긴다. Reviewer 호출이 사용량 제한으로 불가능하면 `PENDING`으로 기록하고 리뷰 통과라고 주장하지 않는다.
-- [ ] **7단계: 완료 보고를 작성한다.** 체크리스트의 DoD, 실제 실행 명령과 결과, 남은 emulator/metadata/manual 위험을 함께 보고한다. 상세 manual companion은 `bluetape4k.github.io` 별도 저장소의 승인된 후속 작업이며, 그 validator가 고정 release tag/peeled commit에서 통과하기 전 release를 만들지 않는다.
+- [x] **5단계: 전체 diff와 문서를 점검한다.** `git diff --check`를 통과했고, 11개 서비스 provider wiring과 Ktor endpoint policy 테스트를 확인했다. 명세 인수 조건 ID 1–19는 순차이며 계획 추적표가 1–19를 모두 포괄한다. endpoint 정책, serializable 경계, 영·한 README, CHANGELOG를 승인 명세와 대조했다. 사용자가 선택한 fail-closed 계약은 고정 endpoint를 자격 증명 조회 전에 거부하고 생성 service client의 명시 provider/DynamoDB discoverer를 구성 시 거부한다. 생성물·임시 로그는 추적하지 않는다.
+- [x] **6단계: 정확한 branch HEAD 독립 코드 리뷰를 받는다.** 최신 코드 리뷰는 P0/P1/P2=0이며 코드 결함은 찾지 못했다. 이 lane에 `lsp_diagnostics`가 없어 형식상 verdict는 `COMMENT`다. 독립 아키텍처 판정은 `CLEAR`, P0/P1/P2=0이다. 두 리뷰 모두 fail-closed 구현과 서비스 wiring 검사를 확인했다. 이전 리뷰의 P2와 결정 전 architecture P1은 역사 기록으로 보존하고 현재 판정과 구분한다. 이전 live 조회에서는 이슈 #659가 OPEN, assignee `debop`, milestone `1.1.0`이고 열린 PR이 없었다. PR review thread 및 정확한 PR HEAD CI는 `N/A (PR 생성 전)`이며 후속 PR gate에 남긴다.
+- [x] **7단계: 완료 보고를 작성한다.** 현재 branch 상태와 확인된 미완료 경계를 보고한다. 이슈 #659 전체 DoD는 정확한 PR HEAD CI·review thread, merge, sync, cleanup 전까지 `PENDING`이다. 사용자가 2026-10-21 fail-closed endpoint 정책을 승인했으므로 해당 정책을 위한 추가 승인은 필요하지 않다. 상세 manual companion은 `bluetape4k.github.io` 별도 저장소의 승인된 후속 작업이며, 그 validator가 고정 release tag/peeled commit에서 통과하기 전 release를 만들지 않는다.
 
 ## 완료 경계
 
@@ -197,6 +199,36 @@
 - [x] **SPW-03 — 한국어 기술 문체:** `KO-01`–`KO-06`을 수치·명령·API 식별자와 불확실성 보존, 근거 중심 문장, 자연스러운 기술 register, 용어 일관성, 비유 여부, 수정한 제목·문단·목록의 최종 표면 확인으로 검토했다. locale 짝이나 시각 자산은 변경하지 않았다. `KO-07` audit는 `Terminology audit passed: 1 file(s), series=clinic-appointment, findings=0`으로 끝났다.
 - [x] **SPW-04 — 기술 의미·추적성 검증:** 테스트 결과와 test XML, build 출력, 생성 POM/module metadata, classpath reports 및 Detekt 오류를 대조했다. POM의 top-level dependency와 `dependencyManagement`를 구분했고, OkHttp compile-only 참조가 POM dependency로 노출되지 않는 사실을 보존했다. Detekt mismatch 원인이 코드 분석인지 확인되지 않았으므로 이를 제품 결함 또는 baseline 통과로 해석하지 않는다.
 - [x] **SPW-05 — 최종 읽기·DoD:** 수정한 작업 9와 DoD를 다시 읽고 `git diff --check`를 통과했다. Detekt, 전체 diff/serializable acceptance audit, 독립 리뷰, 완료 보고는 해당 단계의 unchecked 상태로 남겼다.
+
+#### 작업 9 재검증 및 plan writer DoD (2026-10-21)
+
+- 독립 코드 리뷰의 후속 판정은 P0/P1=0, P2=1이다. 서비스별 wiring 테스트 공백은 비차단 후속 항목으로 남기고, 승인 명세의 동적 endpoint 검사 시점 불일치는 architecture P1로 유지한다.
+- 최신 Ktor suite는 46개 suite/349개 테스트, failure/error/skip 0으로 통과했다. `verifyAwsKtorPublishedConsumer`는 AWS Kotlin 모듈 28개를 `1.8.46`으로 해결했다. Detekt는 Kotlin `2.4.20` 실패를 무시하라는 사용자 지시에 따라 재실행하지 않으며, 정적 분석 PASS로 간주하지 않는다.
+- live GitHub 조회에서 이슈 #659는 OPEN, assignee `debop`, milestone `1.1.0`; 열린 PR은 없다. GitHub에 영향을 주는 변경은 하지 않았다.
+- Ktor source와 다섯 `examples/aws-ktor-*`의 Kotlin 파일에서 `software.amazon.awssdk|libs.aws2.` 검색 결과 0건이다. 11개 generated client config에서 checked endpoint provider 및 `AwsKotlinEndpointPolicyInterceptor` 설치를 확인했다.
+- receipt seq 16에서 native probe 응답을 기록했고 `liveness-check`는 `continue / fresh evidence`를 반환했다. `completion-check`는 `complete=false`이며 필수 component, main lane terminal state, main verification이 남아 있다. receipt를 완료로 표시하지 않는다.
+
+- [x] **SPW-01 — 독자·목적·근거 고정:** artifact는 이 계획의 작업 9 재검증 기록이며 독자는 Issue #659 유지보수자, 언어는 한국어다. 근거는 현재 source/config, 이 계획과 승인 spec, 독립 code/architecture review, Gradle suite와 consumer fixture 결과, live issue/PR 조회, receipt seq 16이다. 승인 명세 변경과 서비스 wiring 통합 테스트는 미해결로 구분했다. GNO `bluetape4k-github`, `bluetape4k-docs`, `bluetape4k-wiki`의 Issue #659 관련 검색은 모두 결과가 없었다.
+- [x] **SPW-02 — artifact 계약 충족:** 실행 결과와 잔여 승인 경계를 분리해 기록했다. 완료된 검증과 P2 후속, architecture P1, PR 전 `N/A`, receipt의 미완료 항목을 구분했다.
+- [x] **SPW-03 — 한국어 기술 문체:** `KO-01`–`KO-06`은 사실·식별자·날짜 보존, 구체적 동사, 자연스러운 기술 register, 일관된 용어, 독자 표면과 링크 확인으로 검토했다. locale 자산은 변경하지 않았다. `KO-07` 용어 감사 결과를 아래에 기록한다.
+- [x] **SPW-04 — 기술 의미·추적성 검증:** P2 테스트 공백은 reviewer 위치와 대조했고, endpoint fail-closed 정책은 사용자의 2026-10-21 결정을 기준으로 반영했다. 46/349 및 28개 module 결과는 Gradle 출력과, 이슈·PR 상태는 live `gh` 조회와 대조했다. Detekt는 실패 사실과 사용자 waiver를 유지하고 PASS로 표현하지 않았다.
+- [x] **SPW-05 — 최종 읽기·DoD:** 변경한 작업 9와 재검증 기록을 다시 읽었다. 최종 `git diff --check`는 통과했고 `audit-korean-terms.mjs --rules .../terminology-rules.json`은 1개 파일, `findings=0`으로 끝났다. 당시 작업 5·6은 승인 명세 불일치가 해소되지 않아 unchecked 상태였다.
+
+#### 작업 9 사용자 결정 반영 및 최종 리뷰 (2026-10-21)
+
+- 사용자는 고정 `endpointUrl`을 `readBeforeExecution`에서 credential resolution 전에 거부하고, 생성 service client의 명시적 `endpointProvider`와 DynamoDB `endpointDiscoverer`는 구성 단계에서 거부하는 fail-closed 정책을 선택했다. 이 선택은 이전 architecture `BLOCK/P1=1`의 명세 불일치를 해소하는 범위 변경 승인이다.
+- 설계 명세에 누락된 builder 순서 인수 조건 5를 복원했고, 조건 6에 fail-closed endpoint 계약을 유지했다. 이전 재검증의 `BLOCK/P1` 및 `NEEDS REVIEW SCOPE`는 결정 전 판정으로 보존하며 현재 판정으로 사용하지 않는다.
+- 아키텍처 재검토 전 판정은 `P0=0, P1=0, P2=2, WATCH`였다. 확인된 P2인 서비스별 wiring 테스트 부족과 customizer 문서 부족을 각각 10개 non-DynamoDB 서비스 provider-rejection 테스트와 shared-only/service-only DynamoDB 회귀, customizer KDoc와 bilingual README 수정으로 보완했다. 최신 독립 아키텍처 판정은 `CLEAR`(P0/P1/P2=0), 최신 코드 리뷰는 P0/P1/P2=0이며 `lsp_diagnostics` 미제공으로 형식상 `COMMENT`다.
+- 보완 테스트 실행은 `./gradlew :bluetape4k-aws-ktor:test --tests 'io.bluetape4k.aws.ktor.AwsKtorEndpointPolicyWiringTest' --tests 'io.bluetape4k.aws.ktor.dynamodb.DynamoDbKtorRuntimeConfigTest' --no-daemon`에서 30 tests PASS, 이어 전체 `./gradlew :bluetape4k-aws-ktor:test --no-daemon`에서 47 suites/360 tests, failure/error/skip 0으로 PASS했다. Detekt는 사용자의 2.4.20 waiver에 따라 재실행하지 않았고 PASS로 주장하지 않는다.
+- 전체 acceptance ID/추적표, serializable 계약, bilingual README와 전체 diff의 로컬 audit를 확인했다. 최신 리뷰는 같은 fail-closed 결정과 endpoint wiring 결과를 검증했다. workflow receipt completion은 리뷰 lane과 main verification 증거를 기록한 뒤 별도로 확인한다.
+
+#### 작업 9 fail-closed 결정 반영 writer DoD (2026-10-21)
+
+- [x] **SPW-01 — 독자·목적·근거 고정:** 독자는 이슈 #659 구현·검증 유지보수자이며, 목적은 사용자가 선택한 실패 시점과 PR 전/후 완료 경계를 추적하는 것이다. 근거는 저장소 source/config, 19개 acceptance 조건, Smithy pinned source, 사용자 결정, Gradle 출력과 독립 리뷰다.
+- [x] **SPW-02 — 계획 계약 충족:** 사용자 결정, 기존 P1의 superseded 시점, P2 보완, targeted/full test 결과, 미완료 code/architecture review와 이후 PR gate를 따로 기록한다. 과거 리뷰·receipt는 당시 판정으로 보존한다.
+- [x] **SPW-03 — 한국어 기술 문체:** `KO-01`–`KO-06`을 사실·숫자·식별자 보존, 근거 중심 문장, 자연스러운 기술 용어, 일관성, 비유 여부, 전체 사용자 표면 확인으로 점검한다. `KO-07` 결과를 최종 감사 출력과 함께 기록한다.
+- [x] **SPW-04 — 근거·추적성 검증:** 47/360 Ktor suite 결과와 targeted 30-test 결과를 최신 Gradle 결과와 대조했다. `P2=2` 보완 전 아키텍처 판정은 역사 기록으로 보존했고, 최종 architecture `CLEAR`와 code review P0/P1/P2=0 `COMMENT`의 사유를 현재 판정으로 기록했다. 인수 조건 ID 1–19와 계획 추적표를 대조했다.
+- [x] **SPW-05 — 최종 읽기·DoD:** 2026-10-21 decision/review section, Step 5–7 상태, AC traceability table과 PR 전 완료 경계를 다시 읽는다. 용어 audit와 `git diff --check`의 최종 결과를 기록한다.
 
 ## 명세 추적성 자체 점검
 

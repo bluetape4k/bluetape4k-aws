@@ -1,5 +1,10 @@
 package io.bluetape4k.aws.ktor.sns
 
+import aws.sdk.kotlin.services.sns.endpoints.DefaultSnsEndpointProvider
+import aws.sdk.kotlin.services.sns.endpoints.SnsEndpointProvider
+import io.bluetape4k.aws.ktor.AwsKotlinEndpointPolicyInterceptor
+import io.bluetape4k.aws.ktor.checkedAwsKotlinEndpointProvider
+import io.bluetape4k.aws.ktor.requireAwsKotlinEndpointProviderUnset
 import aws.sdk.kotlin.services.sns.SnsClient
 import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
 import aws.smithy.kotlin.runtime.http.engine.HttpClientEngine
@@ -17,6 +22,7 @@ import java.io.Serializable
  *
  * 플러그인을 설치하면 작업과 SNS HTTP 파서만 등록합니다. 애플리케이션 코드가
  * [SnsKtorOperations]를 호출하기 전에는 주제를 생성하거나 메시지를 게시하거나 구독을 확인하지 않습니다.
+ * 주입된 client에는 플러그인의 endpoint 정책 검사가 적용되지 않으므로 호출자가 전송 endpoint를 보호해야 합니다.
  */
 class SnsKtorPluginConfig {
 
@@ -49,7 +55,10 @@ class SnsKtorPluginConfig {
 
     private val clientCustomizers = mutableListOf<AwsKtorSnsClientCustomizer>()
 
-    /** 플러그인이 생성한 AWS Kotlin SNS 클라이언트에 사용자 정의 설정을 추가합니다. */
+    /**
+     * 플러그인이 생성한 AWS Kotlin SNS 클라이언트에 사용자 정의 설정을 추가합니다.
+     * 동적 endpoint provider는 허용되지 않습니다. 고정 endpoint에는 [endpointOverride]를 사용합니다.
+     */
     fun snsClient(customizer: AwsKtorSnsClientCustomizer) {
         clientCustomizers += customizer
     }
@@ -86,6 +95,20 @@ class SnsKtorPluginConfig {
             builder = {
                 defaults.snsClientCustomizers.forEach { it.customize(this) }
                 clientCustomizers.forEach { it.customize(this) }
+                requireAwsKotlinEndpointProviderUnset(endpointProvider)
+                endpointProvider = checkedAwsKotlinEndpointProvider(
+                    provider = endpointProvider ?: DefaultSnsEndpointProvider(),
+                    region = { it.region },
+                    allowInsecureLocalHttpEndpoint = defaults.allowInsecureLocalHttpEndpoint,
+                    create = { resolver -> SnsEndpointProvider { parameters -> resolver(parameters) } },
+                )
+                interceptors.add(
+                    AwsKotlinEndpointPolicyInterceptor(
+                        configuredEndpoint = this.endpointUrl?.toString(),
+                        region = this.region,
+                        allowInsecureLocalHttpEndpoint = defaults.allowInsecureLocalHttpEndpoint,
+                    ),
+                )
             },
         )
     }

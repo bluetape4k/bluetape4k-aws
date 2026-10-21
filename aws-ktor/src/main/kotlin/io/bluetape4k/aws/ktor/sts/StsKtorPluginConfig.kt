@@ -1,5 +1,10 @@
 package io.bluetape4k.aws.ktor.sts
 
+import aws.sdk.kotlin.services.sts.endpoints.DefaultStsEndpointProvider
+import aws.sdk.kotlin.services.sts.endpoints.StsEndpointProvider
+import io.bluetape4k.aws.ktor.AwsKotlinEndpointPolicyInterceptor
+import io.bluetape4k.aws.ktor.checkedAwsKotlinEndpointProvider
+import io.bluetape4k.aws.ktor.requireAwsKotlinEndpointProviderUnset
 import aws.sdk.kotlin.services.sts.StsClient
 import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
 import aws.smithy.kotlin.runtime.http.engine.HttpClientEngine
@@ -16,6 +21,7 @@ import io.bluetape4k.aws.kotlin.sts.stsClientOf
  *
  * 플러그인 설치는 작업만 등록합니다. STS 자격 또는 세션 호출은 애플리케이션 코드가
  * [StsKtorOperations]를 호출할 때만 발생합니다.
+ * 주입된 client에는 플러그인의 endpoint 정책 검사가 적용되지 않으므로 호출자가 전송 endpoint를 보호해야 합니다.
  */
 class StsKtorPluginConfig {
 
@@ -42,7 +48,10 @@ class StsKtorPluginConfig {
 
     private val clientCustomizers = mutableListOf<AwsKtorStsClientCustomizer>()
 
-    /** 플러그인이 생성한 AWS Kotlin STS 클라이언트에 사용자 정의 설정을 추가합니다. */
+    /**
+     * 플러그인이 생성한 AWS Kotlin STS 클라이언트에 사용자 정의 설정을 추가합니다.
+     * 동적 endpoint provider는 허용되지 않습니다. 고정 endpoint에는 [endpointOverride]를 사용합니다.
+     */
     fun stsClient(customizer: AwsKtorStsClientCustomizer) {
         clientCustomizers += customizer
     }
@@ -76,6 +85,20 @@ class StsKtorPluginConfig {
             builder = {
                 defaults.stsClientCustomizers.forEach { it.customize(this) }
                 clientCustomizers.forEach { it.customize(this) }
+                requireAwsKotlinEndpointProviderUnset(endpointProvider)
+                endpointProvider = checkedAwsKotlinEndpointProvider(
+                    provider = endpointProvider ?: DefaultStsEndpointProvider(),
+                    region = { it.region },
+                    allowInsecureLocalHttpEndpoint = defaults.allowInsecureLocalHttpEndpoint,
+                    create = { resolver -> StsEndpointProvider { parameters -> resolver(parameters) } },
+                )
+                interceptors.add(
+                    AwsKotlinEndpointPolicyInterceptor(
+                        configuredEndpoint = this.endpointUrl?.toString(),
+                        region = this.region,
+                        allowInsecureLocalHttpEndpoint = defaults.allowInsecureLocalHttpEndpoint,
+                    ),
+                )
             },
         )
     }
