@@ -45,7 +45,7 @@ dependencies {
 
     implementation(libs.aws.smithy.aws.signing.default)
     implementation(bt4k.aws.smithy.kotlin.http.client.engine.okhttp)
-    compileOnly("com.squareup.okhttp3:okhttp:5.5.0")
+    compileOnly(bt4k.okhttp3)
 
     compileOnly(platform(bt4k.spring.boot4.dependencies))
     compileOnly(libs.micrometer.core)
