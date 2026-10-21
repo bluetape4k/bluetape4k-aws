@@ -1,5 +1,10 @@
 package io.bluetape4k.aws.ktor.cloudwatch
 
+import aws.sdk.kotlin.services.cloudwatch.endpoints.DefaultCloudWatchEndpointProvider
+import aws.sdk.kotlin.services.cloudwatch.endpoints.CloudWatchEndpointProvider
+import io.bluetape4k.aws.ktor.AwsKotlinEndpointPolicyInterceptor
+import io.bluetape4k.aws.ktor.checkedAwsKotlinEndpointProvider
+import io.bluetape4k.aws.ktor.requireAwsKotlinEndpointProviderUnset
 import io.bluetape4k.ToStringBuilder
 import aws.sdk.kotlin.services.cloudwatch.CloudWatchClient
 import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
@@ -16,6 +21,7 @@ import io.bluetape4k.aws.ktor.AwsKtorDefaults
  *
  * 플러그인을 설치하면 작업만 등록합니다. 애플리케이션 코드가 [CloudWatchKtorOperations]를
  * 호출하기 전에는 메트릭을 게시하지 않습니다.
+ * 주입된 client에는 플러그인의 endpoint 정책 검사가 적용되지 않으므로 호출자가 전송 endpoint를 보호해야 합니다.
  */
 class CloudWatchKtorPluginConfig {
 
@@ -50,6 +56,7 @@ class CloudWatchKtorPluginConfig {
 
     /**
      * 플러그인이 생성한 클라이언트에 CloudWatch 비동기 클라이언트 빌더 사용자 정의 설정을 추가합니다.
+     * 동적 endpoint provider는 허용되지 않습니다. 고정 endpoint에는 [endpointOverride]를 사용합니다.
      */
     fun cloudWatchClient(customizer: AwsKtorCloudWatchClientCustomizer) {
         clientCustomizers += customizer
@@ -87,6 +94,20 @@ class CloudWatchKtorPluginConfig {
             builder = {
                 defaults.cloudWatchClientCustomizers.forEach { it.customize(this) }
                 clientCustomizers.forEach { it.customize(this) }
+                requireAwsKotlinEndpointProviderUnset(endpointProvider)
+                endpointProvider = checkedAwsKotlinEndpointProvider(
+                    provider = endpointProvider ?: DefaultCloudWatchEndpointProvider(),
+                    region = { it.region },
+                    allowInsecureLocalHttpEndpoint = defaults.allowInsecureLocalHttpEndpoint,
+                    create = { resolver -> CloudWatchEndpointProvider { parameters -> resolver(parameters) } },
+                )
+                interceptors.add(
+                    AwsKotlinEndpointPolicyInterceptor(
+                        configuredEndpoint = this.endpointUrl?.toString(),
+                        region = this.region,
+                        allowInsecureLocalHttpEndpoint = defaults.allowInsecureLocalHttpEndpoint,
+                    ),
+                )
             },
         )
     }

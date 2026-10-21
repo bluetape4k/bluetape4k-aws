@@ -106,6 +106,8 @@ fun Application.module() {
 can inherit shared defaults. Set a service-local `region`, `endpointOverride` /
 `endpointUrl`, or credentials provider when one integration needs a different target. Use local endpoints such as `http://localhost:4566` with dummy test credentials for Floci or LocalStack; production deployments should use an AWS Kotlin credentials provider such as `DefaultChainCredentialsProvider` or an application-owned provider. For EKS/IRSA or other web-identity deployments, supply the appropriate AWS Kotlin credentials provider in `AwsKtorCore`; keep `aws.sdk.kotlin:sts` on the application runtime classpath when that provider requires STS.
 
+Plugin-managed clients reject a custom `endpointProvider` while the client is configured; DynamoDB also rejects `endpointDiscoverer`. This lets endpoint policy fail before credentials are resolved. Set a fixed target with `endpointOverride` or `endpointUrl`; HTTPS is required unless `allowInsecureLocalHttpEndpoint` explicitly permits a literal loopback HTTP endpoint. Caller-injected clients bypass plugin endpoint checks, so their owner must enforce the same policy.
+
 ```kotlin
 import io.bluetape4k.aws.ktor.client.AwsSigV4Plugin
 import io.ktor.client.HttpClient
@@ -521,7 +523,7 @@ install(CloudWatchLogsKtorPlugin) {
 after cleanup. Set `shutdownPolicy = CloudWatchLogsShutdownPolicy.ThrowOnTimeout`
 when a timeout must fail shutdown; the plugin-owned client is closed and the observer is notified before `CloudWatchLogsShutdownTimeoutException` is thrown.
 
-Use `CloudWatchKtorMeterPublishingTemplate` when a service wants to publish a one-time Micrometer snapshot to CloudWatch. This helper reads an existing
+Use `CloudWatchKtorMeterPublishingTemplate` when a service wants to publish the current Micrometer measurements to CloudWatch. This helper reads an existing
 `MeterRegistry` only when invoked and does not register a scheduled CloudWatch registry exporter.
 
 ## SES And SNS Server Plugins

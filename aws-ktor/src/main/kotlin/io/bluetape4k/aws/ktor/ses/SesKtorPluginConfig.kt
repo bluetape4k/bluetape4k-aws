@@ -1,5 +1,10 @@
 package io.bluetape4k.aws.ktor.ses
 
+import aws.sdk.kotlin.services.sesv2.endpoints.DefaultSesV2EndpointProvider
+import aws.sdk.kotlin.services.sesv2.endpoints.SesV2EndpointProvider
+import io.bluetape4k.aws.ktor.AwsKotlinEndpointPolicyInterceptor
+import io.bluetape4k.aws.ktor.checkedAwsKotlinEndpointProvider
+import io.bluetape4k.aws.ktor.requireAwsKotlinEndpointProviderUnset
 import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.AwsKtorSesV2ClientCustomizer
@@ -17,6 +22,7 @@ import aws.smithy.kotlin.runtime.net.url.Url
  *
  * 플러그인을 설치하면 작업만 등록합니다. 애플리케이션 코드가 [SesKtorOperations]를
  * 호출하기 전에는 이메일을 전송하지 않습니다.
+ * 주입된 client에는 플러그인의 endpoint 정책 검사가 적용되지 않으므로 호출자가 전송 endpoint를 보호해야 합니다.
  */
 class SesKtorPluginConfig {
 
@@ -51,6 +57,7 @@ class SesKtorPluginConfig {
 
     /**
      * 플러그인이 생성한 AWS Kotlin SES v2 클라이언트에 사용자 정의 설정을 추가합니다.
+     * 동적 endpoint provider는 허용되지 않습니다. 고정 endpoint에는 [endpointOverride]를 사용합니다.
      */
     fun sesV2Client(customizer: AwsKtorSesV2ClientCustomizer) {
         clientCustomizers += customizer
@@ -95,6 +102,20 @@ class SesKtorPluginConfig {
             builder = {
                 defaults.sesV2ClientCustomizers.forEach { it.customize(this) }
                 clientCustomizers.forEach { it.customize(this) }
+                requireAwsKotlinEndpointProviderUnset(endpointProvider)
+                endpointProvider = checkedAwsKotlinEndpointProvider(
+                    provider = endpointProvider ?: DefaultSesV2EndpointProvider(),
+                    region = { it.region },
+                    allowInsecureLocalHttpEndpoint = defaults.allowInsecureLocalHttpEndpoint,
+                    create = { resolver -> SesV2EndpointProvider { parameters -> resolver(parameters) } },
+                )
+                interceptors.add(
+                    AwsKotlinEndpointPolicyInterceptor(
+                        configuredEndpoint = this.endpointUrl?.toString(),
+                        region = this.region,
+                        allowInsecureLocalHttpEndpoint = defaults.allowInsecureLocalHttpEndpoint,
+                    ),
+                )
             },
         )
     }

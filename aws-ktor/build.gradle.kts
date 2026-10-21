@@ -3,6 +3,8 @@ configurations {
 }
 
 dependencies {
+    val awsKotlinVersion = bt4k.versions.aws.kotlin.get()
+
     // bluetape4k-aws modules
     api(project(":bluetape4k-aws-kotlin"))
     compileOnly(project(":bluetape4k-aws-exposed"))
@@ -25,17 +27,17 @@ dependencies {
 
     // Ktor client and optional runtime integrations. Keep direct dependencies
     // where aws-ktor exposes Ktor public types or needs a concrete engine.
-    api(libs.aws.kotlin.cloudwatch)
-    api(libs.aws.kotlin.cloudwatchlogs)
-    api(libs.aws.kotlin.eventbridge)
-    api(libs.aws.kotlin.kinesis)
-    api(libs.aws.kotlin.dynamodb)
-    api(libs.aws.kotlin.s3control)
-    api(libs.aws.kotlin.s3vectors)
-    api(libs.aws.kotlin.sesv2)
-    api(libs.aws.kotlin.sns)
-    api(libs.aws.kotlin.sqs)
-    api(libs.aws.kotlin.sts)
+    api("aws.sdk.kotlin:cloudwatch:$awsKotlinVersion")
+    api("aws.sdk.kotlin:cloudwatchlogs:$awsKotlinVersion")
+    api("aws.sdk.kotlin:eventbridge:$awsKotlinVersion")
+    api("aws.sdk.kotlin:kinesis:$awsKotlinVersion")
+    api("aws.sdk.kotlin:dynamodb:$awsKotlinVersion")
+    api("aws.sdk.kotlin:s3control:$awsKotlinVersion")
+    api("aws.sdk.kotlin:s3vectors:$awsKotlinVersion")
+    api("aws.sdk.kotlin:sesv2:$awsKotlinVersion")
+    api("aws.sdk.kotlin:sns:$awsKotlinVersion")
+    api("aws.sdk.kotlin:sqs:$awsKotlinVersion")
+    api("aws.sdk.kotlin:sts:$awsKotlinVersion")
     api(libs.aws.smithy.aws.credentials)
     api(libs.aws.smithy.aws.signing.common)
     api(libs.aws.smithy.http.client)

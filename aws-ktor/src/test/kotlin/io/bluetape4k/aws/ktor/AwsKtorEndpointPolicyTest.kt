@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.ktor
 
 import aws.smithy.kotlin.runtime.client.ProtocolRequestInterceptorContext
+import aws.smithy.kotlin.runtime.client.RequestInterceptorContext
 import aws.smithy.kotlin.runtime.http.HttpMethod
 import aws.smithy.kotlin.runtime.http.request.HttpRequest
 import aws.smithy.kotlin.runtime.net.Host
@@ -107,7 +108,20 @@ class AwsKtorEndpointPolicyTest {
     }
 
     @Test
-    fun `rejects remote HTTP endpoint after endpoint discovery rewrites the request host`() {
+    fun `rejects configured remote HTTP endpoint before request execution`() {
+        val interceptor = AwsKotlinEndpointPolicyInterceptor(
+            configuredEndpoint = "http://169.254.169.254/latest/meta-data",
+            region = "ap-northeast-2",
+            allowInsecureLocalHttpEndpoint = true,
+        )
+
+        assertFailsWith<IllegalArgumentException> {
+            interceptor.readBeforeExecution(mockk<RequestInterceptorContext<Any>>(relaxed = true))
+        }
+    }
+
+    @Test
+    fun `rejects remote HTTP endpoint after endpoint discovery rewrites the request host before signing`() {
         val discoveredUrl = Url.parse("http://localhost:4566").copy {
             host = Host.parse("169.254.169.254")
         }
@@ -122,9 +136,10 @@ class AwsKtorEndpointPolicyTest {
         assertFailsWith<IllegalArgumentException> {
             runSuspendIO {
                 AwsKotlinEndpointPolicyInterceptor(
-                    region = "ap-northeast-2",
+                    configuredEndpoint = null,
+                    region = null,
                     allowInsecureLocalHttpEndpoint = true,
-                ).modifyBeforeTransmit(context)
+                ).modifyBeforeSigning(context)
             }
         }
     }

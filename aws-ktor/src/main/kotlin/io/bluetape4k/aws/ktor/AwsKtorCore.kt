@@ -33,6 +33,9 @@ import java.time.Clock
  * 플러그인별 설정은 항상 이 기본값보다 우선합니다. 기본값은 옵트인 방식입니다. 애플리케이션이
  * [AwsKtorCore]를 한 번 설치하면 서비스 플러그인이 리전, 엔드포인트 재정의, 자격 증명, 시계,
  * 사용자 정의 설정을 상속할 수 있습니다.
+ * 고정 endpoint override는 요청 시작 단계에서 자격 증명을 조회하기 전에 검사합니다.
+ * 서비스 사용자 정의 설정의 endpoint provider와 DynamoDB endpoint discovery는 요청마다 endpoint가 달라
+ * 자격 증명 조회 전에 검증할 수 없으므로 클라이언트 생성 시 거부됩니다.
  *
  * 자격 증명 공급자, HTTP 엔진, 사용자 정의 람다는 영속 상태가 아닌 런타임 객체이므로
  * 실행 중인 협력 객체 속성은 transient입니다. 명시적으로 전달한 AWS Kotlin 자격 증명 공급자와
@@ -309,58 +312,89 @@ class AwsKtorCoreConfig {
         httpClientCustomizers += customizer
     }
 
-    /** 전역 AWS Kotlin SDK CloudWatch 클라이언트 빌더 사용자 정의 설정을 추가합니다. */
+    /**
+     * 전역 AWS Kotlin SDK CloudWatch 클라이언트 빌더 사용자 정의 설정을 추가합니다.
+     * endpoint provider는 지정하지 마세요. 고정 endpoint는 [AwsKtorDefaults.endpointOverride]를 사용합니다.
+     */
     fun cloudWatchClient(customizer: AwsKtorCloudWatchClientCustomizer) {
         cloudWatchClientCustomizers += customizer
     }
 
-    /** 전역 AWS Kotlin SDK CloudWatch Logs 클라이언트 빌더 사용자 정의 설정을 추가합니다. */
+    /**
+     * 전역 AWS Kotlin SDK CloudWatch Logs 클라이언트 빌더 사용자 정의 설정을 추가합니다.
+     * endpoint provider는 지정하지 마세요. 고정 endpoint는 [AwsKtorDefaults.endpointOverride]를 사용합니다.
+     */
     fun cloudWatchLogsClient(customizer: AwsKtorCloudWatchLogsClientCustomizer) {
         cloudWatchLogsClientCustomizers += customizer
     }
 
-    /** 전역 AWS Kotlin SDK EventBridge 클라이언트 빌더 사용자 정의 설정을 추가합니다. */
+    /**
+     * 전역 AWS Kotlin SDK EventBridge 클라이언트 빌더 사용자 정의 설정을 추가합니다.
+     * endpoint provider는 지정하지 마세요. 고정 endpoint는 [AwsKtorDefaults.endpointOverride]를 사용합니다.
+     */
     fun eventBridgeClient(customizer: AwsKtorEventBridgeClientCustomizer) {
         eventBridgeClientCustomizers += customizer
     }
 
-    /** 전역 AWS Kotlin SDK Kinesis 클라이언트 빌더 사용자 정의 설정을 추가합니다. */
+    /**
+     * 전역 AWS Kotlin SDK Kinesis 클라이언트 빌더 사용자 정의 설정을 추가합니다.
+     * endpoint provider는 지정하지 마세요. 고정 endpoint는 [AwsKtorDefaults.endpointOverride]를 사용합니다.
+     */
     fun kinesisClient(customizer: AwsKtorKinesisClientCustomizer) {
         kinesisClientCustomizers += customizer
     }
 
-    /** 전역 AWS Kotlin SDK S3 Control 클라이언트 빌더 사용자 정의 설정을 추가합니다. */
+    /**
+     * 전역 AWS Kotlin SDK S3 Control 클라이언트 빌더 사용자 정의 설정을 추가합니다.
+     * endpoint provider는 지정하지 마세요. 고정 endpoint는 [AwsKtorDefaults.endpointOverride]를 사용합니다.
+     */
     fun s3ControlClient(customizer: AwsKtorS3ControlClientCustomizer) {
         s3ControlClientCustomizers += customizer
     }
 
-    /** 전역 AWS Kotlin SDK S3 Vectors 클라이언트 빌더 사용자 정의 설정을 추가합니다. */
+    /**
+     * 전역 AWS Kotlin SDK S3 Vectors 클라이언트 빌더 사용자 정의 설정을 추가합니다.
+     * endpoint provider는 지정하지 마세요. 고정 endpoint는 [AwsKtorDefaults.endpointOverride]를 사용합니다.
+     */
     fun s3VectorsClient(customizer: AwsKtorS3VectorsClientCustomizer) {
         s3VectorsClientCustomizers += customizer
     }
 
-    /** 전역 AWS Kotlin SDK SES v2 클라이언트 빌더 사용자 정의 설정을 추가합니다. */
+    /**
+     * 전역 AWS Kotlin SDK SES v2 클라이언트 빌더 사용자 정의 설정을 추가합니다.
+     * endpoint provider는 지정하지 마세요. 고정 endpoint는 [AwsKtorDefaults.endpointOverride]를 사용합니다.
+     */
     fun sesV2Client(customizer: AwsKtorSesV2ClientCustomizer) {
         sesV2ClientCustomizers += customizer
     }
 
-    /** 전역 AWS Kotlin SDK SNS 클라이언트 빌더 사용자 정의 설정을 추가합니다. */
+    /**
+     * 전역 AWS Kotlin SDK SNS 클라이언트 빌더 사용자 정의 설정을 추가합니다.
+     * endpoint provider는 지정하지 마세요. 고정 endpoint는 [AwsKtorDefaults.endpointOverride]를 사용합니다.
+     */
     fun snsClient(customizer: AwsKtorSnsClientCustomizer) {
         snsClientCustomizers += customizer
     }
 
-    /** 전역 AWS Kotlin SDK SQS 클라이언트 빌더 사용자 정의 설정을 추가합니다. */
+    /**
+     * 전역 AWS Kotlin SDK SQS 클라이언트 빌더 사용자 정의 설정을 추가합니다.
+     * endpoint provider는 지정하지 마세요. 고정 endpoint는 [AwsKtorDefaults.endpointOverride]를 사용합니다.
+     */
     fun sqsClient(customizer: AwsKtorSqsClientCustomizer) {
         sqsClientCustomizers += customizer
     }
 
-    /** 전역 AWS Kotlin SDK STS 클라이언트 빌더 사용자 정의 설정을 추가합니다. */
+    /**
+     * 전역 AWS Kotlin SDK STS 클라이언트 빌더 사용자 정의 설정을 추가합니다.
+     * endpoint provider는 지정하지 마세요. 고정 endpoint는 [AwsKtorDefaults.endpointOverride]를 사용합니다.
+     */
     fun stsClient(customizer: AwsKtorStsClientCustomizer) {
         stsClientCustomizers += customizer
     }
 
     /**
      * 전역 AWS Kotlin SDK DynamoDB 클라이언트 빌더 사용자 정의 설정을 추가합니다.
+     * `endpointProvider`와 `endpointDiscoverer`는 지원하지 않으며, 고정 endpoint는 [AwsKtorDefaults.endpointOverride]를 사용합니다.
      */
     fun dynamoDbClient(customizer: AwsKtorDynamoDbClientCustomizer) {
         dynamoDbClientCustomizers += customizer
@@ -406,58 +440,89 @@ fun interface AwsKtorHttpClientCustomizer {
     fun customize(config: HttpClientConfig<*>)
 }
 
-/** 플러그인이 생성할 AWS Kotlin SDK CloudWatch 클라이언트 빌더를 사용자 정의합니다. */
+    /**
+     * 플러그인이 생성할 AWS Kotlin SDK CloudWatch 클라이언트 빌더를 사용자 정의합니다.
+     * 동적 endpoint provider는 지원하지 않으며, 고정 endpoint는 플러그인의 `endpointOverride`를 사용합니다.
+     */
 fun interface AwsKtorCloudWatchClientCustomizer {
     fun customize(builder: CloudWatchClient.Config.Builder)
 }
 
-/** 플러그인이 생성할 AWS Kotlin SDK CloudWatch Logs 클라이언트 빌더를 사용자 정의합니다. */
+/**
+ * 플러그인이 생성할 AWS Kotlin SDK CloudWatch Logs 클라이언트 빌더를 사용자 정의합니다.
+ * 동적 endpoint provider는 지원하지 않으며, 고정 endpoint는 플러그인의 `endpointOverride`를 사용합니다.
+ */
 fun interface AwsKtorCloudWatchLogsClientCustomizer {
     fun customize(builder: CloudWatchLogsClient.Config.Builder)
 }
 
-/** 플러그인이 생성할 AWS Kotlin SDK EventBridge 클라이언트 빌더를 사용자 정의합니다. */
+/**
+ * 플러그인이 생성할 AWS Kotlin SDK EventBridge 클라이언트 빌더를 사용자 정의합니다.
+ * 동적 endpoint provider는 지원하지 않으며, 고정 endpoint는 플러그인의 `endpointOverride`를 사용합니다.
+ */
 fun interface AwsKtorEventBridgeClientCustomizer {
     fun customize(builder: EventBridgeClient.Config.Builder)
 }
 
-/** 플러그인이 생성할 AWS Kotlin SDK Kinesis 클라이언트 빌더를 사용자 정의합니다. */
+/**
+ * 플러그인이 생성할 AWS Kotlin SDK Kinesis 클라이언트 빌더를 사용자 정의합니다.
+ * 동적 endpoint provider는 지원하지 않으며, 고정 endpoint는 플러그인의 `endpointOverride`를 사용합니다.
+ */
 fun interface AwsKtorKinesisClientCustomizer {
     fun customize(builder: KinesisClient.Config.Builder)
 }
 
-/** 플러그인이 생성할 AWS Kotlin SDK S3 Control 클라이언트 빌더를 사용자 정의합니다. */
+/**
+ * 플러그인이 생성할 AWS Kotlin SDK S3 Control 클라이언트 빌더를 사용자 정의합니다.
+ * 동적 endpoint provider는 지원하지 않으며, 고정 endpoint는 플러그인의 `endpointOverride`를 사용합니다.
+ */
 fun interface AwsKtorS3ControlClientCustomizer {
     fun customize(builder: S3ControlClient.Config.Builder)
 }
 
-/** 플러그인이 생성할 AWS Kotlin SDK S3 Vectors 클라이언트 빌더를 사용자 정의합니다. */
+/**
+ * 플러그인이 생성할 AWS Kotlin SDK S3 Vectors 클라이언트 빌더를 사용자 정의합니다.
+ * 동적 endpoint provider는 지원하지 않으며, 고정 endpoint는 플러그인의 `endpointOverride`를 사용합니다.
+ */
 fun interface AwsKtorS3VectorsClientCustomizer {
     fun customize(builder: S3VectorsClient.Config.Builder)
 }
 
-/** 플러그인이 생성할 AWS Kotlin SDK SES v2 클라이언트 빌더를 사용자 정의합니다. */
+/**
+ * 플러그인이 생성할 AWS Kotlin SDK SES v2 클라이언트 빌더를 사용자 정의합니다.
+ * 동적 endpoint provider는 지원하지 않으며, 고정 endpoint는 플러그인의 `endpointOverride`를 사용합니다.
+ */
 fun interface AwsKtorSesV2ClientCustomizer {
     fun customize(builder: SesV2Client.Config.Builder)
 }
 
-/** 플러그인이 생성할 AWS Kotlin SDK SNS 클라이언트 빌더를 사용자 정의합니다. */
+/**
+ * 플러그인이 생성할 AWS Kotlin SDK SNS 클라이언트 빌더를 사용자 정의합니다.
+ * 동적 endpoint provider는 지원하지 않으며, 고정 endpoint는 플러그인의 `endpointOverride`를 사용합니다.
+ */
 fun interface AwsKtorSnsClientCustomizer {
     fun customize(builder: SnsClient.Config.Builder)
 }
 
-/** 플러그인이 생성할 AWS Kotlin SDK SQS 클라이언트 빌더를 사용자 정의합니다. */
+/**
+ * 플러그인이 생성할 AWS Kotlin SDK SQS 클라이언트 빌더를 사용자 정의합니다.
+ * 동적 endpoint provider는 지원하지 않으며, 고정 endpoint는 플러그인의 `endpointOverride`를 사용합니다.
+ */
 fun interface AwsKtorSqsClientCustomizer {
     fun customize(builder: SqsClient.Config.Builder)
 }
 
-/** 플러그인이 생성할 AWS Kotlin SDK STS 클라이언트 빌더를 사용자 정의합니다. */
+/**
+ * 플러그인이 생성할 AWS Kotlin SDK STS 클라이언트 빌더를 사용자 정의합니다.
+ * 동적 endpoint provider는 지원하지 않으며, 고정 endpoint는 플러그인의 `endpointOverride`를 사용합니다.
+ */
 fun interface AwsKtorStsClientCustomizer {
     fun customize(builder: StsClient.Config.Builder)
 }
 
 /**
  * 플러그인이 생성할 AWS Kotlin SDK DynamoDB 클라이언트 빌더를 사용자 정의합니다.
+ * `endpointProvider`와 `endpointDiscoverer`는 지원하지 않으며, 고정 endpoint는 플러그인의 `endpointUrl`을 사용합니다.
  */
 fun interface AwsKtorDynamoDbClientCustomizer {
     fun customize(builder: aws.sdk.kotlin.services.dynamodb.DynamoDbClient.Config.Builder)

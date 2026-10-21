@@ -7,7 +7,9 @@ import aws.smithy.kotlin.runtime.http.HttpStatusCode
 import aws.smithy.kotlin.runtime.http.SdkHttpClient
 import aws.smithy.kotlin.runtime.http.engine.CloseableHttpClientEngine
 import aws.smithy.kotlin.runtime.http.engine.HttpClientEngineConfig
+import aws.smithy.kotlin.runtime.http.request.HttpRequest
 import aws.smithy.kotlin.runtime.http.response.HttpResponse
+import aws.smithy.kotlin.runtime.io.SdkByteReadChannel
 import aws.smithy.kotlin.runtime.io.SdkBuffer
 import aws.smithy.kotlin.runtime.io.SdkSource
 import aws.sdk.kotlin.runtime.config.imds.EndpointMode
@@ -18,12 +20,17 @@ import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.jupiter.api.Test
 import java.net.InetSocketAddress
 import java.net.URI
@@ -42,6 +49,56 @@ import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
 
 class ImdsKtorTemplateTest {
+
+    @Test
+    fun `http call cleanup completes after caller cancellation`() = runSuspendIO {
+        val callerJob = Job()
+        val callJob = SupervisorJob()
+        val readStarted = CompletableDeferred<Unit>()
+        val cancellationRequested = CompletableDeferred<Unit>()
+        val allowReadToFinish = CompletableDeferred<Unit>()
+        val responseChannel = object : SdkByteReadChannel {
+            override val availableForRead: Int = 0
+            override val isClosedForRead: Boolean
+                get() = allowReadToFinish.isCompleted
+            override val isClosedForWrite: Boolean
+                get() = cancellationRequested.isCompleted
+            override val closedCause: Throwable? = null
+
+            override suspend fun read(sink: SdkBuffer, limit: Long): Long {
+                readStarted.complete(Unit)
+                cancellationRequested.await()
+                allowReadToFinish.await()
+                return -1L
+            }
+
+            override fun cancel(cause: Throwable?): Boolean = cancellationRequested.complete(Unit)
+        }
+        val responseBody = object : HttpBody.ChannelContent() {
+            override fun readFrom(): SdkByteReadChannel = responseChannel
+        }
+        val activeChild = CoroutineScope(Dispatchers.Unconfined + callJob).launch {
+            responseChannel.read(SdkBuffer(), Long.MAX_VALUE)
+        }
+        readStarted.await()
+        val call = HttpCall(
+            request = HttpRequest { method = HttpMethod.GET },
+            response = HttpResponse(HttpStatusCode(200, "OK"), body = responseBody),
+            coroutineContext = Dispatchers.Unconfined + callJob,
+        )
+        val cleanupScope = CoroutineScope(coroutineContext + callerJob)
+
+        val cleanup = cleanupScope.launch { completeHttpCall(call) }
+
+        cancellationRequested.await()
+        callerJob.cancel()
+        (withTimeoutOrNull(50) { cleanup.join() } == null).shouldBeTrue()
+
+        allowReadToFinish.complete(Unit)
+        cleanup.join()
+        activeChild.isCompleted.shouldBeTrue()
+        callJob.isCompleted.shouldBeTrue()
+    }
 
     @Test
     fun `get sends token ttl caches token and attaches it to metadata request`() = runSuspendIO {

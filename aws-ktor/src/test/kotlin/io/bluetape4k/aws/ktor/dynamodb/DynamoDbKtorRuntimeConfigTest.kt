@@ -1,11 +1,14 @@
 package io.bluetape4k.aws.ktor.dynamodb
 
 import aws.sdk.kotlin.services.dynamodb.DynamoDbClient
+import aws.sdk.kotlin.services.dynamodb.endpoints.DynamoDbEndpointDiscoverer
 import aws.sdk.kotlin.services.dynamodb.endpoints.DynamoDbEndpointParameters
 import aws.sdk.kotlin.services.dynamodb.endpoints.DynamoDbEndpointProvider
 import aws.sdk.kotlin.services.dynamodb.model.AttributeDefinition
 import aws.sdk.kotlin.services.dynamodb.model.CreateTableRequest
+import aws.sdk.kotlin.services.dynamodb.model.ListTablesRequest
 import aws.sdk.kotlin.services.dynamodb.model.KeySchemaElement
+import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
 import aws.smithy.kotlin.runtime.client.endpoints.Endpoint
 import aws.smithy.kotlin.runtime.auth.awscredentials.CloseableCredentialsProvider
 import aws.smithy.kotlin.runtime.http.engine.CloseableHttpClientEngine
@@ -25,6 +28,7 @@ import io.bluetape4k.aws.ktor.AwsKotlinEndpointPolicyInterceptor
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.ktor.core.ApplicationResourceRegistry
 import io.bluetape4k.ktor.core.ApplicationResourceRegistryState
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -262,7 +266,8 @@ class DynamoDbKtorRuntimeConfigTest {
     }
 
     @Test
-    fun `validates final endpoint after shared and service customizers`() {
+    fun `validates final endpoint after shared and service customizers before credentials`() {
+        val credentialsProvider = mockk<CredentialsProvider>(relaxed = true)
         val defaults = AwsKtorDefaults(
             region = "ap-northeast-2",
             dynamoDbClientCustomizers = listOf(
@@ -274,6 +279,7 @@ class DynamoDbKtorRuntimeConfigTest {
 
         val runtimeConfig = DynamoDbKtorPluginConfig()
             .apply {
+                this.credentialsProvider = credentialsProvider
                 client {
                     endpointUrl = Url.parse("http://169.254.169.254")
                 }
@@ -283,14 +289,10 @@ class DynamoDbKtorRuntimeConfigTest {
         try {
             assertFailsWith<IllegalArgumentException> {
                 runSuspendIO {
-                    runtimeConfig.dynamoDbClient.config.endpointProvider.resolveEndpoint(
-                        DynamoDbEndpointParameters {
-                            region = "ap-northeast-2"
-                            endpoint = runtimeConfig.dynamoDbClient.config.endpointUrl?.toString()
-                        },
-                    )
+                    runtimeConfig.dynamoDbClient.listTables(ListTablesRequest {})
                 }
             }
+            coVerify(exactly = 0) { credentialsProvider.resolve() }
         } finally {
             runtimeConfig.dynamoDbClient.close()
         }
@@ -327,45 +329,86 @@ class DynamoDbKtorRuntimeConfigTest {
     }
 
     @Test
-    fun `rejects remote HTTP endpoint returned by service custom endpoint provider`() {
-        var sharedProviderCalls = 0
+    fun `rejects service endpoint provider before resolving credentials`() {
         var serviceProviderCalls = 0
-        val runtimeConfig = DynamoDbKtorPluginConfig().apply {
-            client {
-                endpointProvider = DynamoDbEndpointProvider {
-                    serviceProviderCalls++
-                    Endpoint(Url.parse("http://169.254.169.254/latest/meta-data"))
+        val credentialsProvider = mockk<CredentialsProvider>(relaxed = true)
+        assertFailsWith<IllegalArgumentException> {
+            DynamoDbKtorPluginConfig().apply {
+                this.credentialsProvider = credentialsProvider
+                client {
+                    endpointProvider = DynamoDbEndpointProvider {
+                        serviceProviderCalls++
+                        Endpoint(Url.parse("http://169.254.169.254/latest/meta-data"))
+                    }
                 }
-            }
-        }.toRuntimeConfig(
-            AwsKtorDefaults(
-                region = "ap-northeast-2",
-                dynamoDbClientCustomizers = listOf(
-                    AwsKtorDynamoDbClientCustomizer { builder ->
-                        builder.endpointProvider = DynamoDbEndpointProvider {
-                            sharedProviderCalls++
-                            Endpoint(Url.parse("https://service.example.com"))
-                        }
-                    },
+            }.toRuntimeConfig(
+                AwsKtorDefaults(region = "ap-northeast-2"),
+            )
+        }
+
+        serviceProviderCalls shouldBeEqualTo 0
+        coVerify(exactly = 0) { credentialsProvider.resolve() }
+    }
+
+    @Test
+    fun `rejects shared endpoint provider before resolving credentials`() {
+        var sharedProviderCalls = 0
+        val credentialsProvider = mockk<CredentialsProvider>(relaxed = true)
+
+        assertFailsWith<IllegalArgumentException> {
+            DynamoDbKtorPluginConfig().apply {
+                this.credentialsProvider = credentialsProvider
+            }.toRuntimeConfig(
+                AwsKtorDefaults(
+                    region = "ap-northeast-2",
+                    kotlinCredentialsProvider = credentialsProvider,
+                    dynamoDbClientCustomizers = listOf(
+                        AwsKtorDynamoDbClientCustomizer { builder ->
+                            builder.endpointProvider = DynamoDbEndpointProvider {
+                                sharedProviderCalls++
+                                Endpoint(Url.parse("https://service.example.com"))
+                            }
+                        },
+                    ),
                 ),
-            ),
-        )
+            )
+        }
+
+        sharedProviderCalls shouldBeEqualTo 0
+        coVerify(exactly = 0) { credentialsProvider.resolve() }
+    }
+
+    @Test
+    fun `rejects DynamoDB endpoint discovery during client configuration`() {
+        val discoverer = mockk<DynamoDbEndpointDiscoverer>(relaxed = true)
+        val credentialsProvider = mockk<CredentialsProvider>(relaxed = true)
+
+        assertFailsWith<IllegalArgumentException> {
+            DynamoDbKtorPluginConfig().apply {
+                this.credentialsProvider = credentialsProvider
+                client { endpointDiscoverer = discoverer }
+            }.toRuntimeConfig(AwsKtorDefaults(region = "ap-northeast-2"))
+        }
+
+        coVerify(exactly = 0) { credentialsProvider.resolve() }
+    }
+
+    @Test
+    fun `rejects invalid configured endpoint before resolving credentials`() {
+        val credentialsProvider = mockk<CredentialsProvider>(relaxed = true)
+        val runtimeConfig = DynamoDbKtorPluginConfig().apply {
+            region = "ap-northeast-2"
+            endpointUrl = Url.parse("http://169.254.169.254/latest/meta-data")
+            this.credentialsProvider = credentialsProvider
+        }.toRuntimeConfig()
 
         try {
-            runtimeConfig.dynamoDbClient.config.interceptors
-                .any { it is AwsKotlinEndpointPolicyInterceptor }
-                .shouldBeTrue()
-
             assertFailsWith<IllegalArgumentException> {
                 runSuspendIO {
-                    runtimeConfig.dynamoDbClient.config.endpointProvider.resolveEndpoint(
-                        DynamoDbEndpointParameters { region = "ap-northeast-2" },
-                    )
+                    runtimeConfig.dynamoDbClient.listTables(ListTablesRequest {})
                 }
             }
-
-            serviceProviderCalls shouldBeEqualTo 1
-            sharedProviderCalls shouldBeEqualTo 0
+            coVerify(exactly = 0) { credentialsProvider.resolve() }
         } finally {
             runtimeConfig.dynamoDbClient.close()
         }

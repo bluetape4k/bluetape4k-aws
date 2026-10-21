@@ -1,5 +1,10 @@
 package io.bluetape4k.aws.ktor.cloudwatch
 
+import aws.sdk.kotlin.services.cloudwatchlogs.endpoints.DefaultCloudWatchLogsEndpointProvider
+import aws.sdk.kotlin.services.cloudwatchlogs.endpoints.CloudWatchLogsEndpointProvider
+import io.bluetape4k.aws.ktor.AwsKotlinEndpointPolicyInterceptor
+import io.bluetape4k.aws.ktor.checkedAwsKotlinEndpointProvider
+import io.bluetape4k.aws.ktor.requireAwsKotlinEndpointProviderUnset
 import io.bluetape4k.ToStringBuilder
 import aws.sdk.kotlin.services.cloudwatchlogs.CloudWatchLogsClient
 import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
@@ -17,6 +22,7 @@ import java.time.Duration
  *
  * 플러그인을 설치하면 작업과 런타임만 등록합니다. 명시적으로 구성하거나 호출하지 않으면
  * 로그 그룹이나 스트림을 생성하거나 이벤트를 게시하지 않습니다.
+ * 주입된 client에는 플러그인의 endpoint 정책 검사가 적용되지 않으므로 호출자가 전송 endpoint를 보호해야 합니다.
  */
 class CloudWatchLogsKtorPluginConfig {
 
@@ -70,6 +76,7 @@ class CloudWatchLogsKtorPluginConfig {
 
     /**
      * 플러그인이 생성한 클라이언트에 CloudWatch Logs 비동기 클라이언트 빌더 사용자 정의 설정을 추가합니다.
+     * 동적 endpoint provider는 허용되지 않습니다. 고정 endpoint에는 [endpointOverride]를 사용합니다.
      */
     fun cloudWatchLogsClient(customizer: AwsKtorCloudWatchLogsClientCustomizer) {
         clientCustomizers += customizer
@@ -143,6 +150,20 @@ class CloudWatchLogsKtorPluginConfig {
             builder = {
                 defaults.cloudWatchLogsClientCustomizers.forEach { it.customize(this) }
                 clientCustomizers.forEach { it.customize(this) }
+                requireAwsKotlinEndpointProviderUnset(endpointProvider)
+                endpointProvider = checkedAwsKotlinEndpointProvider(
+                    provider = endpointProvider ?: DefaultCloudWatchLogsEndpointProvider(),
+                    region = { it.region },
+                    allowInsecureLocalHttpEndpoint = defaults.allowInsecureLocalHttpEndpoint,
+                    create = { resolver -> CloudWatchLogsEndpointProvider { parameters -> resolver(parameters) } },
+                )
+                interceptors.add(
+                    AwsKotlinEndpointPolicyInterceptor(
+                        configuredEndpoint = this.endpointUrl?.toString(),
+                        region = this.region,
+                        allowInsecureLocalHttpEndpoint = defaults.allowInsecureLocalHttpEndpoint,
+                    ),
+                )
             },
         )
     }
