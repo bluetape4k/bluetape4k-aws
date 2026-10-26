@@ -6,7 +6,7 @@
 - 구현 worktree: `.worktrees/feat-issue-665-aws-request-builders`
 - branch: `feat/issue-665-aws-request-builders`
 - 구현 검토 기준 HEAD: `c4ad8034e4462cbefcc17f5e8d038f1bba55fe97`
-- 문서·계획 마감 기준 HEAD: `da91f37084eb42b03e33ba4db2605da7225c1322`
+- 문서·계획 마감 기준 HEAD: `013e070020a7ec105a4315b5362c7932b922391c`
 - 변경 범위: `aws-java`의 8개 Request support와 대응 테스트, `aws-java` 한·영 README, `CHANGELOG.md`
 - 추적 이슈: [#665](https://github.com/bluetape4k/bluetape4k-aws/issues/665)
 
@@ -75,5 +75,5 @@ Code-review 계약에 따라 독립 lane 실패를 작성자 자체 review로 �
 - SPW-02: PASS — lane 상태, 자동 검증, 위험, 다음 gate를 분리했다.
 - SPW-03: PASS — 한국어 prose와 API·명령·식별자를 구분하고 용어를 일관되게 사용했다.
 - SPW-04: PASS — 설계 계약과 구현·테스트·ABI 증거를 매핑했다.
-- SPW-05: PASS — Markdown read-back, terminology audit, `git diff --check`를 수행한다.
+- SPW-05: PASS — Markdown read-back, terminology audit, `git diff --check`를 통과했다.
 
