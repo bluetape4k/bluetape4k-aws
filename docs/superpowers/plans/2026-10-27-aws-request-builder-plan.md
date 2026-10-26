@@ -155,11 +155,11 @@ inline fun getParameterRequest(
 - Modify: `aws-java/src/main/kotlin/io/bluetape4k/aws/eventbridge/model/EventBridgeRequestSupport.kt`
 - Test: `aws-java/src/test/kotlin/io/bluetape4k/aws/eventbridge/EventBridgeRequestSupportTest.kt`
 
-- [ ] 다음 builder-only 함수와 기존 `RequestOf` 연결을 추가한다: `createEventBusRequest`, `deleteEventBusRequest`, `putRuleRequest`, `deleteRuleRequest`, `putEventsRequestEntry`, `putTargetsRequest`, `removeTargetsRequest`, `putEventsRequest`, `listRulesRequest`, `listTargetsByRuleRequest`.
-- [ ] `targetOf`와 기존 entry helper의 non-Request 계약은 유지하되, `putEventsRequestEntry`는 SQS batch entry 패턴과 동일한 builder-only parity 대상으로 포함한다.
-- [ ] `putEventsRequest`는 1..10 entries, `putTargetsRequest`/`removeTargetsRequest`는 1..10 item, list helpers는 1..100 limit을 최종 Request에서 검증한다.
-- [ ] `putRuleRequest`의 `eventPattern` 또는 `scheduleExpression` 중 하나 이상 필수 계약을 보존하고, 두 값을 모두 지정하는 기존 동작도 유지한다. `create/delete`의 event-bus/rule `name` 검증을 보존하며, callback이 name/entries/targets/limit을 무효화하면 build 후 거부한다.
-- [ ] 테스트에서 builder-only block 반영, `RequestOf`의 callback override, limit 초과와 빈 값 거부를 확인한다.
+- [x] 다음 builder-only 함수와 기존 `RequestOf` 연결을 추가한다: `createEventBusRequest`, `deleteEventBusRequest`, `putRuleRequest`, `deleteRuleRequest`, `putEventsRequestEntry`, `putTargetsRequest`, `removeTargetsRequest`, `putEventsRequest`, `listRulesRequest`, `listTargetsByRuleRequest`.
+- [x] `targetOf`와 기존 entry helper의 non-Request 계약은 유지하되, `putEventsRequestEntry`는 SQS batch entry 패턴과 동일한 builder-only parity 대상으로 포함한다.
+- [x] `putEventsRequest`는 1..10 entries, `putTargetsRequest`/`removeTargetsRequest`는 1..10 item, list helpers는 1..100 limit을 최종 Request에서 검증한다.
+- [x] `putRuleRequest`의 `eventPattern` 또는 `scheduleExpression` 중 하나 이상 필수 계약을 보존하고, 두 값을 모두 지정하는 기존 동작도 유지한다. `create/delete`의 event-bus/rule `name` 검증을 보존하며, callback이 name/entries/targets/limit을 무효화하면 build 후 거부한다.
+- [x] 테스트에서 builder-only block 반영, `RequestOf`의 callback override, limit 초과와 빈 값 거부를 확인한다.
 
 ```bash
 ./gradlew :bluetape4k-aws-java:test --tests '*EventBridgeRequestSupportTest' --no-daemon --console=plain
