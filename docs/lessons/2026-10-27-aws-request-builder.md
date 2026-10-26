@@ -30,6 +30,16 @@
 - callback이 필수 값을 무효화할 수 있으므로 helper-owned validation은 SDK `build()` 뒤
   최종 Request에 적용해야 한다. 단, Step Functions의 `{}` normalization rebuild는 의도된
   예외로 남겨야 한다.
+- public `inline` 함수가 참조하는 `@PublishedApi internal` 상수·helper는 JVM facade에
+  public ABI로 노출될 수 있다. 내부 검증을 재사용할 때도 승인된 additive symbol allowlist와
+  `javap` 전체 public diff로 의도하지 않은 ABI 고정을 확인해야 한다.
+- AWS SDK builder는 `type` 누락이나 `secretString`·`secretBinary` 동시 설정을 build 단계에서
+  막지 않을 수 있다. `RequestOf`의 필수값·상호배타 조건은 callback 적용 뒤 최종 Request에서
+  다시 검증하고, 각각의 callback 무효화 회귀 테스트를 둬야 한다.
+- `--rerun-tasks` 전체 테스트에서 Testcontainers가 Docker 환경을 일시적으로 찾지 못해
+  worker 오류가 연쇄될 수 있다. `colima status`, `docker context show`, `docker info`를
+  확인한 뒤 동일 exact HEAD에서 재실행하고, 최초 환경 실패와 최종 제품 테스트 결과를
+  분리해 기록한다.
 - 복구된 workflow receipt는 `session_id`가 없을 수 있어 외부 mutation-check를 통과하지
   못한다. 원본 receipt를 보존하고, 복구 provenance와 live GitHub read-back을 별도로
   기록해야 한다.
