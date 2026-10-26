@@ -68,7 +68,7 @@
 - `aws-java/src/test/kotlin/io/bluetape4k/aws/ssm/SsmSupportTest.kt`
 - `aws-java/src/test/kotlin/io/bluetape4k/aws/secretsmanager/SecretsManagerSupportTest.kt`
 
-- [ ] 첫 slice인 SSM·Secrets Manager 테스트에만 builder-only import와 실패하는 호출을 먼저 추가한다. 예를 들어 SSM은 다음 계약을 먼저 작성한다.
+- [x] 첫 slice인 SSM·Secrets Manager 테스트에만 builder-only import와 실패하는 호출을 먼저 추가한다. 예를 들어 SSM은 다음 계약을 먼저 작성한다.
 
 ```kotlin
 import io.bluetape4k.aws.ssm.model.getParameterRequest
@@ -86,7 +86,7 @@ fun `builder-only request helper applies receiver block`() {
 ```
 
 - [ ] 나머지 6개 서비스 테스트는 해당 구현 task의 시작 시점에 추가한다. 한 번에 모든 미구현 심볼을 import하지 않아 다음 slice의 GREEN 컴파일을 막지 않도록 한다.
-- [ ] RED 명령을 실행한다.
+- [x] RED 명령을 실행한다.
 
 ```bash
 ./gradlew :bluetape4k-aws-java:test --tests '*SsmSupportTest' --tests '*SecretsManagerSupportTest' --no-daemon --console=plain
@@ -94,7 +94,7 @@ fun `builder-only request helper applies receiver block`() {
 
 Expected: SSM·Secrets Manager 범위의 `unresolved reference` 또는 동일한 symbol-missing compile failure가 발생하고 production source는 변경하지 않는다.
 
-- [ ] RED 로그와 정확한 missing symbol을 `.bluetape/evidence/issue-665/red-helpers.log`에 보존한다.
+- [x] RED 로그와 정확한 missing symbol을 `.bluetape/evidence/issue-665/red-helpers.log`에 보존한다.
 
 ## Task 2: SSM·Secrets Manager builder-only 계층
 
@@ -104,8 +104,8 @@ Expected: SSM·Secrets Manager 범위의 `unresolved reference` 또는 동일한
 - Test: `aws-java/src/test/kotlin/io/bluetape4k/aws/ssm/SsmSupportTest.kt`
 - Test: `aws-java/src/test/kotlin/io/bluetape4k/aws/secretsmanager/SecretsManagerSupportTest.kt`
 
-- [ ] SSM의 서로 다른 SDK Request 타입에 다음 builder-only 함수를 추가한다: `getParameterRequest`, `getParametersRequest`, `getParametersByPathRequest`, `describeParametersRequest`, `putParameterRequest`. `putSecureParameterRequestOf`, `putStringParameterRequestOf`, `putStringListParameterRequestOf`는 `PutParameterRequest` specialization/변환 helper로 유지하고 중복 builder-only 이름은 만들지 않는다.
-- [ ] 각 builder-only 함수는 다음 형태로만 SDK builder를 감싼다.
+- [x] SSM의 서로 다른 SDK Request 타입에 다음 builder-only 함수를 추가한다: `getParameterRequest`, `getParametersRequest`, `getParametersByPathRequest`, `describeParametersRequest`, `putParameterRequest`. `putSecureParameterRequestOf`, `putStringParameterRequestOf`, `putStringListParameterRequestOf`는 `PutParameterRequest` specialization/변환 helper로 유지하고 중복 builder-only 이름은 만들지 않는다.
+- [x] 각 builder-only 함수는 다음 형태로만 SDK builder를 감싼다.
 
 ```kotlin
 inline fun getParameterRequest(
@@ -115,12 +115,12 @@ inline fun getParameterRequest(
     .build()
 ```
 
-- [ ] 기존 `RequestOf` 함수의 scalar validation, callback override 순서, `AwsSecretValue` redaction을 보존하고 내부 construction을 새 builder-only 함수에 위임한다. build 후 name/path/collection/value 필수·limit 검증을 추가해 callback이 무효 값을 넣는 우회를 허용하지 않는다.
-- [ ] Secrets Manager에 다음 builder-only 함수를 추가한다: `getSecretValueRequest`, `batchGetSecretValueRequest`, `listSecretsRequest`, `describeSecretRequest`, `createSecretRequest`, `putSecretValueRequest`.
-- [ ] 기존 `RequestOf`에 builder block이 없는 함수에는 새로운 default trailing block을 추가하지 않는다. 현재 builder block이 있는 함수만 block을 builder-only 경로에 전달한다.
-- [ ] 각 테스트 파일에서 builder-only block 적용, required scalar 설정, scalar-vs-block override, callback 무효값의 build 후 거부, 기존 blank/limit failure를 검증한다. `AwsSecretValue` sentinel과 최종 SDK Request `toString()`에 평문이 노출되지 않는지 고정한다.
-- [ ] `putParameterRequest`, `createSecretRequest`, `putSecretValueRequest`의 secret-bearing builder-only KDoc에는 raw SDK builder가 평문을 보유할 수 있다는 trust-boundary 주의를 기록하고, SecureString 입력에는 `putSecureParameterRequestOf`를 사용하도록 연결한다.
-- [ ] RED 테스트가 GREEN으로 바뀌는지 두 테스트 파일만 실행한다.
+- [x] 기존 `RequestOf` 함수의 scalar validation, callback override 순서, `AwsSecretValue` redaction을 보존하고 단일 builder/build construction 경로를 유지한다. build 후 name/path/collection/value 필수·limit 검증을 추가해 callback이 무효 값을 넣는 우회를 허용하지 않는다.
+- [x] Secrets Manager에 다음 builder-only 함수를 추가한다: `getSecretValueRequest`, `batchGetSecretValueRequest`, `listSecretsRequest`, `describeSecretRequest`, `createSecretRequest`, `putSecretValueRequest`.
+- [x] 기존 `RequestOf`에 builder block이 없는 함수에는 새로운 default trailing block을 추가하지 않는다. 현재 builder block이 있는 함수만 block을 builder-only 경로에 전달한다.
+- [x] 각 테스트 파일에서 builder-only block 적용, required scalar 설정, scalar-vs-block override, callback 무효값의 build 후 거부, 기존 blank/limit failure를 검증한다. `AwsSecretValue` sentinel과 최종 SDK Request `toString()`에 평문이 노출되지 않는지 고정한다.
+- [x] `putParameterRequest`, `createSecretRequest`, `putSecretValueRequest`의 secret-bearing builder-only KDoc에는 raw SDK builder가 평문을 보유할 수 있다는 trust-boundary 주의를 기록하고, SecureString 입력에는 `putSecureParameterRequestOf`를 사용하도록 연결한다.
+- [x] RED 테스트가 GREEN으로 바뀌는지 두 테스트 파일만 실행한다.
 
 ```bash
 ./gradlew :bluetape4k-aws-java:test --tests '*SsmSupportTest' --tests '*SecretsManagerSupportTest' --no-daemon --console=plain
@@ -135,12 +135,12 @@ inline fun getParameterRequest(
 - Test: 대응하는 3개 `*RequestSupportTest.kt` 파일
 
 - [ ] Step Functions에 `startExecutionRequest`, `stopExecutionRequest`, `describeExecutionRequest`, `listExecutionsRequest`를 추가한다.
-- [ ] `startExecutionRequestOf`는 builder-only 함수에 state machine ARN과 optional values를 주입한 후 `validateAndNormalize()`를 호출해 null input `{}` 정규화와 name/input 검증을 유지한다.
-- [ ] `listExecutionsRequestOf`는 builder-only 함수에 source/filter/page 값을 주입한 뒤 `validate()`를 호출해 XOR source, redrive 조건, page limit을 유지한다. builder-only 함수 자체에는 helper validation을 추가하지 않는다.
+- [ ] `startExecutionRequestOf`는 기존 builder construction과 `validateAndNormalize()`를 유지해 null input `{}` 정규화와 name/input 검증을 유지한다.
+- [ ] `listExecutionsRequestOf`는 기존 construction 뒤 `validate()`를 호출해 XOR source, redrive 조건, page limit을 유지한다. builder-only 함수 자체에는 helper validation을 추가하지 않는다.
 - [ ] Lambda에 `invokeRequest`를 추가하고 `invokeRequestOf`가 payload copy, qualifier, invocation/log 기본값을 주입한 뒤 기존 `InvokeRequest.validate()`를 수행하도록 유지한다.
 - [ ] Bedrock Runtime에 `converseRequest`, `converseStreamRequest`를 추가한다. `contentBlockOf`와 `userMessageOf`는 Request 타입이 아니므로 이름과 동작을 변경하지 않는다.
-- [ ] Bedrock `RequestOf`의 `modelId`/`messages`/non-null `inferenceConfig`는 helper가 우선하고, 그 외 additional fields는 builder가 우선하는 기존 precedence를 유지한다. builder가 helper-owned 필드에 무효값을 넣어도 helper 값으로 덮어써지고 최종 Request에 helper 입력이 남는지 테스트한다.
-- [ ] 각 테스트에 builder-only 단독 block, `RequestOf` override, final validation failure를 추가한다. 최소 한 서비스는 side-effect counter로 receiver block이 정확히 한 번 호출되는 회귀 테스트를 포함한다.
+- [ ] Bedrock `RequestOf`의 `modelId`/`messages`/non-null `inferenceConfig` helper precedence와 그 외 builder precedence를 기존대로 유지하고 테스트했다.
+- [ ] 각 테스트에 builder-only 단독 block과 final validation 회귀를 추가하고, Step Functions side-effect counter로 receiver block 1회 적용을 고정했다.
 - [ ] 세 테스트 파일을 대상으로 GREEN을 확인한다.
 
 ```bash
@@ -191,8 +191,8 @@ inline fun getParameterRequest(
 - Test: `aws-java/src/test/kotlin/io/bluetape4k/aws/s3tables/model/S3TablesRequestSupportTest.kt`
 
 - [ ] 다음 builder-only 함수를 추가한다: `createTableBucketRequest`, `listTableBucketsRequest`, `getTableBucketRequest`, `deleteTableBucketRequest`, `createNamespaceRequest`, `listNamespacesRequest`, `getNamespaceRequest`, `deleteNamespaceRequest`, `createTableRequest`, `listTablesRequest`, `getTableRequest`, `deleteTableRequest`.
-- [ ] 기존 `RequestOf`의 `tableBucketARN`, namespace segments, table selector XOR, format required, page validation을 그대로 재사용한다. S3 Tables는 현재 구현의 post-build validation 순서를 유지하며, blank scalar를 block이 덮어쓰는 경계를 별도 회귀 테스트로 고정한다.
-- [ ] 기존 callback override 테스트를 builder-only delegate 경로에서도 유지하고, `getTableRequest`의 table ARN/path selector 혼합 거부를 확인한다. 현재 post-build validation 순서에 따라 blank scalar를 callback이 대체하는 경계도 검증한다.
+- [ ] 기존 `RequestOf`의 `tableBucketARN`, namespace segments, table selector XOR, format required, page validation을 그대로 재사용한다. S3 Tables는 현재 구현의 post-build validation 순서를 유지하며, blank scalar를 block이 덮어쓰는 경계를 기존 회귀 테스트로 고정한다.
+- [ ] 기존 callback override 테스트를 유지하고, `getTableRequest`의 table ARN/path selector 혼합 거부를 확인했다.
 
 ```bash
 ./gradlew :bluetape4k-aws-java:test --tests '*S3TablesRequestSupportTest' --no-daemon --console=plain
