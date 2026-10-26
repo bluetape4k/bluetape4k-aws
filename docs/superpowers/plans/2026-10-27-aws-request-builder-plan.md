@@ -247,7 +247,7 @@ inline fun getParameterRequest(
 - [x] 두 README에 동일 구조의 짧은 paired example을 추가했다. `fooRequest { }`는 AWS SDK builder 필드만 설정하고, 필수 정보가 있는 경우 `fooRequestOf(required...)`를 사용한다는 경계를 영어/한국어로 설명했다. Bedrock precedence 예외와 SSM `PutParameterRequest` specialization 경계를 기록했으며 중앙 manual을 복제하지 않았다.
 - [x] `CHANGELOG.md`의 `[미출시] > 추가`에 Issue #665와 builder-only/`RequestOf` 계약을 한국어로 기록했다. 릴리스 dispatch나 버전 변경은 수행하지 않았고 N/A 근거를 남겼다.
 - [x] `git diff --check`, 변경 경로 scope, KDoc/Issue #665 traceability를 확인했다.
-- [x] raw test/ABI/Detekt/diff logs는 `.bluetape/evidence/issue-665/`에 보존하고, 정확한 구현 HEAD, 명령, exit/result, skipped/N/A, P0/P1 처분 요약을 커밋된 계획 review와 구현 후 code-review artifact에 기록했다.
+- [x] test/ABI/Detekt/diff 검증 로그 요약은 `.bluetape/evidence/issue-665/`에 보존하고, 정확한 구현 HEAD, 명령, exit/result, skipped/N/A, P0/P1 처분 요약을 커밋된 계획 review와 구현 후 code-review artifact에 기록했다.
 - [x] 승인된 설계와 각 acceptance criterion의 traceability를 review·lesson 체크리스트에 기록했다.
 
 ## Task 9: Plan-level rollback 및 완료 기준
