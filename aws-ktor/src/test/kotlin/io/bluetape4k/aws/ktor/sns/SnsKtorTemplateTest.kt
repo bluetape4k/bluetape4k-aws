@@ -94,7 +94,8 @@ class SnsKtorTemplateTest {
         request.captured.messageAttributes?.get("kind")?.dataType shouldBeEqualTo "String.custom"
         request.captured.messageAttributes?.get("kind")?.stringValue shouldBeEqualTo "created"
         request.captured.messageAttributes?.get("payload")?.dataType shouldBeEqualTo "Binary.custom"
-        request.captured.messageAttributes?.get("payload")?.binaryValue?.contentEquals(byteArrayOf(1, 2, 3)) shouldBeEqualTo true
+        request.captured.messageAttributes?.get("payload")?.binaryValue
+            ?.contentEquals(byteArrayOf(1, 2, 3)) shouldBeEqualTo true
     }
 
     @Test
@@ -116,9 +117,12 @@ class SnsKtorTemplateTest {
         )
 
         request.captured.phoneNumber shouldBeEqualTo "+15550100000"
-        request.captured.messageAttributes?.get(SnsSmsRequest.SMS_TYPE_ATTRIBUTE)?.stringValue shouldBeEqualTo "Transactional"
-        request.captured.messageAttributes?.get(SnsSmsRequest.SENDER_ID_ATTRIBUTE)?.stringValue shouldBeEqualTo "Bluetape"
-        request.captured.messageAttributes?.get("binary")?.binaryValue?.contentEquals(byteArrayOf(4, 5)) shouldBeEqualTo true
+        request.captured.messageAttributes?.get(SnsSmsRequest.SMS_TYPE_ATTRIBUTE)?.stringValue shouldBeEqualTo
+            "Transactional"
+        request.captured.messageAttributes?.get(SnsSmsRequest.SENDER_ID_ATTRIBUTE)?.stringValue shouldBeEqualTo
+            "Bluetape"
+        request.captured.messageAttributes?.get("binary")?.binaryValue
+            ?.contentEquals(byteArrayOf(4, 5)) shouldBeEqualTo true
     }
 
     @Test
@@ -180,7 +184,11 @@ class SnsKtorTemplateTest {
             SnsPublishRequest(topicArn = " ", message = "hello")
         }
         assertFailsWith<IllegalArgumentException> {
-            SnsPublishRequest(topicArn = "arn:aws:sns:us-east-1:123456789012:standard", message = "hello", messageGroupId = "g")
+            SnsPublishRequest(
+                topicArn = "arn:aws:sns:us-east-1:123456789012:standard",
+                message = "hello",
+                messageGroupId = "g",
+            )
         }
         assertFailsWith<IllegalArgumentException> {
             SnsPublishRequest(topicArn = "arn:aws:sns:us-east-1:123456789012:orders.fifo", message = "hello")

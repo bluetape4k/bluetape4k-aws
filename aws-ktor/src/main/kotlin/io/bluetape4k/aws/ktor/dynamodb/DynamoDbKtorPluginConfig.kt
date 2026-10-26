@@ -118,7 +118,8 @@ class DynamoDbKtorPluginConfig {
                     clientBuilder()
                     requireAwsKotlinEndpointProviderUnset(endpointProvider)
                     require(endpointDiscoverer == null) {
-                        "DynamoDB endpoint discovery is not supported by Ktor service clients; configure endpointUrl instead."
+                        "DynamoDB endpoint discovery is not supported by Ktor service clients; " +
+                            "configure endpointUrl instead."
                     }
                     this.endpointProvider = checkedAwsKotlinEndpointProvider(
                         provider = this.endpointProvider ?: DefaultDynamoDbEndpointProvider(),

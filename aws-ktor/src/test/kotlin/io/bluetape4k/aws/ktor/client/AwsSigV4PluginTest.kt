@@ -141,7 +141,10 @@ class AwsSigV4PluginTest {
         }
         val payload = "signed payload".encodeToByteArray()
 
-        client.post("https://s3.ap-northeast-2.amazonaws.com:8443/demo.bucket/a%2Fb/app%20log.txt?dup=1&dup=&flag&empty=&encoded=a%2Fb") {
+        client.post(
+            "https://s3.ap-northeast-2.amazonaws.com:8443/demo.bucket/a%2Fb/" +
+                "app%20log.txt?dup=1&dup=&flag&empty=&encoded=a%2Fb",
+        ) {
             headers {
                 append("X-Duplicate", "first")
                 append("X-Duplicate", "second")
