@@ -104,6 +104,26 @@ sync (blocking) → async (CompletableFuture) → coroutines (suspend)
 
 코루틴 확장이 제공되는 API는 `CompletableFuture`를 `.await()` 확장 함수로 래핑하므로, 코루틴 컨텍스트에서 스레드 블로킹 없이 사용할 수 있습니다. 서비스 SDK와 코루틴 헬퍼 아티팩트는 `compileOnly`로 유지되므로 애플리케이션은 실제 사용하는 AWS SDK 및 코루틴 런타임 모듈을 추가해야 합니다.
 
+## Request builder DSL
+
+Request helper는 AWS SDK builder를 Kotlin receiver block으로 직접 노출합니다. SDK builder 필드만 설정할 때는 `fooRequest { }`를 사용하고, helper가 핵심 정보를 필수로 받고 먼저 검증해야 할 때는 `fooRequestOf(...)`를 사용합니다.
+
+```kotlin
+import io.bluetape4k.aws.ssm.model.getParameterRequest
+import io.bluetape4k.aws.ssm.model.getParameterRequestOf
+
+val customRequest = getParameterRequest {
+    name("/app/config")
+    withDecryption(true)
+}
+
+val requiredInfoRequest = getParameterRequestOf("/app/config") {
+    withDecryption(true)
+}
+```
+
+SSM, Secrets Manager, Step Functions, Lambda, EventBridge, Scheduler, S3 Tables의 `RequestOf` callback은 최종 override로 적용되며, Bedrock은 `modelId`, `messages`, non-null `inferenceConfig`를 helper가 소유합니다. SSM `PutParameterRequest`는 `putSecureParameterRequestOf` 같은 specialization helper를 사용하고, builder-only 진입점은 하나의 `putParameterRequest { }`로 유지합니다. secret-bearing raw builder에는 평문이 들어갈 수 있으므로 로그에 남기지 마세요.
+
 ## 사용 예시
 
 ### DynamoDB Enhanced Async Table

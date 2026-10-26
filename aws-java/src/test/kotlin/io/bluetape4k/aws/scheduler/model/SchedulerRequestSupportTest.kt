@@ -18,7 +18,12 @@ class SchedulerRequestSupportTest {
         val request = createScheduleRequest {
             name("daily-job")
             scheduleExpression("rate(1 day)")
-            target(targetOf("arn:aws:scheduler:::aws-sdk:lambda:invoke", "arn:aws:iam::123456789012:role/scheduler-role"))
+            target(
+                targetOf(
+                    "arn:aws:scheduler:::aws-sdk:lambda:invoke",
+                    "arn:aws:iam::123456789012:role/scheduler-role",
+                )
+            )
             flexibleTimeWindow(flexibleTimeWindowOff())
             startDate(Instant.parse("2026-01-01T00:00:00Z"))
         }

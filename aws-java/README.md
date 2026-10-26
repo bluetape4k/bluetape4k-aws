@@ -105,6 +105,26 @@ sync (blocking) → async (CompletableFuture) → coroutines (suspend)
 Where coroutine extensions are provided, the coroutines tier wraps
 `CompletableFuture` with `.await()` extension functions, so no thread blocking occurs in coroutine contexts. Service SDK artifacts remain `compileOnly`; applications must add the AWS SDK and coroutine runtime modules they use.
 
+## Request Builder DSL
+
+Request helpers expose the AWS SDK builder directly through a Kotlin receiver block. Use `fooRequest { }` when all fields are naturally supplied by the SDK builder, and use `fooRequestOf(...)` when the helper should require and validate core information first.
+
+```kotlin
+import io.bluetape4k.aws.ssm.model.getParameterRequest
+import io.bluetape4k.aws.ssm.model.getParameterRequestOf
+
+val customRequest = getParameterRequest {
+    name("/app/config")
+    withDecryption(true)
+}
+
+val requiredInfoRequest = getParameterRequestOf("/app/config") {
+    withDecryption(true)
+}
+```
+
+`RequestOf` callbacks remain the final override for SSM, Secrets Manager, Step Functions, Lambda, EventBridge, Scheduler, and S3 Tables, while Bedrock keeps `modelId`, `messages`, and non-null `inferenceConfig` helper-owned. For SSM `PutParameterRequest`, use the specialization helpers such as `putSecureParameterRequestOf`; they share one `putParameterRequest { }` builder-only entry point. Raw secret-bearing builders can hold plaintext and must not be logged.
+
 ## Usage Examples
 
 ### DynamoDB Enhanced Async Table
