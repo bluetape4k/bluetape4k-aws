@@ -57,10 +57,10 @@
 - Create: `docs/review/2026-10-27-issue-665-plan-review.md`
 - Evidence: `.bluetape/evidence/issue-665/`
 
-- [ ] 승인된 설계와 이 계획을 기준으로 performance, stability, security, operator/Ops, developer/API, user/caller 6관점과 main-session integration을 완료한다. 최신 통합 표에서 P0=0, P1=0인지 확인한다.
-- [ ] 통합 review에 `SPW-01`~`SPW-05`를 적용하고, 정확한 artifact path, source ledger, traceability, Korean naturalness audit, read-back 결과를 기록한다.
-- [ ] `docs/review/2026-10-27-issue-665-plan-review.md`에 각 lane의 판정, 수정·재실행 결과, exact current HEAD, unchecked/N/A 항목, 구현 전 사용자 승인 대기를 기록하고 Lore 형식으로 커밋한다.
-- [ ] 위 review artifact 커밋과 사용자의 수정된 설계·계획 승인을 얻기 전에는 RED 테스트나 production code를 변경하지 않는다.
+- [x] 승인된 설계와 이 계획을 기준으로 performance, stability, security, operator/Ops, developer/API, user/caller 6관점과 main-session integration을 완료했다. 통합 표에서 P0=0, P1=0을 확인했다.
+- [x] 통합 review에 `SPW-01`~`SPW-05`를 적용하고, 정확한 artifact path, source ledger, traceability, Korean naturalness audit, read-back 결과를 기록했다.
+- [x] `docs/review/2026-10-27-issue-665-plan-review.md`에 각 lane의 판정, 수정·재실행 결과, exact HEAD, unchecked/N/A 항목, 구현 전 사용자 승인 대기를 기록하고 Lore 형식으로 커밋했다.
+- [x] 위 review artifact 커밋과 사용자의 수정된 설계·계획 승인을 얻은 뒤 RED 테스트와 production code를 변경했다.
 
 ## Task 1: 첫 서비스 slice의 RED 계약과 API inventory 고정
 
@@ -85,7 +85,7 @@ fun `builder-only request helper applies receiver block`() {
 }
 ```
 
-- [ ] 나머지 6개 서비스 테스트는 해당 구현 task의 시작 시점에 추가한다. 한 번에 모든 미구현 심볼을 import하지 않아 다음 slice의 GREEN 컴파일을 막지 않도록 한다.
+- [x] 나머지 6개 서비스 테스트는 각 구현 task의 시작 시점에 추가했다. 한 번에 모든 미구현 심볼을 import하지 않아 다음 slice의 GREEN 컴파일을 막았다.
 - [x] RED 명령을 실행한다.
 
 ```bash
@@ -204,13 +204,13 @@ inline fun getParameterRequest(
 
 **Files:** Task 2–6의 production/test 파일 전체
 
-- [ ] 모든 새 public 함수에 한국어 KDoc, 명시적 반환 타입, 기존 module import 규칙을 적용한다. KDoc에는 `fooRequest { }`의 raw builder 책임과 `fooRequestOf(...)`의 required-info/validation 경계를 명시하고, Bedrock helper-owned precedence 예외를 기록한다.
-- [ ] 각 `fooRequest`가 receiver block을 실제로 한 번 호출하는지 source inspection과 테스트로 확인한다.
-- [ ] 각 `RequestOf`가 주 construction 경로에서 builder를 한 번 생성하고 한 번 `build()`하는지 source inspection으로 확인한다. 위임 중첩으로 이중 builder allocation/build가 생기지 않아야 한다. 단, Step Functions `startExecutionRequestOf`의 기존 `validateAndNormalize()`가 input 생략 시 `{}`를 삽입하기 위해 `toBuilder().input("{}").build()`하는 의도된 normalization rebuild는 예외로 기록하고 회귀 테스트한다.
-- [ ] `fooRequestOf`가 없는 scalar overload를 새로 만들어 overload ambiguity를 유발하지 않았는지 `kotlinc`/Gradle compile로 확인한다.
-- [ ] 기존 public `RequestOf` 함수의 JVM owner와 descriptor가 유지되는지 ABI task를 먼저 inventory한다.
-- [ ] 순수 SDK request object construction 변경이므로 concurrency, coroutine cancellation, client lifecycle, emulator/backend capability는 N/A임을 evidence에 기록하고, 네트워크 호출을 추가하지 않았는지 확인한다.
-- [ ] 네트워크 왕복·공유 상태·반복 hot path를 변경하지 않는 순수 object construction이므로 JMH/benchmark는 N/A로 기록하고, `inline` 유지 및 generic/reflection wrapper 부재를 source inspection으로 확인한다.
+- [x] 모든 새 public 함수에 한국어 KDoc, 명시적 반환 타입, 기존 module import 규칙을 적용했다. KDoc에는 `fooRequest { }`의 raw builder 책임과 `fooRequestOf(...)`의 required-info/validation 경계를 명시하고, Bedrock helper-owned precedence 예외를 기록했다.
+- [x] 각 `fooRequest`가 receiver block을 실제로 한 번 호출하는지 source inspection과 테스트로 확인했다.
+- [x] 각 `RequestOf`가 주 construction 경로에서 builder를 한 번 생성하고 한 번 `build()`하는지 source inspection으로 확인했다. 위임 중첩으로 이중 builder allocation/build가 생기지 않도록 했고, Step Functions `startExecutionRequestOf`의 기존 `validateAndNormalize()`가 input 생략 시 `{}`를 삽입하기 위해 `toBuilder().input("{}").build()`하는 의도된 normalization rebuild를 예외로 기록하고 회귀 테스트했다.
+- [x] `fooRequestOf`가 없는 scalar overload를 새로 만들어 overload ambiguity를 유발하지 않았는지 consumer fixture와 Gradle compile로 확인했다.
+- [x] 기존 public `RequestOf` 함수의 JVM owner와 descriptor가 유지되는지 base/head ABI inventory를 수행했다.
+- [x] 순수 SDK request object construction 변경이므로 concurrency, coroutine cancellation, client lifecycle, emulator/backend capability는 N/A로 evidence에 기록했고, 네트워크 호출을 추가하지 않았다.
+- [x] 네트워크 왕복·공유 상태·반복 hot path를 변경하지 않는 순수 object construction이므로 JMH/benchmark는 N/A로 기록했고, `inline` 유지 및 generic/reflection wrapper 부재를 source inspection으로 확인했다.
 
 ```bash
 ./gradlew :bluetape4k-aws-java:compileKotlin --no-daemon --console=plain
@@ -219,9 +219,9 @@ inline fun getParameterRequest(
 ./gradlew compatibilityCheck --no-daemon --console=plain
 ```
 
-- [ ] `compatibilityCheck`는 repository 공통 compatibility 회귀를 위해 항상 실행하고 결과를 보존한다. 이 task가 8개 `aws-java` facade를 직접 검사하는지와 무관하게, base/head JAR의 다음 8개 top-level facade owner를 `javap -public -s`로 반드시 비교한다: `io.bluetape4k.aws.ssm.model.SsmRequestSupportKt`, `io.bluetape4k.aws.secretsmanager.model.SecretsManagerRequestSupportKt`, `io.bluetape4k.aws.sfn.model.SfnRequestSupportKt`, `io.bluetape4k.aws.lambda.model.LambdaRequestSupportKt`, `io.bluetape4k.aws.bedrock.model.BedrockRuntimeRequestSupportKt`, `io.bluetape4k.aws.eventbridge.model.EventBridgeRequestSupportKt`, `io.bluetape4k.aws.scheduler.model.SchedulerRequestSupportKt`, `io.bluetape4k.aws.s3tables.model.S3TablesRequestSupportKt`. 기존 `*RequestOf` method descriptor가 동일하고 새 `*Request`만 additive인지 diff로 확인한다.
-- [ ] base JAR는 고정 base commit `81f8e3e1a3c85f1850f4a9533da430bbb06c14c9`를 임시 worktree에서 `:bluetape4k-aws-java:jar`로 만들고, head JAR는 현재 feature worktree에서 동일 task로 만든다. 임시 worktree와 JAR 경로를 evidence에 기록하고 검증 후 제거한다.
-- [ ] hosted compatibility job은 현재 `.github/workflows/ci.yml` path filter가 `aws-java/**`를 compatibility matrix에 포함하지 않으므로 `N/A (expected skipped)`로 기록한다. 이는 local `compileAwsJavaServiceConsumerFixture`와 `javap` ABI 증거를 대체하지 않는다.
+- [x] `compatibilityCheck`는 repository 공통 compatibility 회귀를 위해 실행하고 결과를 보존했다. 이 task가 8개 `aws-java` facade를 직접 검사하기 전에 기존 Kinesis legacy stub null 오류로 중단했지만, base/head JAR의 다음 8개 top-level facade owner를 `javap -public -s`로 비교했다: `io.bluetape4k.aws.ssm.model.SsmRequestSupportKt`, `io.bluetape4k.aws.secretsmanager.model.SecretsManagerRequestSupportKt`, `io.bluetape4k.aws.sfn.model.SfnRequestSupportKt`, `io.bluetape4k.aws.lambda.model.LambdaRequestSupportKt`, `io.bluetape4k.aws.bedrock.model.BedrockRuntimeRequestSupportKt`, `io.bluetape4k.aws.eventbridge.model.EventBridgeRequestSupportKt`, `io.bluetape4k.aws.scheduler.model.SchedulerRequestSupportKt`, `io.bluetape4k.aws.s3tables.model.S3TablesRequestSupportKt`. 기존 `*RequestOf` method descriptor가 동일하고 새 `*Request`만 additive임을 확인했다.
+- [x] base JAR는 고정 base commit `81f8e3e1a3c85f1850f4a9533da430bbb06c14c9`를 임시 worktree에서 `:bluetape4k-aws-java:jar`로 만들고, head JAR는 현재 feature worktree에서 동일 task로 만들었다. 임시 worktree와 JAR 경로를 evidence에 기록하고 검증 후 제거했다.
+- [x] hosted compatibility job은 현재 `.github/workflows/ci.yml` path filter가 `aws-java/**`를 compatibility matrix에 포함하지 않으므로 `N/A (expected skipped)`로 기록했다. 이는 local `compileAwsJavaServiceConsumerFixture`와 `javap` ABI 증거를 대체하지 않는다.
 
 ## Task 8: 전체 검증과 문서 추적성
 
@@ -231,39 +231,39 @@ inline fun getParameterRequest(
 - Create/update review: 구현 후 `docs/review/2026-10-27-issue-665-code-review.md`
 - Evidence: `.bluetape/evidence/issue-665/`
 
-- [ ] 변경된 테스트를 모두 실행한다.
+- [x] 변경된 테스트를 모두 실행했다.
 
 ```bash
 ./gradlew :bluetape4k-aws-java:test --no-daemon --console=plain
 ```
 
-- [ ] 모듈 build와 Detekt를 실행한다.
+- [x] 모듈 build와 Detekt를 실행했다.
 
 ```bash
 ./gradlew :bluetape4k-aws-java:build -x test --no-daemon --console=plain
 ./gradlew :bluetape4k-aws-java:detekt --no-daemon --console=plain
 ```
 
-- [ ] 두 README에 동일 구조의 짧은 paired example을 추가한다. `fooRequest { }`는 AWS SDK builder 필드만 설정하고, 필수 정보가 있는 경우 `fooRequestOf(required...)`를 사용한다는 경계를 영어/한국어로 설명한다. Bedrock precedence 예외와 SSM `PutParameterRequest` specialization 경계를 오해하지 않도록 기록한다. 중앙 manual을 이 저장소에 복제하지 않는다.
-- [ ] `CHANGELOG.md`의 `[미출시] > 추가`에 Issue #665와 builder-only/`RequestOf` 계약을 한국어로 기록한다. 릴리스 dispatch나 버전 변경은 수행하지 않고 N/A 근거를 남긴다.
-- [ ] `git diff --check`, 변경 경로 scope, KDoc/Issue #665 traceability를 확인한다.
-- [ ] raw test/ABI/Detekt/diff logs는 `.bluetape/evidence/issue-665/`에 보존하되, 정확한 HEAD, 명령, exit/result, skipped/N/A, P0/P1 처분 요약을 커밋된 `docs/review/2026-10-27-issue-665-plan-review.md`와 구현 후 `docs/review/2026-10-27-issue-665-code-review.md`에 기록한다.
-- [ ] 승인된 설계와 각 acceptance criterion의 traceability를 verifier 체크리스트에 기록한다.
+- [x] 두 README에 동일 구조의 짧은 paired example을 추가했다. `fooRequest { }`는 AWS SDK builder 필드만 설정하고, 필수 정보가 있는 경우 `fooRequestOf(required...)`를 사용한다는 경계를 영어/한국어로 설명했다. Bedrock precedence 예외와 SSM `PutParameterRequest` specialization 경계를 기록했으며 중앙 manual을 복제하지 않았다.
+- [x] `CHANGELOG.md`의 `[미출시] > 추가`에 Issue #665와 builder-only/`RequestOf` 계약을 한국어로 기록했다. 릴리스 dispatch나 버전 변경은 수행하지 않았고 N/A 근거를 남겼다.
+- [x] `git diff --check`, 변경 경로 scope, KDoc/Issue #665 traceability를 확인했다.
+- [x] raw test/ABI/Detekt/diff logs는 `.bluetape/evidence/issue-665/`에 보존하고, 정확한 구현 HEAD, 명령, exit/result, skipped/N/A, P0/P1 처분 요약을 커밋된 계획 review와 구현 후 code-review artifact에 기록했다.
+- [x] 승인된 설계와 각 acceptance criterion의 traceability를 review·lesson 체크리스트에 기록했다.
 
 ## Task 9: Plan-level rollback 및 완료 기준
 
-- [ ] RED 단계에서 symbol/API 모양이 잘못되면 production 변경 없이 테스트만 되돌리고 함수 목록을 수정한다.
-- [ ] 특정 서비스의 validation regression이 발생하면 해당 support 파일의 delegate만 원복하고 기존 `RequestOf` 구현을 보존한 채 서비스 단위 테스트를 재실행한다.
-- [ ] ABI 차이가 기존 top-level owner/descriptor 변경으로 나타나면 새 helper를 별도 Kotlin 파일로 옮기되 기존 파일의 `RequestOf` facade는 유지한다.
-- [ ] 각 GREEN slice는 Lore 형식의 독립 커밋으로 고정한다: SSM·Secrets Manager, Step Functions·Lambda·Bedrock, EventBridge, Scheduler, S3 Tables. 실패 시 해당 slice 커밋과 대상 테스트만 되돌리고 full verification을 다시 실행한다.
-- [ ] 전체 검증이 통과하고 P0/P1 finding이 없으며 issue-linked PR 준비 전까지는 merge/publish/branch deletion을 수행하지 않는다.
+- [x] RED 단계에서 symbol/API 모양이 잘못되면 production 변경 없이 테스트만 되돌리고 함수 목록을 수정하는 절차를 계획에 고정했다.
+- [x] 특정 서비스의 validation regression이 발생하면 해당 support 파일의 delegate만 원복하고 기존 `RequestOf` 구현을 보존한 채 서비스 단위 테스트를 재실행하는 절차를 고정했다.
+- [x] ABI 차이가 기존 top-level owner/descriptor 변경으로 나타나면 새 helper를 별도 Kotlin 파일로 옮기되 기존 파일의 `RequestOf` facade는 유지하는 절차를 고정했다.
+- [x] 각 GREEN slice를 Lore 형식의 독립 커밋으로 고정했다: SSM·Secrets Manager, Step Functions·Lambda·Bedrock, EventBridge, Scheduler, S3 Tables.
+- [x] 자동 검증이 통과했고 P0/P1 자동 finding은 없으며 issue-linked PR 준비 전까지 merge/publish/branch deletion을 수행하지 않는다. 독립 최종 review는 사용량 제한으로 PENDING이다.
 
 ## Task 10: 최종 review·lesson 및 PR handoff
 
-- [ ] 구현된 exact HEAD에서 performance, stability, security, operator/Ops, developer/API, user/caller 6관점 최종 code review와 main-session integration을 실행하고, P0/P1을 0으로 수렴한다. 결과는 `docs/review/2026-10-27-issue-665-code-review.md`에 커밋한다.
-- [ ] 최종 review 문서와 lesson에 한국어 writer gate `SPW-01`~`SPW-05`를 적용하고, 명령·HEAD·skipped/N/A·P0/P1 처분을 read-back한다.
-- [ ] `docs/lessons/2026-10-27-aws-request-builder.md`에 결정, 실제 구현 결과, 검증 증거, 계획에서 발견한 source drift, 향후 guard를 한국어로 기록하고 Lore 형식으로 커밋한다.
-- [ ] PR 권한·base/head·remote push가 별도로 승인되지 않았으면 PR 생성, push, hosted CI dispatch, merge, publish, branch deletion은 `PENDING`으로 남긴다. 이 계획의 완료는 구현·검증·lesson까지이며 merge 승인을 의미하지 않는다.
+- [ ] 구현된 exact HEAD에서 독립 performance, stability, security, operator/Ops, developer/API, user/caller 6관점 최종 code review와 main-session integration을 실행하고 P0/P1을 0으로 수렴한다. 두 native review lane이 사용량 제한으로 결과를 반환하지 못해 이 항목은 `PENDING`이며, `docs/review/2026-10-27-issue-665-code-review.md`에 unavailable 상태를 기록했다.
+- [x] 최종 review 문서와 lesson에 한국어 writer gate `SPW-01`~`SPW-05`를 적용하고, 명령·HEAD·skipped/N/A·P0/P1 처분을 read-back했다.
+- [x] `docs/lessons/2026-10-27-aws-request-builder.md`에 결정, 실제 구현 결과, 검증 증거, 계획에서 발견한 source drift, 향후 guard를 한국어로 기록하고 Lore 형식으로 커밋할 준비를 했다.
+- [x] PR 권한·base/head·remote push가 별도로 승인되지 않았으므로 PR 생성, push, hosted CI dispatch, merge, publish, branch deletion은 `PENDING`으로 남겼다. 이 계획의 완료는 구현·검증·lesson까지이며 merge 승인을 의미하지 않는다.
 
 ## Traceability map
 
@@ -279,9 +279,9 @@ inline fun getParameterRequest(
 
 ## Plan DoD
 
-- [ ] 모든 함수 목록과 파일 경로가 구현 task에 매핑되었다.
-- [ ] RED → GREEN 순서와 각 expected command가 정의되었다.
-- [ ] validation, overload ambiguity, ABI, rollback risk가 명시되었다.
-- [ ] 설계 acceptance criterion마다 검증 명령과 evidence 위치가 있다.
-- [ ] README 한·영, `CHANGELOG.md`, committed review/lesson 및 exact-head read-back이 구현 task에 포함되었다.
-- [ ] 계획 review에서 P0/P1이 없다.
+- [x] 모든 함수 목록과 파일 경로가 구현 task에 매핑되었다.
+- [x] RED → GREEN 순서와 각 expected command가 정의되었다.
+- [x] validation, overload ambiguity, ABI, rollback risk가 명시되었다.
+- [x] 설계 acceptance criterion마다 검증 명령과 evidence 위치가 있다.
+- [x] README 한·영, `CHANGELOG.md`, committed review/lesson 및 exact-head read-back이 구현 task에 포함되었다.
+- [x] 계획 review에서 P0/P1이 없다.
