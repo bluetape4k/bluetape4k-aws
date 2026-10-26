@@ -51,6 +51,7 @@ inline fun getSecretValueRequestOf(
             request.versionStage()?.requireNotBlank("versionStage")
         }
 }
+
 /**
  * 단일 페이지 [BatchGetSecretValueRequest]를 SDK builder 필드만 사용해 구성합니다.
  * 필수 secret ID 목록과 limit 검증이 필요한 경우 [batchGetSecretValueRequestOf]를 사용하세요.
@@ -207,6 +208,9 @@ inline fun createSecretRequestOf(
         .also { request ->
             request.name().requireNotBlank("name")
             request.secretString().requireNotBlank("secretString")
+            require(request.secretBinary() == null) {
+                "secretString and secretBinary are mutually exclusive"
+            }
             request.description()?.requireNotBlank("description")
             request.clientRequestToken()?.requireNotBlank("clientRequestToken")
         }
@@ -255,6 +259,9 @@ inline fun putSecretValueRequestOf(
         .also { request ->
             request.secretId().requireNotBlank("secretId")
             request.secretString().requireNotBlank("secretString")
+            require(request.secretBinary() == null) {
+                "secretString and secretBinary are mutually exclusive"
+            }
             request.clientRequestToken()?.requireNotBlank("clientRequestToken")
             request.versionStages().forEach { it.requireNotBlank("versionStage") }
         }

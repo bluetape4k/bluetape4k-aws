@@ -24,7 +24,7 @@ import software.amazon.awssdk.services.s3tables.model.TableBucketType
  * [CreateTableBucketRequest]의 SDK builder 필드만 사용해 구성합니다.
  * 필수 bucket name 검증이 필요한 경우 [createTableBucketRequestOf]를 사용하세요.
  */
-fun createTableBucketRequest(
+inline fun createTableBucketRequest(
     builder: CreateTableBucketRequest.Builder.() -> Unit,
 ): CreateTableBucketRequest = CreateTableBucketRequest.builder()
     .apply(builder)
@@ -34,7 +34,7 @@ fun createTableBucketRequest(
  * [ListTableBucketsRequest]의 SDK builder 필드만 사용해 구성합니다.
  * page limit 검증이 필요한 경우 [listTableBucketsRequestOf]를 사용하세요.
  */
-fun listTableBucketsRequest(
+inline fun listTableBucketsRequest(
     builder: ListTableBucketsRequest.Builder.() -> Unit,
 ): ListTableBucketsRequest = ListTableBucketsRequest.builder()
     .apply(builder)
@@ -44,7 +44,7 @@ fun listTableBucketsRequest(
  * [GetTableBucketRequest]의 SDK builder 필드만 사용해 구성합니다.
  * 필수 table bucket ARN 검증이 필요한 경우 [getTableBucketRequestOf]를 사용하세요.
  */
-fun getTableBucketRequest(
+inline fun getTableBucketRequest(
     builder: GetTableBucketRequest.Builder.() -> Unit,
 ): GetTableBucketRequest = GetTableBucketRequest.builder()
     .apply(builder)
@@ -54,7 +54,7 @@ fun getTableBucketRequest(
  * [DeleteTableBucketRequest]의 SDK builder 필드만 사용해 구성합니다.
  * 필수 table bucket ARN 검증이 필요한 경우 [deleteTableBucketRequestOf]를 사용하세요.
  */
-fun deleteTableBucketRequest(
+inline fun deleteTableBucketRequest(
     builder: DeleteTableBucketRequest.Builder.() -> Unit,
 ): DeleteTableBucketRequest = DeleteTableBucketRequest.builder()
     .apply(builder)
@@ -64,7 +64,7 @@ fun deleteTableBucketRequest(
  * [CreateNamespaceRequest]의 SDK builder 필드만 사용해 구성합니다.
  * 필수 bucket ARN·namespace 검증이 필요한 경우 [createNamespaceRequestOf]를 사용하세요.
  */
-fun createNamespaceRequest(
+inline fun createNamespaceRequest(
     builder: CreateNamespaceRequest.Builder.() -> Unit,
 ): CreateNamespaceRequest = CreateNamespaceRequest.builder()
     .apply(builder)
@@ -74,7 +74,7 @@ fun createNamespaceRequest(
  * [ListNamespacesRequest]의 SDK builder 필드만 사용해 구성합니다.
  * 필수 bucket ARN과 page limit 검증이 필요한 경우 [listNamespacesRequestOf]를 사용하세요.
  */
-fun listNamespacesRequest(
+inline fun listNamespacesRequest(
     builder: ListNamespacesRequest.Builder.() -> Unit,
 ): ListNamespacesRequest = ListNamespacesRequest.builder()
     .apply(builder)
@@ -84,7 +84,7 @@ fun listNamespacesRequest(
  * [GetNamespaceRequest]의 SDK builder 필드만 사용해 구성합니다.
  * 필수 bucket ARN·namespace 검증이 필요한 경우 [getNamespaceRequestOf]를 사용하세요.
  */
-fun getNamespaceRequest(
+inline fun getNamespaceRequest(
     builder: GetNamespaceRequest.Builder.() -> Unit,
 ): GetNamespaceRequest = GetNamespaceRequest.builder()
     .apply(builder)
@@ -94,7 +94,7 @@ fun getNamespaceRequest(
  * [DeleteNamespaceRequest]의 SDK builder 필드만 사용해 구성합니다.
  * 필수 bucket ARN·namespace 검증이 필요한 경우 [deleteNamespaceRequestOf]를 사용하세요.
  */
-fun deleteNamespaceRequest(
+inline fun deleteNamespaceRequest(
     builder: DeleteNamespaceRequest.Builder.() -> Unit,
 ): DeleteNamespaceRequest = DeleteNamespaceRequest.builder()
     .apply(builder)
@@ -104,7 +104,7 @@ fun deleteNamespaceRequest(
  * [CreateTableRequest]의 SDK builder 필드만 사용해 구성합니다.
  * 필수 bucket ARN·namespace·table name 검증이 필요한 경우 [createTableRequestOf]를 사용하세요.
  */
-fun createTableRequest(
+inline fun createTableRequest(
     builder: CreateTableRequest.Builder.() -> Unit,
 ): CreateTableRequest = CreateTableRequest.builder()
     .apply(builder)
@@ -114,7 +114,7 @@ fun createTableRequest(
  * [ListTablesRequest]의 SDK builder 필드만 사용해 구성합니다.
  * 필수 bucket ARN·namespace와 page limit 검증이 필요한 경우 [listTablesRequestOf]를 사용하세요.
  */
-fun listTablesRequest(
+inline fun listTablesRequest(
     builder: ListTablesRequest.Builder.() -> Unit,
 ): ListTablesRequest = ListTablesRequest.builder()
     .apply(builder)
@@ -124,7 +124,7 @@ fun listTablesRequest(
  * [GetTableRequest]의 SDK builder 필드만 사용해 구성합니다.
  * 필수 selector 검증이 필요한 경우 [getTableRequestOf]를 사용하세요.
  */
-fun getTableRequest(
+inline fun getTableRequest(
     builder: GetTableRequest.Builder.() -> Unit,
 ): GetTableRequest = GetTableRequest.builder()
     .apply(builder)
@@ -134,7 +134,7 @@ fun getTableRequest(
  * [DeleteTableRequest]의 SDK builder 필드만 사용해 구성합니다.
  * 필수 selector 검증이 필요한 경우 [deleteTableRequestOf]를 사용하세요.
  */
-fun deleteTableRequest(
+inline fun deleteTableRequest(
     builder: DeleteTableRequest.Builder.() -> Unit,
 ): DeleteTableRequest = DeleteTableRequest.builder()
     .apply(builder)

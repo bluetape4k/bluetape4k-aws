@@ -43,6 +43,7 @@ inline fun getParameterRequestOf(
         .build()
         .also { it.name().requireNotBlank("name") }
 }
+
 /**
  * [GetParametersRequest]의 SDK builder 필드만 사용해 요청을 구성합니다.
  * 필수 이름 목록과 최대 10개 검증이 필요한 경우 [getParametersRequestOf]를 사용하세요.
@@ -271,6 +272,7 @@ inline fun putParameterRequestOf(
         .also { request ->
             request.name().requireNotBlank("name")
             request.value().requireNotBlank("value")
+            requireNotNull(request.type()) { "type must not be null" }
             request.description()?.requireNotBlank("description")
         }
 }

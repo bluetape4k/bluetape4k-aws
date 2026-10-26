@@ -11,6 +11,7 @@ import io.bluetape4k.aws.secretsmanager.model.getSecretValueRequestOf
 import io.bluetape4k.aws.secretsmanager.model.listSecretsRequestOf
 import io.bluetape4k.aws.secretsmanager.model.getSecretValueRequest
 import io.bluetape4k.aws.secretsmanager.model.createSecretRequest
+import io.bluetape4k.aws.secretsmanager.model.putSecretValueRequestOf
 import io.bluetape4k.concurrent.completableFutureOf
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
@@ -145,6 +146,16 @@ class SecretsManagerSupportTest {
         assertFailsWith<IllegalArgumentException> {
             createSecretRequestOf(name = "secret-name", secretValue = awsSecretValueOf(SENTINEL)) {
                 secretString(" ")
+            }
+        }
+        assertFailsWith<IllegalArgumentException> {
+            createSecretRequestOf(name = "secret-name", secretValue = awsSecretValueOf(SENTINEL)) {
+                secretBinary(SdkBytes.fromUtf8String("binary"))
+            }
+        }
+        assertFailsWith<IllegalArgumentException> {
+            putSecretValueRequestOf(secretId = "secret-id", secretValue = awsSecretValueOf(SENTINEL)) {
+                secretBinary(SdkBytes.fromUtf8String("binary"))
             }
         }
     }

@@ -13,6 +13,7 @@ import io.bluetape4k.aws.ssm.model.getParameterRequest
 import io.bluetape4k.aws.ssm.model.getParametersByPathRequestOf
 import io.bluetape4k.aws.ssm.model.getParametersRequestOf
 import io.bluetape4k.aws.ssm.model.putParameterRequest
+import io.bluetape4k.aws.ssm.model.putParameterRequestOf
 import io.bluetape4k.aws.ssm.model.putSecureParameterRequestOf
 import io.bluetape4k.concurrent.completableFutureOf
 import io.bluetape4k.logging.KLogging
@@ -143,6 +144,15 @@ class SsmSupportTest {
         assertFailsWith<IllegalArgumentException> {
             getParametersByPathRequestOf("/app", maxResults = 5) {
                 maxResults(11)
+            }
+        }
+        assertFailsWith<IllegalArgumentException> {
+            putParameterRequestOf(
+                name = "/app/original",
+                value = "value",
+                type = ParameterType.STRING,
+            ) {
+                type(null as ParameterType?)
             }
         }
     }
