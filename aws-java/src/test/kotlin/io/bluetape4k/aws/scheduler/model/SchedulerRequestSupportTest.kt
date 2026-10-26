@@ -5,12 +5,33 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
+import java.time.Instant
 import software.amazon.awssdk.services.scheduler.model.FlexibleTimeWindowMode
 import software.amazon.awssdk.services.scheduler.model.ScheduleState
 
 class SchedulerRequestSupportTest {
 
     companion object: KLogging()
+
+    @Test
+    fun `builder-only scheduler requests apply sdk builder fields`() {
+        val request = createScheduleRequest {
+            name("daily-job")
+            scheduleExpression("rate(1 day)")
+            target(targetOf("arn:aws:scheduler:::aws-sdk:lambda:invoke", "arn:aws:iam::123456789012:role/scheduler-role"))
+            flexibleTimeWindow(flexibleTimeWindowOff())
+            startDate(Instant.parse("2026-01-01T00:00:00Z"))
+        }
+        val listRequest = listSchedulesRequest {
+            groupName("jobs")
+            maxResults(10)
+        }
+
+        request.name() shouldBeEqualTo "daily-job"
+        request.startDate().toString() shouldBeEqualTo "2026-01-01T00:00:00Z"
+        listRequest.groupName() shouldBeEqualTo "jobs"
+        listRequest.maxResults() shouldBeEqualTo 10
+    }
 
     @Test
     fun `target builder maps required target arn and role arn`() {
@@ -87,6 +108,21 @@ class SchedulerRequestSupportTest {
         }
         assertFailsWith<IllegalArgumentException> {
             listSchedulesRequestOf(maxResults = 101)
+        }
+
+        assertFailsWith<IllegalArgumentException> {
+            createScheduleRequestOf(
+                name = "daily-job",
+                scheduleExpression = "rate(1 day)",
+                target = targetOf("arn", "role"),
+            ) {
+                name(" ")
+            }
+        }
+        assertFailsWith<IllegalArgumentException> {
+            listScheduleGroupsRequestOf(maxResults = 10) {
+                maxResults(101)
+            }
         }
     }
 }

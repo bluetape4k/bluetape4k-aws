@@ -129,6 +129,69 @@ inline fun targetOf(
         .build()
 }
 
+/** [CreateScheduleRequest]의 SDK builder 필드만 사용해 구성합니다. */
+inline fun createScheduleRequest(
+    builder: CreateScheduleRequest.Builder.() -> Unit,
+): CreateScheduleRequest = CreateScheduleRequest.builder()
+    .apply(builder)
+    .build()
+
+/** [UpdateScheduleRequest]의 SDK builder 필드만 사용해 구성합니다. */
+inline fun updateScheduleRequest(
+    builder: UpdateScheduleRequest.Builder.() -> Unit,
+): UpdateScheduleRequest = UpdateScheduleRequest.builder()
+    .apply(builder)
+    .build()
+
+/** [DeleteScheduleRequest]의 SDK builder 필드만 사용해 구성합니다. */
+inline fun deleteScheduleRequest(
+    builder: DeleteScheduleRequest.Builder.() -> Unit,
+): DeleteScheduleRequest = DeleteScheduleRequest.builder()
+    .apply(builder)
+    .build()
+
+/** [GetScheduleRequest]의 SDK builder 필드만 사용해 구성합니다. */
+inline fun getScheduleRequest(
+    builder: GetScheduleRequest.Builder.() -> Unit,
+): GetScheduleRequest = GetScheduleRequest.builder()
+    .apply(builder)
+    .build()
+
+/** [ListSchedulesRequest]의 SDK builder 필드만 사용해 구성합니다. */
+inline fun listSchedulesRequest(
+    builder: ListSchedulesRequest.Builder.() -> Unit,
+): ListSchedulesRequest = ListSchedulesRequest.builder()
+    .apply(builder)
+    .build()
+
+/** [CreateScheduleGroupRequest]의 SDK builder 필드만 사용해 구성합니다. */
+inline fun createScheduleGroupRequest(
+    builder: CreateScheduleGroupRequest.Builder.() -> Unit,
+): CreateScheduleGroupRequest = CreateScheduleGroupRequest.builder()
+    .apply(builder)
+    .build()
+
+/** [DeleteScheduleGroupRequest]의 SDK builder 필드만 사용해 구성합니다. */
+inline fun deleteScheduleGroupRequest(
+    builder: DeleteScheduleGroupRequest.Builder.() -> Unit,
+): DeleteScheduleGroupRequest = DeleteScheduleGroupRequest.builder()
+    .apply(builder)
+    .build()
+
+/** [GetScheduleGroupRequest]의 SDK builder 필드만 사용해 구성합니다. */
+inline fun getScheduleGroupRequest(
+    builder: GetScheduleGroupRequest.Builder.() -> Unit,
+): GetScheduleGroupRequest = GetScheduleGroupRequest.builder()
+    .apply(builder)
+    .build()
+
+/** [ListScheduleGroupsRequest]의 SDK builder 필드만 사용해 구성합니다. */
+inline fun listScheduleGroupsRequest(
+    builder: ListScheduleGroupsRequest.Builder.() -> Unit,
+): ListScheduleGroupsRequest = ListScheduleGroupsRequest.builder()
+    .apply(builder)
+    .build()
+
 /** 필수 스케줄 표현식, 대상, 유연한 시간 창으로 [CreateScheduleRequest]를 구성합니다. */
 inline fun createScheduleRequestOf(
     name: String,
@@ -167,6 +230,17 @@ inline fun createScheduleRequestOf(
         .also { kmsKeyArn?.let(it::kmsKeyArn) }
         .apply(builder)
         .build()
+        .also { request ->
+            request.name().requireNotBlank("name")
+            request.scheduleExpression().requireNotBlank("scheduleExpression")
+            require(request.target() != null) { "target must not be null" }
+            require(request.flexibleTimeWindow() != null) { "flexibleTimeWindow must not be null" }
+            request.groupName()?.requireNotBlank("groupName")
+            request.scheduleExpressionTimezone()?.requireNotBlank("scheduleExpressionTimezone")
+            request.description()?.requireNotBlank("description")
+            request.clientToken()?.requireNotBlank("clientToken")
+            request.kmsKeyArn()?.requireNotBlank("kmsKeyArn")
+        }
 }
 
 /** [UpdateScheduleRequest]를 구성합니다. Scheduler 갱신 시 생략한 변경 가능 필드는 서비스 기본값으로 대체됩니다. */
@@ -207,6 +281,17 @@ inline fun updateScheduleRequestOf(
         .also { kmsKeyArn?.let(it::kmsKeyArn) }
         .apply(builder)
         .build()
+        .also { request ->
+            request.name().requireNotBlank("name")
+            request.scheduleExpression().requireNotBlank("scheduleExpression")
+            require(request.target() != null) { "target must not be null" }
+            require(request.flexibleTimeWindow() != null) { "flexibleTimeWindow must not be null" }
+            request.groupName()?.requireNotBlank("groupName")
+            request.scheduleExpressionTimezone()?.requireNotBlank("scheduleExpressionTimezone")
+            request.description()?.requireNotBlank("description")
+            request.clientToken()?.requireNotBlank("clientToken")
+            request.kmsKeyArn()?.requireNotBlank("kmsKeyArn")
+        }
 }
 
 /** [DeleteScheduleRequest]를 구성합니다. */
@@ -225,6 +310,11 @@ inline fun deleteScheduleRequestOf(
         .also { clientToken?.let(it::clientToken) }
         .apply(builder)
         .build()
+        .also { request ->
+            request.name().requireNotBlank("name")
+            request.groupName()?.requireNotBlank("groupName")
+            request.clientToken()?.requireNotBlank("clientToken")
+        }
 }
 
 /** [GetScheduleRequest]를 구성합니다. */
@@ -240,6 +330,10 @@ inline fun getScheduleRequestOf(
         .also { groupName?.let(it::groupName) }
         .apply(builder)
         .build()
+        .also { request ->
+            request.name().requireNotBlank("name")
+            request.groupName()?.requireNotBlank("groupName")
+        }
 }
 
 /** [ListSchedulesRequest]를 구성합니다. */
@@ -263,6 +357,12 @@ inline fun listSchedulesRequestOf(
         .also { nextToken?.let(it::nextToken) }
         .apply(builder)
         .build()
+        .also { request ->
+            request.groupName()?.requireNotBlank("groupName")
+            request.namePrefix()?.requireNotBlank("namePrefix")
+            request.maxResults()?.requireSchedulerListLimit("maxResults")
+            request.nextToken()?.requireNotBlank("nextToken")
+        }
 }
 
 /** [CreateScheduleGroupRequest]를 구성합니다. */
@@ -278,6 +378,10 @@ inline fun createScheduleGroupRequestOf(
         .also { clientToken?.let(it::clientToken) }
         .apply(builder)
         .build()
+        .also { request ->
+            request.name().requireNotBlank("name")
+            request.clientToken()?.requireNotBlank("clientToken")
+        }
 }
 
 /** [DeleteScheduleGroupRequest]를 구성합니다. */
@@ -293,6 +397,10 @@ inline fun deleteScheduleGroupRequestOf(
         .also { clientToken?.let(it::clientToken) }
         .apply(builder)
         .build()
+        .also { request ->
+            request.name().requireNotBlank("name")
+            request.clientToken()?.requireNotBlank("clientToken")
+        }
 }
 
 /** [GetScheduleGroupRequest]를 구성합니다. */
@@ -305,6 +413,7 @@ inline fun getScheduleGroupRequestOf(
         .name(name)
         .apply(builder)
         .build()
+        .also { it.name().requireNotBlank("name") }
 }
 
 /** [ListScheduleGroupsRequest]를 구성합니다. */
@@ -323,4 +432,9 @@ inline fun listScheduleGroupsRequestOf(
         .also { nextToken?.let(it::nextToken) }
         .apply(builder)
         .build()
+        .also { request ->
+            request.namePrefix()?.requireNotBlank("namePrefix")
+            request.maxResults()?.requireSchedulerListLimit("maxResults")
+            request.nextToken()?.requireNotBlank("nextToken")
+        }
 }

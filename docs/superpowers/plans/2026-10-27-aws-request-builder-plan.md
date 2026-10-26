@@ -173,10 +173,10 @@ inline fun getParameterRequest(
 - Modify: `aws-java/src/main/kotlin/io/bluetape4k/aws/scheduler/model/SchedulerRequestSupport.kt`
 - Test: `aws-java/src/test/kotlin/io/bluetape4k/aws/scheduler/model/SchedulerRequestSupportTest.kt`
 
-- [ ] `createScheduleRequest`, `updateScheduleRequest`, `deleteScheduleRequest`, `getScheduleRequest`, `listSchedulesRequest`, `createScheduleGroupRequest`, `deleteScheduleGroupRequest`, `getScheduleGroupRequest`, `listScheduleGroupsRequest`를 추가한다.
-- [ ] `flexibleTimeWindowOf`, `retryPolicyOf`, `deadLetterConfigOf`, `targetOf`는 Request 타입이 아니므로 기존 API를 유지한다.
-- [ ] `RequestOf`의 name/expression/ARN/token/page 검증과 schedule default(`flexibleTimeWindowOff`)를 보존하고, callback 무효값에 대한 build 후 검증을 추가한다.
-- [ ] 테스트에서 builder-only 필드 적용과 schedule/group required info 경로를 확인하고, list limit·retry/window 범위 실패를 유지한다.
+- [x] `createScheduleRequest`, `updateScheduleRequest`, `deleteScheduleRequest`, `getScheduleRequest`, `listSchedulesRequest`, `createScheduleGroupRequest`, `deleteScheduleGroupRequest`, `getScheduleGroupRequest`, `listScheduleGroupsRequest`를 추가한다.
+- [x] `flexibleTimeWindowOf`, `retryPolicyOf`, `deadLetterConfigOf`, `targetOf`는 Request 타입이 아니므로 기존 API를 유지한다.
+- [x] `RequestOf`의 name/expression/ARN/token/page 검증과 schedule default(`flexibleTimeWindowOff`)를 보존하고, callback 무효값에 대한 build 후 검증을 추가한다.
+- [x] 테스트에서 builder-only 필드 적용과 schedule/group required info 경로를 확인하고, list limit·retry/window 범위 실패를 유지한다.
 
 ```bash
 ./gradlew :bluetape4k-aws-java:test --tests '*SchedulerRequestSupportTest' --no-daemon --console=plain
