@@ -107,14 +107,24 @@ custom 필드 설정은 인자 없는 `fooRequest { ... }`에서 수행한다. �
 경로다.
 
 실제 대상 함수는 각 AWS 모델의 기존 필드명과 검증 규칙을 따른다. `RequestOf`의
-scalar 값은 기본값이며 trailing builder가 최종 값을 override할 수 있다. 다만 기존
-입력 검증은 builder 적용 전에 수행하고, 기존 helper가 최종 Request에 적용하던 필수
-필드·limit·상호배타 검증은 build 후에도 유지한다.
+scalar 값은 기본값이며, 함수별 기존 precedence를 보존한다. SSM, Secrets Manager,
+Step Functions, Lambda, EventBridge, EventBridge Scheduler, S3 Tables는 trailing
+builder가 최종 값을 override할 수 있고, helper가 책임지는 필수 필드·limit·상호배타
+조건을 build 후에도 검증해 무효한 override를 거부한다. Bedrock Runtime은 기존 동작대로
+`modelId`와 `messages`, non-null `inferenceConfig`를 helper가 block 뒤에 설정하며,
+그 외 모델별 필드는 builder가 설정한다. 기본 입력 검증은 builder 적용 전에 수행한다.
+단, S3 Tables의 현재 `RequestOf` 구현은 builder 적용 후 build 단계에서 필수 scalar를
+검증하므로, 기존 호출의 검증 순서와 block override 동작을 보존하기 위해 post-build
+순서를 유지한다.
 
 ## 대상 범위
 
-다음 support 파일의 공개 `*RequestOf` 함수마다 대응하는 builder-only `*Request`를
-추가한다.
+다음 support 파일의 서로 다른 AWS SDK `Request` 타입마다 대응하는 builder-only
+`*Request`를 추가한다. 같은 SDK Request 타입을 공유하는 specialization helper는
+중복 builder-only 이름을 만들지 않는다. 예를 들어 SSM의 `putSecureParameterRequestOf`,
+`putStringParameterRequestOf`, `putStringListParameterRequestOf`는
+`PutParameterRequest`를 반환하는 required-info/변환 helper로 유지하고, builder-only
+진입점은 `putParameterRequest { ... }` 하나로 제공한다.
 
 - `ssm/model/SsmRequestSupport.kt`
 - `secretsmanager/model/SecretsManagerRequestSupport.kt`
@@ -137,9 +147,13 @@ S3 Vectors/DynamoDB Streams의 신규 추상화다.
 1. `fooRequest { ... }`가 receiver block을 실제로 적용하고 최종 필드에 반영한다.
 2. `fooRequestOf(required...)`가 필수 정보를 설정하고, 기존 optional 인자와 trailing
    block을 보존한다.
-3. scalar와 block이 같은 필드를 설정할 때 block의 최종 값이 사용된다.
-4. blank 필드, 범위 초과, 배치 크기 초과, 상호배타 조건 위반이 기존과 같은
-   `IllegalArgumentException` 계약으로 거부된다.
+3. scalar와 block이 같은 필드를 설정할 때 기존 함수별 precedence가 사용된다. Bedrock의
+   `modelId`/`messages`/non-null `inferenceConfig`는 helper 값이 우선하고, 그 외 대상은
+   block의 최종 값이 사용된다.
+4. blank 필드, 범위 초과, 배치 크기 초과, 필수 조건 위반이 기존과 같은
+   `IllegalArgumentException` 계약으로 거부된다. EventBridge `PutRuleRequest`는
+   `eventPattern` 또는 `scheduleExpression` 중 하나 이상을 요구하며, 두 값을 모두
+   지정하는 기존 동작은 유지한다.
 
 ### 주요 실패 모드
 
@@ -147,7 +161,7 @@ S3 Vectors/DynamoDB Streams의 신규 추상화다.
   caller 설정이 사라진다. 각 builder-only와 `RequestOf` override 테스트로 방지한다.
 - **필수 값 검증 우회:** builder가 helper scalar를 빈 값으로 덮어쓰면 AWS 호출까지
   잘못된 요청이 전달될 수 있다. `RequestOf`는 입력 검증과 최종 Request 검증을 모두
-  수행한다.
+  수행하며, Bedrock helper-owned 필드는 block 뒤에 다시 설정한다.
 - **검증 순서 회귀:** `ListExecutionsRequest`, EventBridge batch, Scheduler page 같은
   함수의 limit/상호배타 검증을 delegate 과정에서 누락할 수 있다. 기존 검증 helper를
   재사용하고 해당 경로의 실패 테스트를 유지한다.
@@ -173,9 +187,14 @@ S3 Vectors/DynamoDB Streams의 신규 추상화다.
 - `fooRequestOf(...)`는 필수·핵심 정보를 명시적으로 받으며 기존 호출과 검증 계약을
   유지한다.
 - 기본값, scalar-vs-block override, validation failure 테스트가 대상별로 통과한다.
+- S3 Tables는 기존 post-build 검증 순서와 blank scalar를 block이 덮어쓰는 경계를 회귀
+  테스트로 고정한다.
 - `aws-java` targeted test/compile, module test, Detekt, binary compatibility 또는
   저장소 표준 ABI 검사, `git diff --check`가 통과한다.
 - 변경된 public API에는 한국어 KDoc과 Issue #665 추적성이 있다.
+- 새 builder-only KDoc은 필수 필드와 helper validation의 책임 경계를 설명하고,
+  `fooRequestOf(...)`가 required-info 경로임을 명시한다. Bedrock helper-owned
+  precedence 예외도 해당 KDoc에 기록한다.
 
 ## DoD
 
