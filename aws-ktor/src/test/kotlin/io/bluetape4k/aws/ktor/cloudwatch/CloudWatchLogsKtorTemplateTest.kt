@@ -117,7 +117,9 @@ class CloudWatchLogsKtorTemplateTest {
         coEvery { client.createLogStream(any<CreateLogStreamRequest>()) } throws CancellationException("cancelled")
         coEvery { client.putLogEvents(any<PutLogEventsRequest>()) } throws CancellationException("cancelled")
         coEvery { client.describeLogGroups(any<DescribeLogGroupsRequest>()) } throws CancellationException("cancelled")
-        coEvery { client.describeLogStreams(any<DescribeLogStreamsRequest>()) } throws CancellationException("cancelled")
+        coEvery {
+            client.describeLogStreams(any<DescribeLogStreamsRequest>())
+        } throws CancellationException("cancelled")
         val operations = CloudWatchLogsKtorTemplate(client, logStream())
 
         assertFailsWith<CancellationException> { operations.createLogGroup("/app/test") }

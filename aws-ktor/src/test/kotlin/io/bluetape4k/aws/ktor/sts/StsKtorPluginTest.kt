@@ -109,7 +109,9 @@ class StsKtorPluginTest {
         val rendered = StsKtorPluginConfig().apply {
             stsClient = client
             stsOperations = operations
-            endpointOverride = SmithyUrl.parse("https://endpoint-user:endpoint-password@example.com/private?token=endpoint-secret")
+            endpointOverride = SmithyUrl.parse(
+                "https://endpoint-user:endpoint-password@example.com/private?token=endpoint-secret",
+            )
             credentialsProvider = provider
         }.toString()
 

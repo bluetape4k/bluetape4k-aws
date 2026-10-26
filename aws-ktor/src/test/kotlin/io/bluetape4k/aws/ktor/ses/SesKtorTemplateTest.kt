@@ -127,7 +127,8 @@ class SesKtorTemplateTest {
     @Test
     fun `attachment enum variants including unknown values survive mapping`() = runTest {
         val dispositions = AttachmentContentDisposition.values() + AttachmentContentDisposition.SdkUnknown("FUTURE")
-        val encodings = AttachmentContentTransferEncoding.values() + AttachmentContentTransferEncoding.SdkUnknown("FUTURE")
+        val encodings = AttachmentContentTransferEncoding.values() +
+            AttachmentContentTransferEncoding.SdkUnknown("FUTURE")
         val request = slot<SendEmailRequest>()
         coEvery { client.sendEmail(capture(request)) } returns SendEmailResponse { messageId = "enum-1" }
 

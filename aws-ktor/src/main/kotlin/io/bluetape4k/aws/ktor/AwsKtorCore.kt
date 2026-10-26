@@ -72,7 +72,8 @@ class AwsKtorDefaults(
         cloudWatchLogsClientCustomizers
 
     @Transient
-    private val eventBridgeClientCustomizersValue: List<AwsKtorEventBridgeClientCustomizer>? = eventBridgeClientCustomizers
+    private val eventBridgeClientCustomizersValue: List<AwsKtorEventBridgeClientCustomizer>? =
+        eventBridgeClientCustomizers
 
     @Transient
     private val kinesisClientCustomizersValue: List<AwsKtorKinesisClientCustomizer>? = kinesisClientCustomizers
