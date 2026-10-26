@@ -6,6 +6,13 @@ import software.amazon.awssdk.services.lambda.model.InvocationType
 import software.amazon.awssdk.services.lambda.model.InvokeRequest
 import software.amazon.awssdk.services.lambda.model.LogType
 
+/** Lambda invoke 요청의 SDK builder 필드만 사용해 구성합니다. */
+inline fun invokeRequest(
+    builder: InvokeRequest.Builder.() -> Unit,
+): InvokeRequest = InvokeRequest.builder()
+    .apply(builder)
+    .build()
+
 /**
  * AWS Lambda invoke 요청을 구성합니다.
  *

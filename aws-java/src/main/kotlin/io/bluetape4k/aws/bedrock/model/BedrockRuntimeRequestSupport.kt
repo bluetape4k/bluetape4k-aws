@@ -9,6 +9,20 @@ import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamReques
 import software.amazon.awssdk.services.bedrockruntime.model.InferenceConfiguration
 import software.amazon.awssdk.services.bedrockruntime.model.Message
 
+/** [ConverseRequest]의 SDK builder 필드만 사용해 구성합니다. */
+inline fun converseRequest(
+    builder: ConverseRequest.Builder.() -> Unit,
+): ConverseRequest = ConverseRequest.builder()
+    .apply(builder)
+    .build()
+
+/** [ConverseStreamRequest]의 SDK builder 필드만 사용해 구성합니다. */
+inline fun converseStreamRequest(
+    builder: ConverseStreamRequest.Builder.() -> Unit,
+): ConverseStreamRequest = ConverseStreamRequest.builder()
+    .apply(builder)
+    .build()
+
 /**
  * Bedrock 네이티브 텍스트 [ContentBlock]을 구성합니다.
  *

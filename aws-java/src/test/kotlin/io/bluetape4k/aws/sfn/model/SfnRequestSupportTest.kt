@@ -6,6 +6,8 @@ import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
+import io.bluetape4k.aws.sfn.model.listExecutionsRequest
+import io.bluetape4k.aws.sfn.model.startExecutionRequest
 import software.amazon.awssdk.services.sfn.model.ExecutionRedriveFilter
 import software.amazon.awssdk.services.sfn.model.ExecutionStatus
 
@@ -16,6 +18,31 @@ class SfnRequestSupportTest {
         const val OTHER_STATE_MACHINE_ARN = "arn:aws:states:ap-northeast-2:123456789012:stateMachine:payments"
         const val EXECUTION_ARN = "arn:aws:states:ap-northeast-2:123456789012:execution:orders:order-1"
         const val MAP_RUN_ARN = "arn:aws:states:ap-northeast-2:123456789012:mapRun:orders:map-1"
+    }
+
+    @Test
+    fun `builder-only request helper applies receiver block once`() {
+        var calls = 0
+        val request = startExecutionRequest {
+            calls++
+            stateMachineArn(STATE_MACHINE_ARN)
+            input("{}")
+        }
+
+        calls shouldBeEqualTo 1
+        request.stateMachineArn() shouldBeEqualTo STATE_MACHINE_ARN
+        request.input() shouldBeEqualTo "{}"
+    }
+
+    @Test
+    fun `builder-only list request supports source filter`() {
+        val request = listExecutionsRequest {
+            stateMachineArn(STATE_MACHINE_ARN)
+            maxResults(100)
+        }
+
+        request.stateMachineArn() shouldBeEqualTo STATE_MACHINE_ARN
+        request.maxResults() shouldBeEqualTo 100
     }
 
     @Test

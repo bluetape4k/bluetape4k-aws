@@ -134,14 +134,14 @@ inline fun getParameterRequest(
 - Modify: `aws-java/src/main/kotlin/io/bluetape4k/aws/bedrock/model/BedrockRuntimeRequestSupport.kt`
 - Test: 대응하는 3개 `*RequestSupportTest.kt` 파일
 
-- [ ] Step Functions에 `startExecutionRequest`, `stopExecutionRequest`, `describeExecutionRequest`, `listExecutionsRequest`를 추가한다.
-- [ ] `startExecutionRequestOf`는 기존 builder construction과 `validateAndNormalize()`를 유지해 null input `{}` 정규화와 name/input 검증을 유지한다.
-- [ ] `listExecutionsRequestOf`는 기존 construction 뒤 `validate()`를 호출해 XOR source, redrive 조건, page limit을 유지한다. builder-only 함수 자체에는 helper validation을 추가하지 않는다.
-- [ ] Lambda에 `invokeRequest`를 추가하고 `invokeRequestOf`가 payload copy, qualifier, invocation/log 기본값을 주입한 뒤 기존 `InvokeRequest.validate()`를 수행하도록 유지한다.
-- [ ] Bedrock Runtime에 `converseRequest`, `converseStreamRequest`를 추가한다. `contentBlockOf`와 `userMessageOf`는 Request 타입이 아니므로 이름과 동작을 변경하지 않는다.
-- [ ] Bedrock `RequestOf`의 `modelId`/`messages`/non-null `inferenceConfig` helper precedence와 그 외 builder precedence를 기존대로 유지하고 테스트했다.
-- [ ] 각 테스트에 builder-only 단독 block과 final validation 회귀를 추가하고, Step Functions side-effect counter로 receiver block 1회 적용을 고정했다.
-- [ ] 세 테스트 파일을 대상으로 GREEN을 확인한다.
+- [x] Step Functions에 `startExecutionRequest`, `stopExecutionRequest`, `describeExecutionRequest`, `listExecutionsRequest`를 추가한다.
+- [x] `startExecutionRequestOf`는 기존 builder construction과 `validateAndNormalize()`를 유지해 null input `{}` 정규화와 name/input 검증을 유지한다.
+- [x] `listExecutionsRequestOf`는 기존 construction 뒤 `validate()`를 호출해 XOR source, redrive 조건, page limit을 유지한다. builder-only 함수 자체에는 helper validation을 추가하지 않는다.
+- [x] Lambda에 `invokeRequest`를 추가하고 `invokeRequestOf`가 payload copy, qualifier, invocation/log 기본값을 주입한 뒤 기존 `InvokeRequest.validate()`를 수행하도록 유지한다.
+- [x] Bedrock Runtime에 `converseRequest`, `converseStreamRequest`를 추가한다. `contentBlockOf`와 `userMessageOf`는 Request 타입이 아니므로 이름과 동작을 변경하지 않는다.
+- [x] Bedrock `RequestOf`의 `modelId`/`messages`/non-null `inferenceConfig` helper precedence와 그 외 builder precedence를 기존대로 유지하고 테스트했다.
+- [x] 각 테스트에 builder-only 단독 block과 final validation 회귀를 추가하고, Step Functions side-effect counter로 receiver block 1회 적용을 고정했다.
+- [x] 세 테스트 파일을 대상으로 GREEN을 확인한다.
 
 ```bash
 ./gradlew :bluetape4k-aws-java:test --tests '*SfnRequestSupportTest' --tests '*LambdaRequestSupportTest' --tests '*BedrockRuntimeRequestSupportTest' --no-daemon --console=plain
