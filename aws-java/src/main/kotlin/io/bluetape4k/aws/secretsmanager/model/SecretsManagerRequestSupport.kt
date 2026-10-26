@@ -12,13 +12,10 @@ import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueReques
 import software.amazon.awssdk.services.secretsmanager.model.ListSecretsRequest
 import software.amazon.awssdk.services.secretsmanager.model.PutSecretValueRequest
 
-@PublishedApi
-internal const val MAX_BATCH_GET_SECRET_RESULTS = 20
-
-@PublishedApi
-internal const val MAX_LIST_SECRET_RESULTS = 100
-
-/** [GetSecretValueRequest]를 SDK builder 필드만 사용해 구성합니다. */
+/**
+ * [GetSecretValueRequest]를 SDK builder 필드만 사용해 구성합니다.
+ * 필수 `secretId`와 최종 검증이 필요한 경우 [getSecretValueRequestOf]를 사용하세요.
+ */
 inline fun getSecretValueRequest(
     builder: GetSecretValueRequest.Builder.() -> Unit,
 ): GetSecretValueRequest = GetSecretValueRequest.builder()
@@ -54,8 +51,10 @@ inline fun getSecretValueRequestOf(
             request.versionStage()?.requireNotBlank("versionStage")
         }
 }
-
-/** 단일 페이지 [BatchGetSecretValueRequest]를 SDK builder 필드만 사용해 구성합니다. */
+/**
+ * 단일 페이지 [BatchGetSecretValueRequest]를 SDK builder 필드만 사용해 구성합니다.
+ * 필수 secret ID 목록과 limit 검증이 필요한 경우 [batchGetSecretValueRequestOf]를 사용하세요.
+ */
 inline fun batchGetSecretValueRequest(
     builder: BatchGetSecretValueRequest.Builder.() -> Unit,
 ): BatchGetSecretValueRequest = BatchGetSecretValueRequest.builder()
@@ -87,13 +86,22 @@ inline fun batchGetSecretValueRequestOf(
         }
         .build()
         .also { request ->
-            request.secretIdList().requireSecretIdList()
-            request.maxResults()?.requireSecretManagerMaxResults(MAX_BATCH_GET_SECRET_RESULTS, "maxResults")
+            require(request.secretIdList().isNotEmpty()) { "secretIds must not be empty" }
+            require(request.secretIdList().size <= 20) {
+                "secretIds size must be less than or equal to 20"
+            }
+            request.secretIdList().forEach { it.requireNotBlank("secretId") }
+            request.maxResults()?.let {
+                require(it in 1..20) { "maxResults must be in 1..20" }
+            }
             request.nextToken()?.requireNotBlank("nextToken")
         }
 }
 
-/** 단일 페이지 [ListSecretsRequest]를 SDK builder 필드만 사용해 구성합니다. */
+/**
+ * 단일 페이지 [ListSecretsRequest]를 SDK builder 필드만 사용해 구성합니다.
+ * limit·token 검증이 필요한 경우 [listSecretsRequestOf]를 사용하세요.
+ */
 inline fun listSecretsRequest(
     builder: ListSecretsRequest.Builder.() -> Unit,
 ): ListSecretsRequest = ListSecretsRequest.builder()
@@ -103,6 +111,7 @@ inline fun listSecretsRequest(
 /**
  * 단일 페이지 [ListSecretsRequest]를 구성합니다.
  */
+@Suppress("MagicNumber")
 inline fun listSecretsRequestOf(
     maxResults: Int? = null,
     nextToken: String? = null,
@@ -120,12 +129,17 @@ inline fun listSecretsRequestOf(
         }
         .build()
         .also { request ->
-            request.maxResults()?.requireSecretManagerMaxResults(MAX_LIST_SECRET_RESULTS, "maxResults")
+            request.maxResults()?.let {
+                require(it in 1..100) { "maxResults must be in 1..100" }
+            }
             request.nextToken()?.requireNotBlank("nextToken")
         }
 }
 
-/** [DescribeSecretRequest]를 SDK builder 필드만 사용해 구성합니다. */
+/**
+ * [DescribeSecretRequest]를 SDK builder 필드만 사용해 구성합니다.
+ * 필수 `secretId`와 최종 검증이 필요한 경우 [describeSecretRequestOf]를 사용하세요.
+ */
 inline fun describeSecretRequest(
     builder: DescribeSecretRequest.Builder.() -> Unit,
 ): DescribeSecretRequest = DescribeSecretRequest.builder()
@@ -156,7 +170,8 @@ inline fun describeSecretRequestOf(
  * 평문을 직접 담을 수 있는 SDK builder로 [CreateSecretRequest]를 구성합니다.
  *
  * raw builder와 최종 SDK 요청은 평문을 보유할 수 있으므로 로그나 진단 출력에 남기지 마세요.
- * 비밀 값은 [AwsSecretValue]와 [createSecretRequestOf] 경로를 우선 사용하세요.
+ * 이 함수는 필수 값 검증을 수행하지 않으며, 비밀 값은 [AwsSecretValue]와
+ * [createSecretRequestOf] 경로를 우선 사용하세요.
  */
 inline fun createSecretRequest(
     builder: CreateSecretRequest.Builder.() -> Unit,
@@ -201,7 +216,8 @@ inline fun createSecretRequestOf(
  * 평문을 직접 담을 수 있는 SDK builder로 [PutSecretValueRequest]를 구성합니다.
  *
  * raw builder와 최종 SDK 요청은 평문을 보유할 수 있으므로 로그나 진단 출력에 남기지 마세요.
- * 비밀 값은 [AwsSecretValue]와 [putSecretValueRequestOf] 경로를 우선 사용하세요.
+ * 이 함수는 필수 값 검증을 수행하지 않으며, 비밀 값은 [AwsSecretValue]와
+ * [putSecretValueRequestOf] 경로를 우선 사용하세요.
  */
 inline fun putSecretValueRequest(
     builder: PutSecretValueRequest.Builder.() -> Unit,
@@ -242,18 +258,4 @@ inline fun putSecretValueRequestOf(
             request.clientRequestToken()?.requireNotBlank("clientRequestToken")
             request.versionStages().forEach { it.requireNotBlank("versionStage") }
         }
-}
-
-@PublishedApi
-internal fun Collection<String>.requireSecretIdList() {
-    require(isNotEmpty()) { "secretIds must not be empty" }
-    require(size <= MAX_BATCH_GET_SECRET_RESULTS) {
-        "secretIds size must be less than or equal to $MAX_BATCH_GET_SECRET_RESULTS"
-    }
-    forEach { it.requireNotBlank("secretId") }
-}
-
-@PublishedApi
-internal fun Int.requireSecretManagerMaxResults(max: Int, field: String) {
-    require(this in 1..max) { "$field must be in 1..$max" }
 }

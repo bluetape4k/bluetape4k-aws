@@ -76,4 +76,3 @@ Code-review 계약에 따라 독립 lane 실패를 작성자 자체 review로 �
 - SPW-03: PASS — 한국어 prose와 API·명령·식별자를 구분하고 용어를 일관되게 사용했다.
 - SPW-04: PASS — 설계 계약과 구현·테스트·ABI 증거를 매핑했다.
 - SPW-05: PASS — Markdown read-back, terminology audit, `git diff --check`를 통과했다.
-

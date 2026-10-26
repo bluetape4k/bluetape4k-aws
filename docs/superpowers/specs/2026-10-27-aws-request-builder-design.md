@@ -79,7 +79,9 @@ inline fun getParameterRequest(
 ### 필수 정보 convenience helper
 
 기존 `RequestOf`의 인자와 validation을 유지한다. 기존 함수에 builder block이 있는
-경우에는 다음처럼 `fooRequest`를 재사용하도록 정렬한다.
+경우에도 helper scalar, callback precedence, final validation이 한 construction 경로에서
+명확히 보이도록 SDK builder를 한 번 생성하고 한 번 `build()`한다. builder-only 함수와
+이름 수준의 중첩 위임을 강제하지 않으며, 중첩 위임으로 이중 builder/build가 생기지 않게 한다.
 
 ```kotlin
 inline fun getParameterRequestOf(
@@ -89,13 +91,14 @@ inline fun getParameterRequestOf(
 ): GetParameterRequest {
     name.requireNotBlank("name")
 
-    return getParameterRequest {
-        name(name)
-        withDecryption(withDecryption)
-        builder()
-    }.also { request ->
-        request.name().requireNotBlank("name")
-    }
+    return GetParameterRequest.builder()
+        .name(name)
+        .withDecryption(withDecryption)
+        .apply(builder)
+        .build()
+        .also { request ->
+            request.name().requireNotBlank("name")
+        }
 }
 ```
 
@@ -163,7 +166,7 @@ S3 Vectors/DynamoDB Streams의 신규 추상화다.
   잘못된 요청이 전달될 수 있다. `RequestOf`는 입력 검증과 최종 Request 검증을 모두
   수행하며, Bedrock helper-owned 필드는 block 뒤에 다시 설정한다.
 - **검증 순서 회귀:** `ListExecutionsRequest`, EventBridge batch, Scheduler page 같은
-  함수의 limit/상호배타 검증을 delegate 과정에서 누락할 수 있다. 기존 검증 helper를
+  함수의 limit/상호배타 검증을 construction 과정에서 누락할 수 있다. 기존 검증 helper를
   재사용하고 해당 경로의 실패 테스트를 유지한다.
 - **public ABI 회귀:** 기존 top-level `*RequestOf`의 JVM owner 또는 descriptor가
   바뀌면 precompiled consumer가 깨질 수 있다. 기존 함수는 유지하고 새 `*Request`
@@ -177,7 +180,9 @@ S3 Vectors/DynamoDB Streams의 신규 추상화다.
   없는 `RequestOf`에는 default trailing block overload를 추가하지 않아 기존 호출의
   overload ambiguity를 만들지 않는다.
 - 기존 직접 SDK builder 호출은 즉시 제거하지 않는다. 새 DSL은 점진적 migration
-  경로이며, 이번 변경은 public helper 추가와 구현 정렬에 한정한다.
+  경로이며, 이번 변경은 public helper 추가와 구현 정렬에 한정한다. `RequestOf`는
+  callback precedence와 final validation을 보존하기 위해 SDK builder construction을
+  직접 유지한다.
 - `@JvmName`, 파일 위치, top-level facade owner를 불필요하게 바꾸지 않는다.
 
 ## 수용 기준

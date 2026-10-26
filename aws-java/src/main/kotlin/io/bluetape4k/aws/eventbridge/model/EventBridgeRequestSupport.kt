@@ -41,7 +41,10 @@ internal fun Int.requireEventBridgeListLimit(name: String) {
     requireInRange(MIN_EVENTBRIDGE_LIST_LIMIT, MAX_EVENTBRIDGE_LIST_LIMIT, name)
 }
 
-/** [CreateEventBusRequest]의 SDK builder 필드만 사용해 구성합니다. */
+/**
+ * [CreateEventBusRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 bus name과 최종 검증이 필요한 경우 [createEventBusRequestOf]를 사용하세요.
+ */
 inline fun createEventBusRequest(
     builder: CreateEventBusRequest.Builder.() -> Unit,
 ): CreateEventBusRequest = CreateEventBusRequest.builder()
@@ -63,7 +66,10 @@ inline fun createEventBusRequestOf(
         .also { it.name().requireNotBlank("name") }
 }
 
-/** [DeleteEventBusRequest]의 SDK builder 필드만 사용해 구성합니다. */
+/**
+ * [DeleteEventBusRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 bus name과 최종 검증이 필요한 경우 [deleteEventBusRequestOf]를 사용하세요.
+ */
 inline fun deleteEventBusRequest(
     builder: DeleteEventBusRequest.Builder.() -> Unit,
 ): DeleteEventBusRequest = DeleteEventBusRequest.builder()
@@ -87,7 +93,10 @@ inline fun deleteEventBusRequestOf(
         .also { it.name().requireNotBlank("name") }
 }
 
-/** [PutRuleRequest]의 SDK builder 필드만 사용해 구성합니다. */
+/**
+ * [PutRuleRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 name·pattern/schedule 검증이 필요한 경우 [putRuleRequestOf]를 사용하세요.
+ */
 inline fun putRuleRequest(
     builder: PutRuleRequest.Builder.() -> Unit,
 ): PutRuleRequest = PutRuleRequest.builder()
@@ -140,7 +149,10 @@ inline fun putRuleRequestOf(
         }
 }
 
-/** [DeleteRuleRequest]의 SDK builder 필드만 사용해 구성합니다. */
+/**
+ * [DeleteRuleRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 rule name과 최종 검증이 필요한 경우 [deleteRuleRequestOf]를 사용하세요.
+ */
 inline fun deleteRuleRequest(
     builder: DeleteRuleRequest.Builder.() -> Unit,
 ): DeleteRuleRequest = DeleteRuleRequest.builder()
@@ -191,7 +203,10 @@ inline fun targetOf(
         .build()
 }
 
-/** [PutTargetsRequest]의 SDK builder 필드만 사용해 구성합니다. */
+/**
+ * [PutTargetsRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 rule·target 목록과 1..10 limit 검증이 필요한 경우 [putTargetsRequestOf]를 사용하세요.
+ */
 inline fun putTargetsRequest(
     builder: PutTargetsRequest.Builder.() -> Unit,
 ): PutTargetsRequest = PutTargetsRequest.builder()
@@ -226,7 +241,10 @@ inline fun putTargetsRequestOf(
         }
 }
 
-/** [RemoveTargetsRequest]의 SDK builder 필드만 사용해 구성합니다. */
+/**
+ * [RemoveTargetsRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 rule·target ID 목록과 1..10 limit 검증이 필요한 경우 [removeTargetsRequestOf]를 사용하세요.
+ */
 inline fun removeTargetsRequest(
     builder: RemoveTargetsRequest.Builder.() -> Unit,
 ): RemoveTargetsRequest = RemoveTargetsRequest.builder()
@@ -267,7 +285,10 @@ inline fun removeTargetsRequestOf(
         }
 }
 
-/** [PutEventsRequestEntry]의 SDK builder 필드만 사용해 구성합니다. */
+/**
+ * [PutEventsRequestEntry]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 source/detail 검증이 필요한 경우 [putEventsRequestEntryOf]를 사용하세요.
+ */
 inline fun putEventsRequestEntry(
     builder: PutEventsRequestEntry.Builder.() -> Unit,
 ): PutEventsRequestEntry = PutEventsRequestEntry.builder()
@@ -319,7 +340,10 @@ inline fun putEventsRequestEntryOf(
         }
 }
 
-/** [PutEventsRequest]의 SDK builder 필드만 사용해 구성합니다. */
+/**
+ * [PutEventsRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 entry 목록과 1..10 limit 검증이 필요한 경우 [putEventsRequestOf]를 사용하세요.
+ */
 inline fun putEventsRequest(
     builder: PutEventsRequest.Builder.() -> Unit,
 ): PutEventsRequest = PutEventsRequest.builder()
@@ -343,7 +367,10 @@ inline fun putEventsRequestOf(
         .also { it.entries().requireSizeInOneToTen("entries") }
 }
 
-/** [ListRulesRequest]의 SDK builder 필드만 사용해 구성합니다. */
+/**
+ * [ListRulesRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * list field와 1..100 limit 검증이 필요한 경우 [listRulesRequestOf]를 사용하세요.
+ */
 inline fun listRulesRequest(
     builder: ListRulesRequest.Builder.() -> Unit,
 ): ListRulesRequest = ListRulesRequest.builder()
@@ -383,7 +410,10 @@ inline fun listRulesRequestOf(
         }
 }
 
-/** [ListTargetsByRuleRequest]의 SDK builder 필드만 사용해 구성합니다. */
+/**
+ * [ListTargetsByRuleRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 rule과 1..100 limit 검증이 필요한 경우 [listTargetsByRuleRequestOf]를 사용하세요.
+ */
 inline fun listTargetsByRuleRequest(
     builder: ListTargetsByRuleRequest.Builder.() -> Unit,
 ): ListTargetsByRuleRequest = ListTargetsByRuleRequest.builder()

@@ -129,63 +129,90 @@ inline fun targetOf(
         .build()
 }
 
-/** [CreateScheduleRequest]의 SDK builder 필드만 사용해 구성합니다. */
+/**
+ * [CreateScheduleRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 name·expression·target과 최종 검증이 필요한 경우 [createScheduleRequestOf]를 사용하세요.
+ */
 inline fun createScheduleRequest(
     builder: CreateScheduleRequest.Builder.() -> Unit,
 ): CreateScheduleRequest = CreateScheduleRequest.builder()
     .apply(builder)
     .build()
 
-/** [UpdateScheduleRequest]의 SDK builder 필드만 사용해 구성합니다. */
+/**
+ * [UpdateScheduleRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 name·expression·target과 최종 검증이 필요한 경우 [updateScheduleRequestOf]를 사용하세요.
+ */
 inline fun updateScheduleRequest(
     builder: UpdateScheduleRequest.Builder.() -> Unit,
 ): UpdateScheduleRequest = UpdateScheduleRequest.builder()
     .apply(builder)
     .build()
 
-/** [DeleteScheduleRequest]의 SDK builder 필드만 사용해 구성합니다. */
+/**
+ * [DeleteScheduleRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 schedule name 검증이 필요한 경우 [deleteScheduleRequestOf]를 사용하세요.
+ */
 inline fun deleteScheduleRequest(
     builder: DeleteScheduleRequest.Builder.() -> Unit,
 ): DeleteScheduleRequest = DeleteScheduleRequest.builder()
     .apply(builder)
     .build()
 
-/** [GetScheduleRequest]의 SDK builder 필드만 사용해 구성합니다. */
+/**
+ * [GetScheduleRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 schedule name 검증이 필요한 경우 [getScheduleRequestOf]를 사용하세요.
+ */
 inline fun getScheduleRequest(
     builder: GetScheduleRequest.Builder.() -> Unit,
 ): GetScheduleRequest = GetScheduleRequest.builder()
     .apply(builder)
     .build()
 
-/** [ListSchedulesRequest]의 SDK builder 필드만 사용해 구성합니다. */
+/**
+ * [ListSchedulesRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * group·name prefix와 1..100 page limit 검증이 필요한 경우 [listSchedulesRequestOf]를 사용하세요.
+ */
 inline fun listSchedulesRequest(
     builder: ListSchedulesRequest.Builder.() -> Unit,
 ): ListSchedulesRequest = ListSchedulesRequest.builder()
     .apply(builder)
     .build()
 
-/** [CreateScheduleGroupRequest]의 SDK builder 필드만 사용해 구성합니다. */
+/**
+ * [CreateScheduleGroupRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 group name과 최종 검증이 필요한 경우 [createScheduleGroupRequestOf]를 사용하세요.
+ */
 inline fun createScheduleGroupRequest(
     builder: CreateScheduleGroupRequest.Builder.() -> Unit,
 ): CreateScheduleGroupRequest = CreateScheduleGroupRequest.builder()
     .apply(builder)
     .build()
 
-/** [DeleteScheduleGroupRequest]의 SDK builder 필드만 사용해 구성합니다. */
+/**
+ * [DeleteScheduleGroupRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 group name 검증이 필요한 경우 [deleteScheduleGroupRequestOf]를 사용하세요.
+ */
 inline fun deleteScheduleGroupRequest(
     builder: DeleteScheduleGroupRequest.Builder.() -> Unit,
 ): DeleteScheduleGroupRequest = DeleteScheduleGroupRequest.builder()
     .apply(builder)
     .build()
 
-/** [GetScheduleGroupRequest]의 SDK builder 필드만 사용해 구성합니다. */
+/**
+ * [GetScheduleGroupRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 group name 검증이 필요한 경우 [getScheduleGroupRequestOf]를 사용하세요.
+ */
 inline fun getScheduleGroupRequest(
     builder: GetScheduleGroupRequest.Builder.() -> Unit,
 ): GetScheduleGroupRequest = GetScheduleGroupRequest.builder()
     .apply(builder)
     .build()
 
-/** [ListScheduleGroupsRequest]의 SDK builder 필드만 사용해 구성합니다. */
+/**
+ * [ListScheduleGroupsRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * name prefix와 1..100 page limit 검증이 필요한 경우 [listScheduleGroupsRequestOf]를 사용하세요.
+ */
 inline fun listScheduleGroupsRequest(
     builder: ListScheduleGroupsRequest.Builder.() -> Unit,
 ): ListScheduleGroupsRequest = ListScheduleGroupsRequest.builder()

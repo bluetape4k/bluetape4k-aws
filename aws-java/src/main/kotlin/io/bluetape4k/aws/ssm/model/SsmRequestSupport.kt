@@ -12,13 +12,10 @@ import software.amazon.awssdk.services.ssm.model.GetParametersRequest
 import software.amazon.awssdk.services.ssm.model.ParameterType
 import software.amazon.awssdk.services.ssm.model.PutParameterRequest
 
-@PublishedApi
-internal const val MAX_GET_PARAMETERS_BY_PATH_RESULTS = 10
-
-@PublishedApi
-internal const val MAX_DESCRIBE_PARAMETERS_RESULTS = 50
-
-/** [GetParameterRequest]의 SDK builder 필드만 사용해 요청을 구성합니다. */
+/**
+ * [GetParameterRequest]의 SDK builder 필드만 사용해 요청을 구성합니다.
+ * 필수 `name`과 최종 검증이 필요한 경우 [getParameterRequestOf]를 사용하세요.
+ */
 inline fun getParameterRequest(
     builder: GetParameterRequest.Builder.() -> Unit,
 ): GetParameterRequest = GetParameterRequest.builder()
@@ -46,8 +43,10 @@ inline fun getParameterRequestOf(
         .build()
         .also { it.name().requireNotBlank("name") }
 }
-
-/** 최대 10개의 이름으로 [GetParametersRequest]를 구성합니다. */
+/**
+ * [GetParametersRequest]의 SDK builder 필드만 사용해 요청을 구성합니다.
+ * 필수 이름 목록과 최대 10개 검증이 필요한 경우 [getParametersRequestOf]를 사용하세요.
+ */
 inline fun getParametersRequest(
     builder: GetParametersRequest.Builder.() -> Unit,
 ): GetParametersRequest = GetParametersRequest.builder()
@@ -76,11 +75,16 @@ inline fun getParametersRequestOf(
         }
         .build()
         .also { request ->
-            request.names().requireSsmBatchNames()
+            require(request.names().isNotEmpty()) { "names must not be empty" }
+            require(request.names().size <= 10) { "names size must be less than or equal to 10" }
+            request.names().forEach { it.requireNotBlank("name") }
         }
 }
 
-/** 단일 페이지 [GetParametersByPathRequest]를 SDK builder 필드만 사용해 구성합니다. */
+/**
+ * 단일 페이지 [GetParametersByPathRequest]를 SDK builder 필드만 사용해 구성합니다.
+ * 필수 `path`와 최종 검증이 필요한 경우 [getParametersByPathRequestOf]를 사용하세요.
+ */
 inline fun getParametersByPathRequest(
     builder: GetParametersByPathRequest.Builder.() -> Unit,
 ): GetParametersByPathRequest = GetParametersByPathRequest.builder()
@@ -116,11 +120,16 @@ inline fun getParametersByPathRequestOf(
         .also { request ->
             request.path().requireNotBlank("path")
             request.nextToken()?.requireNotBlank("nextToken")
-            request.maxResults()?.requireSsmMaxResults(MAX_GET_PARAMETERS_BY_PATH_RESULTS, "maxResults")
+            request.maxResults()?.let {
+                require(it in 1..10) { "maxResults must be in 1..10" }
+            }
         }
 }
 
-/** 단일 페이지 [DescribeParametersRequest]를 SDK builder 필드만 사용해 구성합니다. */
+/**
+ * 단일 페이지 [DescribeParametersRequest]를 SDK builder 필드만 사용해 구성합니다.
+ * limit·token 검증이 필요한 경우 [describeParametersRequestOf]를 사용하세요.
+ */
 inline fun describeParametersRequest(
     builder: DescribeParametersRequest.Builder.() -> Unit,
 ): DescribeParametersRequest = DescribeParametersRequest.builder()
@@ -130,6 +139,7 @@ inline fun describeParametersRequest(
 /**
  * 단일 페이지 [DescribeParametersRequest]를 구성합니다.
  */
+@Suppress("MagicNumber")
 inline fun describeParametersRequestOf(
     maxResults: Int? = null,
     nextToken: String? = null,
@@ -148,7 +158,9 @@ inline fun describeParametersRequestOf(
         .build()
         .also { request ->
             request.nextToken()?.requireNotBlank("nextToken")
-            request.maxResults()?.requireSsmMaxResults(MAX_DESCRIBE_PARAMETERS_RESULTS, "maxResults")
+            request.maxResults()?.let {
+                require(it in 1..50) { "maxResults must be in 1..50" }
+            }
         }
 }
 
@@ -156,7 +168,8 @@ inline fun describeParametersRequestOf(
  * SDK builder 필드만 사용해 [PutParameterRequest]를 구성합니다.
  *
  * 이 raw builder는 `value`에 평문을 보유할 수 있으므로 요청과 builder를 로그에 남기지 마세요.
- * SecureString 입력에는 평문 경계를 명시하는 [putSecureParameterRequestOf]를 사용하세요.
+ * 이 함수는 필수 값 검증을 수행하지 않으며, SecureString 입력에는 평문 경계를 명시하는
+ * [putSecureParameterRequestOf]를 사용하세요.
  */
 inline fun putParameterRequest(
     builder: PutParameterRequest.Builder.() -> Unit,
@@ -260,16 +273,4 @@ inline fun putParameterRequestOf(
             request.value().requireNotBlank("value")
             request.description()?.requireNotBlank("description")
         }
-}
-
-@PublishedApi
-internal fun Collection<String>.requireSsmBatchNames() {
-    require(isNotEmpty()) { "names must not be empty" }
-    require(size <= 10) { "names size must be less than or equal to 10" }
-    forEach { it.requireNotBlank("name") }
-}
-
-@PublishedApi
-internal fun Int.requireSsmMaxResults(max: Int, field: String) {
-    require(this in 1..max) { "$field must be in 1..$max" }
 }

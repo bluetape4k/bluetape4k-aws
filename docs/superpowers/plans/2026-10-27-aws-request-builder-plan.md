@@ -4,7 +4,7 @@
 
 **Goal:** `aws-java`의 8개 AWS service request support 파일에 인자 없는 `fooRequest { }` DSL을 추가하고, 기존 `fooRequestOf(...)`의 필수 정보·validation·호환성을 유지한다.
 
-**Architecture:** 각 SDK Request 타입마다 명시적인 builder-only top-level 함수를 추가한다. 기존 `RequestOf`는 필수·핵심 scalar를 검증하고 builder-only 함수에 값을 주입한 뒤 기존 final validation을 재사용한다. generic/reflection 계층은 도입하지 않는다.
+**Architecture:** 각 SDK Request 타입마다 명시적인 builder-only top-level 함수를 추가한다. 기존 `RequestOf`는 필수·핵심 scalar를 검증하고 동일한 SDK builder construction 경로에서 callback을 적용한 뒤 기존 final validation을 재사용한다. 이름 수준의 중첩 위임으로 이중 builder/build를 만들지 않으며 generic/reflection 계층도 도입하지 않는다.
 
 **Tech Stack:** Kotlin/JVM, AWS SDK v2 model builders, JUnit 5, Bluetape assertions, Gradle, Detekt, repository binary-compatibility checks.
 

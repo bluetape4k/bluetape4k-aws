@@ -48,4 +48,3 @@
    유지한다.
 5. 복구 workflow에서 session-bound mutation이 불가능하면 issue 본문을 임의로 변경하지
    않고 blocker를 evidence와 final report에 남긴다.
-

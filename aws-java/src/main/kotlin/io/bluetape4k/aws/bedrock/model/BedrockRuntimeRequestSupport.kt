@@ -9,14 +9,23 @@ import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamReques
 import software.amazon.awssdk.services.bedrockruntime.model.InferenceConfiguration
 import software.amazon.awssdk.services.bedrockruntime.model.Message
 
-/** [ConverseRequest]의 SDK builder 필드만 사용해 구성합니다. */
+/**
+ * [ConverseRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 model ID·messages와 helper-owned precedence 검증이 필요한 경우 [converseRequestOf]를
+ * 사용하세요. 이 builder-only 경로는 SDK 필드만 적용하고 helper-owned 값을 소유하지 않습니다.
+ */
 inline fun converseRequest(
     builder: ConverseRequest.Builder.() -> Unit,
 ): ConverseRequest = ConverseRequest.builder()
     .apply(builder)
     .build()
 
-/** [ConverseStreamRequest]의 SDK builder 필드만 사용해 구성합니다. */
+/**
+ * [ConverseStreamRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 model ID·messages와 helper-owned precedence 검증이 필요한 경우
+ * [converseStreamRequestOf]를 사용하세요. 이 builder-only 경로는 SDK 필드만 적용하고
+ * helper-owned 값을 소유하지 않습니다.
+ */
 inline fun converseStreamRequest(
     builder: ConverseStreamRequest.Builder.() -> Unit,
 ): ConverseStreamRequest = ConverseStreamRequest.builder()
