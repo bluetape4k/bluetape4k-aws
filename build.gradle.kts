@@ -1,5 +1,6 @@
 import dev.detekt.gradle.Detekt
 import dev.detekt.gradle.extensions.DetektExtension
+import dev.detekt.gradle.plugin.getSupportedKotlinVersion
 import dev.detekt.gradle.report.ReportMergeTask
 import nmcp.NmcpAggregationExtension
 import nmcp.NmcpExtension
@@ -1376,6 +1377,14 @@ subprojects {
     pluginManager.withPlugin("dev.detekt") {
         extensions.configure<DetektExtension>("detekt") {
             baseline.set(rootProject.layout.projectDirectory.file("config/detekt/baseline-${project.name}.xml"))
+        }
+        configurations.matching { it.name == "detekt" }.configureEach {
+            resolutionStrategy.eachDependency {
+                if (requested.group == "org.jetbrains.kotlin") {
+                    useVersion(getSupportedKotlinVersion())
+                    because("Detekt must run with the Kotlin compiler version it was built against")
+                }
+            }
         }
     }
 
