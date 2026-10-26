@@ -190,9 +190,9 @@ inline fun getParameterRequest(
 - Modify: `aws-java/src/main/kotlin/io/bluetape4k/aws/s3tables/model/S3TablesRequestSupport.kt`
 - Test: `aws-java/src/test/kotlin/io/bluetape4k/aws/s3tables/model/S3TablesRequestSupportTest.kt`
 
-- [ ] 다음 builder-only 함수를 추가한다: `createTableBucketRequest`, `listTableBucketsRequest`, `getTableBucketRequest`, `deleteTableBucketRequest`, `createNamespaceRequest`, `listNamespacesRequest`, `getNamespaceRequest`, `deleteNamespaceRequest`, `createTableRequest`, `listTablesRequest`, `getTableRequest`, `deleteTableRequest`.
-- [ ] 기존 `RequestOf`의 `tableBucketARN`, namespace segments, table selector XOR, format required, page validation을 그대로 재사용한다. S3 Tables는 현재 구현의 post-build validation 순서를 유지하며, blank scalar를 block이 덮어쓰는 경계를 기존 회귀 테스트로 고정한다.
-- [ ] 기존 callback override 테스트를 유지하고, `getTableRequest`의 table ARN/path selector 혼합 거부를 확인했다.
+- [x] 다음 builder-only 함수를 추가한다: `createTableBucketRequest`, `listTableBucketsRequest`, `getTableBucketRequest`, `deleteTableBucketRequest`, `createNamespaceRequest`, `listNamespacesRequest`, `getNamespaceRequest`, `deleteNamespaceRequest`, `createTableRequest`, `listTablesRequest`, `getTableRequest`, `deleteTableRequest`.
+- [x] 기존 `RequestOf`의 `tableBucketARN`, namespace segments, table selector XOR, format required, page validation을 그대로 재사용한다. S3 Tables는 현재 구현의 post-build validation 순서를 유지하며, blank scalar를 block이 덮어쓰는 경계를 기존 회귀 테스트로 고정한다.
+- [x] 기존 callback override 테스트를 유지하고, `getTableRequest`의 table ARN/path selector 혼합 거부를 확인했다.
 
 ```bash
 ./gradlew :bluetape4k-aws-java:test --tests '*S3TablesRequestSupportTest' --no-daemon --console=plain

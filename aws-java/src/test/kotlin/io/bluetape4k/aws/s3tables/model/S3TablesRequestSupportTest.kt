@@ -16,6 +16,25 @@ class S3TablesRequestSupportTest {
     }
 
     @Test
+    fun `builder-only table requests apply sdk builder fields`() {
+        val bucket = createTableBucketRequest {
+            name("table-bucket")
+        }
+        val table = getTableRequest {
+            tableArn(TABLE_ARN)
+        }
+        val namespaces = listNamespacesRequest {
+            tableBucketARN(BUCKET_ARN)
+            maxNamespaces(10)
+        }
+
+        bucket.name() shouldBeEqualTo "table-bucket"
+        table.tableArn() shouldBeEqualTo TABLE_ARN
+        namespaces.tableBucketARN() shouldBeEqualTo BUCKET_ARN
+        namespaces.maxNamespaces() shouldBeEqualTo 10
+    }
+
+    @Test
     fun `create namespace and table preserve required fields and callback overrides`() {
         val namespace = createNamespaceRequestOf(
             BUCKET_ARN,

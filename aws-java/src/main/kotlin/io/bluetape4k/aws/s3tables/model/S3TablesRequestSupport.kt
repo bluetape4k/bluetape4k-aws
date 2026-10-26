@@ -20,6 +20,90 @@ import software.amazon.awssdk.services.s3tables.model.ListTablesRequest
 import software.amazon.awssdk.services.s3tables.model.OpenTableFormat
 import software.amazon.awssdk.services.s3tables.model.TableBucketType
 
+/** [CreateTableBucketRequest]의 SDK builder 필드만 사용해 구성합니다. */
+fun createTableBucketRequest(
+    builder: CreateTableBucketRequest.Builder.() -> Unit,
+): CreateTableBucketRequest = CreateTableBucketRequest.builder()
+    .apply(builder)
+    .build()
+
+/** [ListTableBucketsRequest]의 SDK builder 필드만 사용해 구성합니다. */
+fun listTableBucketsRequest(
+    builder: ListTableBucketsRequest.Builder.() -> Unit,
+): ListTableBucketsRequest = ListTableBucketsRequest.builder()
+    .apply(builder)
+    .build()
+
+/** [GetTableBucketRequest]의 SDK builder 필드만 사용해 구성합니다. */
+fun getTableBucketRequest(
+    builder: GetTableBucketRequest.Builder.() -> Unit,
+): GetTableBucketRequest = GetTableBucketRequest.builder()
+    .apply(builder)
+    .build()
+
+/** [DeleteTableBucketRequest]의 SDK builder 필드만 사용해 구성합니다. */
+fun deleteTableBucketRequest(
+    builder: DeleteTableBucketRequest.Builder.() -> Unit,
+): DeleteTableBucketRequest = DeleteTableBucketRequest.builder()
+    .apply(builder)
+    .build()
+
+/** [CreateNamespaceRequest]의 SDK builder 필드만 사용해 구성합니다. */
+fun createNamespaceRequest(
+    builder: CreateNamespaceRequest.Builder.() -> Unit,
+): CreateNamespaceRequest = CreateNamespaceRequest.builder()
+    .apply(builder)
+    .build()
+
+/** [ListNamespacesRequest]의 SDK builder 필드만 사용해 구성합니다. */
+fun listNamespacesRequest(
+    builder: ListNamespacesRequest.Builder.() -> Unit,
+): ListNamespacesRequest = ListNamespacesRequest.builder()
+    .apply(builder)
+    .build()
+
+/** [GetNamespaceRequest]의 SDK builder 필드만 사용해 구성합니다. */
+fun getNamespaceRequest(
+    builder: GetNamespaceRequest.Builder.() -> Unit,
+): GetNamespaceRequest = GetNamespaceRequest.builder()
+    .apply(builder)
+    .build()
+
+/** [DeleteNamespaceRequest]의 SDK builder 필드만 사용해 구성합니다. */
+fun deleteNamespaceRequest(
+    builder: DeleteNamespaceRequest.Builder.() -> Unit,
+): DeleteNamespaceRequest = DeleteNamespaceRequest.builder()
+    .apply(builder)
+    .build()
+
+/** [CreateTableRequest]의 SDK builder 필드만 사용해 구성합니다. */
+fun createTableRequest(
+    builder: CreateTableRequest.Builder.() -> Unit,
+): CreateTableRequest = CreateTableRequest.builder()
+    .apply(builder)
+    .build()
+
+/** [ListTablesRequest]의 SDK builder 필드만 사용해 구성합니다. */
+fun listTablesRequest(
+    builder: ListTablesRequest.Builder.() -> Unit,
+): ListTablesRequest = ListTablesRequest.builder()
+    .apply(builder)
+    .build()
+
+/** [GetTableRequest]의 SDK builder 필드만 사용해 구성합니다. */
+fun getTableRequest(
+    builder: GetTableRequest.Builder.() -> Unit,
+): GetTableRequest = GetTableRequest.builder()
+    .apply(builder)
+    .build()
+
+/** [DeleteTableRequest]의 SDK builder 필드만 사용해 구성합니다. */
+fun deleteTableRequest(
+    builder: DeleteTableRequest.Builder.() -> Unit,
+): DeleteTableRequest = DeleteTableRequest.builder()
+    .apply(builder)
+    .build()
+
 /** table bucket 생성 요청을 구성합니다. */
 fun createTableBucketRequestOf(
     name: String,
