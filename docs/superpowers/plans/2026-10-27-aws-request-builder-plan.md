@@ -256,11 +256,11 @@ inline fun getParameterRequest(
 - [x] 특정 서비스의 validation regression이 발생하면 해당 support 파일의 delegate만 원복하고 기존 `RequestOf` 구현을 보존한 채 서비스 단위 테스트를 재실행하는 절차를 고정했다.
 - [x] ABI 차이가 기존 top-level owner/descriptor 변경으로 나타나면 새 helper를 별도 Kotlin 파일로 옮기되 기존 파일의 `RequestOf` facade는 유지하는 절차를 고정했다.
 - [x] 각 GREEN slice를 Lore 형식의 독립 커밋으로 고정했다: SSM·Secrets Manager, Step Functions·Lambda·Bedrock, EventBridge, Scheduler, S3 Tables.
-- [x] 자동 검증이 통과했고 P0/P1 자동 finding은 없으며 issue-linked PR 준비 전까지 merge/publish/branch deletion을 수행하지 않는다. exact-head evidence는 `ec49f44b` 기준으로 갱신했고, 독립 final lane은 문서 provenance 갱신 후 재확정한다.
+- [x] 자동 검증이 통과했고 P0/P1 자동 finding은 없으며 issue-linked PR 준비 전까지 merge/publish/branch deletion을 수행하지 않는다. 구현·검증 evidence는 `ec49f44b`, 최종 문서·review synthesis는 `8f788359` 기준으로 확정했다.
 
 ## Task 10: 최종 review·lesson 및 PR handoff
 
-- [ ] `ec49f44b`에서 `code-reviewer`와 `architect`가 production/API 관점 P0/P1=0을 확인했지만, review artifact·plan provenance가 이전 HEAD를 가리킨다는 P2가 남았다. 이 문서와 lesson을 커밋한 새 exact HEAD에서 두 independent lane과 main-session synthesis를 재실행해 P0/P1을 0으로 확정한다.
+- [x] 최종 exact HEAD `8f788359`에서 `code-reviewer`와 `architect`가 각각 PASS, P0/P1/P2/P3=0을 확인했고, main-session synthesis가 review·plan·lesson·evidence provenance를 read-back했다.
 - [x] 최종 review 문서와 lesson에 한국어 writer gate `SPW-01`~`SPW-05`를 적용하고, 명령·HEAD·skipped/N/A·P0/P1 처분을 read-back했다.
 - [x] `docs/lessons/2026-10-27-aws-request-builder.md`에 결정, 실제 구현 결과, 검증 증거, 계획에서 발견한 source drift, 향후 guard를 한국어로 기록하고 Lore 형식으로 커밋했다.
 - [x] PR 권한·base/head·remote push가 별도로 승인되지 않았으므로 PR 생성, push, hosted CI dispatch, merge, publish, branch deletion은 `PENDING`으로 남겼다. 이 계획의 완료는 구현·검증·lesson까지이며 merge 승인을 의미하지 않는다.

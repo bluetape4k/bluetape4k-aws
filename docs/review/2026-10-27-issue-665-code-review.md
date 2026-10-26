@@ -6,12 +6,13 @@
 - 구현 worktree: `.worktrees/feat-issue-665-aws-request-builders`
 - branch: `feat/issue-665-aws-request-builders`
 - base: `81f8e3e1a3c85f1850f4a9533da430bbb06c14c9`
-- 현재 검토 기준 HEAD: `ec49f44baa7809f81167294cb6e4257b3a471719`
+- 최종 문서 기준 HEAD: `8f78835998c81f4e748c209f95a35ed726856b7f`
+- 구현·검증 기준 HEAD: `ec49f44baa7809f81167294cb6e4257b3a471719`
 - 변경 범위: 8개 AWS Request support와 대응 테스트, `aws-java` README/CHANGELOG,
   설계·계획·review·lesson 문서
 - 추적 이슈: [#665](https://github.com/bluetape4k/bluetape4k-aws/issues/665)
 
-이번 문서는 `ec49f44b`에서 실행한 자동 검증과 독립 review lane의 결과를 분리해
+이번 문서는 `ec49f44b`에서 실행한 자동 검증과 `8f788359`에서 확정한 독립 review lane의 결과를 분리해
 기록한다. `fooRequest { }`는 SDK builder 필드만 받고, 필수 정보·helper-owned
 invariant는 `fooRequestOf(...)`가 담당한다.
 
@@ -19,10 +20,10 @@ invariant는 `fooRequestOf(...)`가 담당한다.
 
 | Lane | 기준 HEAD | 결과 | P0/P1/P2/P3 | 비고 |
 |---|---|---|---:|---|
-| `code-reviewer` | `ec49f44b` | `REQUEST CHANGES` | `0/0/1/0` | 구현은 PASS, review artifact와 plan이 이전 HEAD를 가리킨다는 P2 |
-| `architect` | `ec49f44b` | `WATCH` | `0/0/2/0` | 코드 blocker 없음, evidence/review 문서 provenance 갱신 필요 |
+| `code-reviewer` | `8f788359` | `PASS` | `0/0/0/0` | production/API/security와 최종 문서 provenance 확인 |
+| `architect` | `8f788359` | `PASS` | `0/0/0/0` | 문서 전용 후속 커밋과 구현 evidence provenance 확인 |
 | developer/API plan review | `902f174c` | `PASS` | `0/0/0/0` | 함수 목록·ABI 명령·계획 수용 기준 확인 |
-| main-session synthesis | `ec49f44b` | `PENDING` | — | 이 문서와 계획을 커밋한 뒤 새 exact HEAD에서 두 final lane을 재실행한다 |
+| main-session synthesis | `8f788359` | `PASS` | `0/0/0/0` | 두 independent final lane과 계획·문서 read-back을 통합 |
 
 이전 review의 SSM·Secrets `@PublishedApi` ABI 누출, direct construction 설계 불일치,
 KDoc 부족, EOF 문제는 `6d86903c`에서 해소했다. `ec49f44b`에서는 callback이
@@ -69,15 +70,13 @@ script-reference 경고 8건을 남겼다. 이 공통 task 실패는 이번 Requ
 
 ## 결론과 다음 gate
 
-- production/API/security: 현재 fresh review에서 P0/P1 없음.
-- 자동 검증: `ec49f44b`에서 PASS.
-- 남은 gate: 이 문서·계획·lesson 변경을 커밋한 뒤 새 exact HEAD에서
-  `code-reviewer`와 `architect`를 다시 실행해 review provenance를 확정한다.
-- `compatibilityCheck`: repository infrastructure failure로 PENDING.
+- production/API/security: `8f788359` final review에서 P0/P1/P2/P3 없음.
+- 자동 검증: 구현·검증 HEAD `ec49f44b`에서 PASS; `8f788359`는 문서 전용 후속 커밋이다.
+- `compatibilityCheck`: repository infrastructure failure로 N/A이며, 이번 변경의
+  독립 consumer fixture·전체 facade `javap` 증거로 대체 검증했다.
 - PR 생성, push, hosted CI dispatch, merge, publish, branch deletion은 수행하지 않았다.
 
-현재 권고는 **PENDING**이며, independent final lane의 새 결과와 compatibility gate
-상태를 확인하기 전에는 merge-ready로 간주하지 않는다.
+현재 구현 권고는 **PASS**다. 별도 PR·push·merge gate는 사용자 승인 없이 수행하지 않는다.
 
 ## Writer gate
 
