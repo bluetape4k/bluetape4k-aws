@@ -262,7 +262,7 @@ inline fun getParameterRequest(
 
 - [ ] 구현된 exact HEAD에서 독립 performance, stability, security, operator/Ops, developer/API, user/caller 6관점 최종 code review와 main-session integration을 실행하고 P0/P1을 0으로 수렴한다. 두 native review lane이 사용량 제한으로 결과를 반환하지 못해 이 항목은 `PENDING`이며, `docs/review/2026-10-27-issue-665-code-review.md`에 unavailable 상태를 기록했다.
 - [x] 최종 review 문서와 lesson에 한국어 writer gate `SPW-01`~`SPW-05`를 적용하고, 명령·HEAD·skipped/N/A·P0/P1 처분을 read-back했다.
-- [x] `docs/lessons/2026-10-27-aws-request-builder.md`에 결정, 실제 구현 결과, 검증 증거, 계획에서 발견한 source drift, 향후 guard를 한국어로 기록하고 Lore 형식으로 커밋할 준비를 했다.
+- [x] `docs/lessons/2026-10-27-aws-request-builder.md`에 결정, 실제 구현 결과, 검증 증거, 계획에서 발견한 source drift, 향후 guard를 한국어로 기록하고 Lore 형식으로 커밋했다.
 - [x] PR 권한·base/head·remote push가 별도로 승인되지 않았으므로 PR 생성, push, hosted CI dispatch, merge, publish, branch deletion은 `PENDING`으로 남겼다. 이 계획의 완료는 구현·검증·lesson까지이며 merge 승인을 의미하지 않는다.
 
 ## Traceability map

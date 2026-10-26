@@ -33,6 +33,9 @@
 - 복구된 workflow receipt는 `session_id`가 없을 수 있어 외부 mutation-check를 통과하지
   못한다. 원본 receipt를 보존하고, 복구 provenance와 live GitHub read-back을 별도로
   기록해야 한다.
+- 이번 recovery run은 통과한 check 결과와 독립 review unavailable을 모두 기록한 뒤
+  sequence 17에서 `blocked`로 종료했다. 운영 receipt의 blocked 상태와 코드의 자동 검증
+  PASS는 서로 다른 gate로 보고해야 한다.
 
 ## 향후 guard
 

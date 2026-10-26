@@ -6,6 +6,7 @@
 - 구현 worktree: `.worktrees/feat-issue-665-aws-request-builders`
 - branch: `feat/issue-665-aws-request-builders`
 - 구현 검토 기준 HEAD: `c4ad8034e4462cbefcc17f5e8d038f1bba55fe97`
+- 문서·계획 마감 기준 HEAD: `da91f37084eb42b03e33ba4db2605da7225c1322`
 - 변경 범위: `aws-java`의 8개 Request support와 대응 테스트, `aws-java` 한·영 README, `CHANGELOG.md`
 - 추적 이슈: [#665](https://github.com/bluetape4k/bluetape4k-aws/issues/665)
 
@@ -62,6 +63,9 @@ Code-review 계약에 따라 독립 lane 실패를 작성자 자체 review로 �
 - 자동 검증: 구현 범위에서 PASS.
 - 독립 code review: `PENDING (independent review unavailable)`.
 - `compatibilityCheck`: repository infrastructure failure로 PENDING.
+- workflow recovery run `20261026T154437Z-74887d23`: receipt verify PASS, sequence 17,
+  checksum `d0364a3758441349ab63177c6c579c5be3fe79b489018eb5d2d5f7d5c7647663`,
+  completion `blocked` (final-review unavailable).
 - 최종 권고: `PENDING`; 이 문서는 merge-ready 승인으로 사용할 수 없다.
 - PR 생성, push, hosted CI dispatch, merge, publish, branch deletion은 수행하지 않았다.
 
