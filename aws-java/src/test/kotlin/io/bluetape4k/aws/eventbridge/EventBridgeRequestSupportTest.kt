@@ -6,8 +6,11 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.aws.AbstractAwsTest
 import io.bluetape4k.aws.eventbridge.model.listRulesRequestOf
 import io.bluetape4k.aws.eventbridge.model.listTargetsByRuleRequestOf
+import io.bluetape4k.aws.eventbridge.model.putEventsRequest
 import io.bluetape4k.aws.eventbridge.model.putEventsRequestEntryOf
+import io.bluetape4k.aws.eventbridge.model.putEventsRequestEntry
 import io.bluetape4k.aws.eventbridge.model.putEventsRequestOf
+import io.bluetape4k.aws.eventbridge.model.putRuleRequest
 import io.bluetape4k.aws.eventbridge.model.putRuleRequestOf
 import io.bluetape4k.aws.eventbridge.model.putTargetsRequestOf
 import io.bluetape4k.aws.eventbridge.model.removeTargetsRequestOf
@@ -19,6 +22,26 @@ import org.junit.jupiter.api.Test
 class EventBridgeRequestSupportTest: AbstractAwsTest() {
 
     companion object: KLogging()
+
+    @Test
+    fun `builder-only event bridge requests apply sdk builder fields`() {
+        val entry = putEventsRequestEntry {
+            source("app.test")
+            detailType("event")
+            detail("{}")
+        }
+        val request = putEventsRequest {
+            entries(entry)
+        }
+        val rule = putRuleRequest {
+            name("rule")
+            eventPattern("""{"source":["app.test"]}""")
+        }
+
+        entry.source() shouldBeEqualTo "app.test"
+        request.entries() shouldBeEqualTo listOf(entry)
+        rule.name() shouldBeEqualTo "rule"
+    }
 
     @Test
     fun `putEventsRequestOf validates entry count`() {
@@ -138,6 +161,33 @@ class EventBridgeRequestSupportTest: AbstractAwsTest() {
         }
         assertFailsWith<IllegalArgumentException> {
             listTargetsByRuleRequestOf("rule", limit = 101)
+        }
+
+    }
+
+    @Test
+    fun `request of callback overrides scalar fields and validates final values`() {
+        val rule = putRuleRequestOf(name = "rule", eventPattern = "{}") {
+            name("overridden")
+            scheduleExpression("rate(1 minute)")
+        }
+        rule.name() shouldBeEqualTo "overridden"
+        rule.scheduleExpression() shouldBeEqualTo "rate(1 minute)"
+
+        assertFailsWith<IllegalArgumentException> {
+            putEventsRequestOf(listOf(putEventsRequestEntryOf("source", "type", "{}"))) {
+                entries(emptyList())
+            }
+        }
+        assertFailsWith<IllegalArgumentException> {
+            putTargetsRequestOf("rule", listOf(targetOf("id", "arn"))) {
+                rule(" ")
+            }
+        }
+        assertFailsWith<IllegalArgumentException> {
+            listRulesRequestOf(limit = 10) {
+                limit(101)
+            }
         }
     }
 }

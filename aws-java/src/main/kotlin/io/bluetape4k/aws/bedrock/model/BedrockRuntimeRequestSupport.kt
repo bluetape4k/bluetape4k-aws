@@ -10,6 +10,29 @@ import software.amazon.awssdk.services.bedrockruntime.model.InferenceConfigurati
 import software.amazon.awssdk.services.bedrockruntime.model.Message
 
 /**
+ * [ConverseRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 model ID·messages와 helper-owned precedence 검증이 필요한 경우 [converseRequestOf]를
+ * 사용하세요. 이 builder-only 경로는 SDK 필드만 적용하고 helper-owned 값을 소유하지 않습니다.
+ */
+inline fun converseRequest(
+    builder: ConverseRequest.Builder.() -> Unit,
+): ConverseRequest = ConverseRequest.builder()
+    .apply(builder)
+    .build()
+
+/**
+ * [ConverseStreamRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 model ID·messages와 helper-owned precedence 검증이 필요한 경우
+ * [converseStreamRequestOf]를 사용하세요. 이 builder-only 경로는 SDK 필드만 적용하고
+ * helper-owned 값을 소유하지 않습니다.
+ */
+inline fun converseStreamRequest(
+    builder: ConverseStreamRequest.Builder.() -> Unit,
+): ConverseStreamRequest = ConverseStreamRequest.builder()
+    .apply(builder)
+    .build()
+
+/**
  * Bedrock 네이티브 텍스트 [ContentBlock]을 구성합니다.
  *
  * [text]는 도우미가 소유하며 [builder]보다 우선합니다. 도우미는 모델에 종속되지 않으며,

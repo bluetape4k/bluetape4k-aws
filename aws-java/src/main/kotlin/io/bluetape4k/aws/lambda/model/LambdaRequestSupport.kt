@@ -7,6 +7,16 @@ import software.amazon.awssdk.services.lambda.model.InvokeRequest
 import software.amazon.awssdk.services.lambda.model.LogType
 
 /**
+ * Lambda invoke 요청의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 function name과 최종 invoke 검증이 필요한 경우 [invokeRequestOf]를 사용하세요.
+ */
+inline fun invokeRequest(
+    builder: InvokeRequest.Builder.() -> Unit,
+): InvokeRequest = InvokeRequest.builder()
+    .apply(builder)
+    .build()
+
+/**
  * AWS Lambda invoke 요청을 구성합니다.
  *
  * callback을 적용한 뒤 최종 request를 검증하며 payload가 null이면 SDK request에서

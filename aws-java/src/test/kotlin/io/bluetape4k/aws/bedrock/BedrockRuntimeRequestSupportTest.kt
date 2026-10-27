@@ -6,7 +6,9 @@ import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.AbstractAwsTest
 import io.bluetape4k.aws.bedrock.model.contentBlockOf
 import io.bluetape4k.aws.bedrock.model.converseRequestOf
+import io.bluetape4k.aws.bedrock.model.converseRequest
 import io.bluetape4k.aws.bedrock.model.converseStreamRequestOf
+import io.bluetape4k.aws.bedrock.model.converseStreamRequest
 import io.bluetape4k.aws.bedrock.model.userMessageOf
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
@@ -18,6 +20,23 @@ import software.amazon.awssdk.services.bedrockruntime.model.InferenceConfigurati
 class BedrockRuntimeRequestSupportTest: AbstractAwsTest() {
 
     companion object: KLogging()
+
+    @Test
+    fun `builder-only converse helpers apply receiver blocks`() {
+        val message = userMessageOf("hello")
+        val request = converseRequest {
+            modelId("model-id")
+            messages(message)
+        }
+        val streamRequest = converseStreamRequest {
+            modelId("stream-model-id")
+            messages(message)
+        }
+
+        request.modelId() shouldBeEqualTo "model-id"
+        request.messages().single() shouldBeEqualTo message
+        streamRequest.modelId() shouldBeEqualTo "stream-model-id"
+    }
 
     @Test
     fun `content and user message keep helper-owned fields`() {

@@ -9,6 +9,9 @@ import io.bluetape4k.aws.secretsmanager.model.batchGetSecretValueRequestOf
 import io.bluetape4k.aws.secretsmanager.model.createSecretRequestOf
 import io.bluetape4k.aws.secretsmanager.model.getSecretValueRequestOf
 import io.bluetape4k.aws.secretsmanager.model.listSecretsRequestOf
+import io.bluetape4k.aws.secretsmanager.model.getSecretValueRequest
+import io.bluetape4k.aws.secretsmanager.model.createSecretRequest
+import io.bluetape4k.aws.secretsmanager.model.putSecretValueRequestOf
 import io.bluetape4k.concurrent.completableFutureOf
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
@@ -94,6 +97,67 @@ class SecretsManagerSupportTest {
         log.debug { "request=$request" }
         request.maxResults() shouldBeEqualTo 10
         request.nextToken() shouldBeEqualTo "token-1"
+    }
+
+    @Test
+    fun `builder-only request helper applies receiver block`() {
+        val request = getSecretValueRequest {
+            secretId("secret-id")
+            versionStage("AWSCURRENT")
+        }
+
+        request.secretId() shouldBeEqualTo "secret-id"
+        request.versionStage() shouldBeEqualTo "AWSCURRENT"
+    }
+
+    @Test
+    fun `builder-only secret request accepts sdk fields`() {
+        val request = createSecretRequest {
+            name("secret-name")
+            secretString(SENTINEL)
+            description("description")
+        }
+
+        request.name() shouldBeEqualTo "secret-name"
+        request.secretString() shouldBeEqualTo SENTINEL
+        request.description() shouldBeEqualTo "description"
+    }
+
+    @Test
+    fun `request of callback overrides scalar fields and final validation remains active`() {
+        val overridden = getSecretValueRequestOf("secret-original") {
+            secretId("secret-override")
+            versionStage("AWSCURRENT")
+        }
+
+        overridden.secretId() shouldBeEqualTo "secret-override"
+        overridden.versionStage() shouldBeEqualTo "AWSCURRENT"
+
+        assertFailsWith<IllegalArgumentException> {
+            batchGetSecretValueRequestOf(listOf("secret-original")) {
+                secretIdList(emptyList())
+            }
+        }
+        assertFailsWith<IllegalArgumentException> {
+            listSecretsRequestOf(maxResults = 10) {
+                maxResults(101)
+            }
+        }
+        assertFailsWith<IllegalArgumentException> {
+            createSecretRequestOf(name = "secret-name", secretValue = awsSecretValueOf(SENTINEL)) {
+                secretString(" ")
+            }
+        }
+        assertFailsWith<IllegalArgumentException> {
+            createSecretRequestOf(name = "secret-name", secretValue = awsSecretValueOf(SENTINEL)) {
+                secretBinary(SdkBytes.fromUtf8String("binary"))
+            }
+        }
+        assertFailsWith<IllegalArgumentException> {
+            putSecretValueRequestOf(secretId = "secret-id", secretValue = awsSecretValueOf(SENTINEL)) {
+                secretBinary(SdkBytes.fromUtf8String("binary"))
+            }
+        }
     }
 
     @Test

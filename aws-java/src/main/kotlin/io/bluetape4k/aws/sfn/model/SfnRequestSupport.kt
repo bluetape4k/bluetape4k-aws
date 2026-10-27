@@ -1,3 +1,5 @@
+@file:Suppress("TooManyFunctions")
+
 package io.bluetape4k.aws.sfn.model
 
 import io.bluetape4k.support.requireNotBlank
@@ -10,6 +12,46 @@ import software.amazon.awssdk.services.sfn.model.StopExecutionRequest
 
 private const val MAX_EXECUTION_NAME_LENGTH = 80
 private const val MAX_LIST_EXECUTIONS_RESULTS = 1000
+
+/**
+ * 실행 시작 요청의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 ARN·입력 정규화와 최종 검증이 필요한 경우 [startExecutionRequestOf]를 사용하세요.
+ */
+inline fun startExecutionRequest(
+    builder: StartExecutionRequest.Builder.() -> Unit,
+): StartExecutionRequest = StartExecutionRequest.builder()
+    .apply(builder)
+    .build()
+
+/**
+ * 실행 중지 요청의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 execution ARN 검증이 필요한 경우 [stopExecutionRequestOf]를 사용하세요.
+ */
+inline fun stopExecutionRequest(
+    builder: StopExecutionRequest.Builder.() -> Unit,
+): StopExecutionRequest = StopExecutionRequest.builder()
+    .apply(builder)
+    .build()
+
+/**
+ * 실행 상세 조회 요청의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 execution ARN 검증이 필요한 경우 [describeExecutionRequestOf]를 사용하세요.
+ */
+inline fun describeExecutionRequest(
+    builder: DescribeExecutionRequest.Builder.() -> Unit,
+): DescribeExecutionRequest = DescribeExecutionRequest.builder()
+    .apply(builder)
+    .build()
+
+/**
+ * 실행 목록 요청의 SDK builder 필드만 사용해 구성합니다.
+ * ARN 선택, redrive 조건과 page limit 검증이 필요한 경우 [listExecutionsRequestOf]를 사용하세요.
+ */
+inline fun listExecutionsRequest(
+    builder: ListExecutionsRequest.Builder.() -> Unit,
+): ListExecutionsRequest = ListExecutionsRequest.builder()
+    .apply(builder)
+    .build()
 
 /**
  * AWS Step Functions 실행 시작 요청을 구성합니다.

@@ -42,6 +42,16 @@ internal fun Int.requireEventBridgeListLimit(name: String) {
 }
 
 /**
+ * [CreateEventBusRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 bus name과 최종 검증이 필요한 경우 [createEventBusRequestOf]를 사용하세요.
+ */
+inline fun createEventBusRequest(
+    builder: CreateEventBusRequest.Builder.() -> Unit,
+): CreateEventBusRequest = CreateEventBusRequest.builder()
+    .apply(builder)
+    .build()
+
+/**
  * 버스 이름으로 [CreateEventBusRequest]를 구성합니다.
  */
 inline fun createEventBusRequestOf(
@@ -53,7 +63,18 @@ inline fun createEventBusRequestOf(
         .name(name)
         .apply(builder)
         .build()
+        .also { it.name().requireNotBlank("name") }
 }
+
+/**
+ * [DeleteEventBusRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 bus name과 최종 검증이 필요한 경우 [deleteEventBusRequestOf]를 사용하세요.
+ */
+inline fun deleteEventBusRequest(
+    builder: DeleteEventBusRequest.Builder.() -> Unit,
+): DeleteEventBusRequest = DeleteEventBusRequest.builder()
+    .apply(builder)
+    .build()
 
 /**
  * 버스 이름으로 [DeleteEventBusRequest]를 구성합니다.
@@ -69,7 +90,18 @@ inline fun deleteEventBusRequestOf(
         .name(name)
         .apply(builder)
         .build()
+        .also { it.name().requireNotBlank("name") }
 }
+
+/**
+ * [PutRuleRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 name·pattern/schedule 검증이 필요한 경우 [putRuleRequestOf]를 사용하세요.
+ */
+inline fun putRuleRequest(
+    builder: PutRuleRequest.Builder.() -> Unit,
+): PutRuleRequest = PutRuleRequest.builder()
+    .apply(builder)
+    .build()
 
 /**
  * [PutRuleRequest]를 구성합니다.
@@ -105,7 +137,27 @@ inline fun putRuleRequestOf(
         }
         .apply(builder)
         .build()
+        .also { request ->
+            request.name().requireNotBlank("name")
+            request.eventBusName()?.requireNotBlank("eventBusName")
+            request.eventPattern()?.requireNotBlank("eventPattern")
+            request.scheduleExpression()?.requireNotBlank("scheduleExpression")
+            require(!request.eventPattern().isNullOrBlank() || !request.scheduleExpression().isNullOrBlank()) {
+                "eventPattern or scheduleExpression must be provided."
+            }
+            request.description()?.requireNotBlank("description")
+        }
 }
+
+/**
+ * [DeleteRuleRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 rule name과 최종 검증이 필요한 경우 [deleteRuleRequestOf]를 사용하세요.
+ */
+inline fun deleteRuleRequest(
+    builder: DeleteRuleRequest.Builder.() -> Unit,
+): DeleteRuleRequest = DeleteRuleRequest.builder()
+    .apply(builder)
+    .build()
 
 /**
  * [DeleteRuleRequest]를 구성합니다.
@@ -128,6 +180,10 @@ inline fun deleteRuleRequestOf(
         }
         .apply(builder)
         .build()
+        .also { request ->
+            request.name().requireNotBlank("name")
+            request.eventBusName()?.requireNotBlank("eventBusName")
+        }
 }
 
 /**
@@ -146,6 +202,16 @@ inline fun targetOf(
         .apply(builder)
         .build()
 }
+
+/**
+ * [PutTargetsRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 rule·target 목록과 1..10 limit 검증이 필요한 경우 [putTargetsRequestOf]를 사용하세요.
+ */
+inline fun putTargetsRequest(
+    builder: PutTargetsRequest.Builder.() -> Unit,
+): PutTargetsRequest = PutTargetsRequest.builder()
+    .apply(builder)
+    .build()
 
 /**
  * EventBridge의 요청당 대상 10개 제한에 맞춰 [PutTargetsRequest]를 구성합니다.
@@ -169,9 +235,21 @@ inline fun putTargetsRequestOf(
         .apply(builder)
         .build()
         .also {
+            it.rule().requireNotBlank("rule")
+            it.eventBusName()?.requireNotBlank("eventBusName")
             it.targets().requireSizeInOneToTen("targets")
         }
 }
+
+/**
+ * [RemoveTargetsRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 rule·target ID 목록과 1..10 limit 검증이 필요한 경우 [removeTargetsRequestOf]를 사용하세요.
+ */
+inline fun removeTargetsRequest(
+    builder: RemoveTargetsRequest.Builder.() -> Unit,
+): RemoveTargetsRequest = RemoveTargetsRequest.builder()
+    .apply(builder)
+    .build()
 
 /**
  * EventBridge의 요청당 대상 id 10개 제한에 맞춰 [RemoveTargetsRequest]를 구성합니다.
@@ -200,10 +278,22 @@ inline fun removeTargetsRequestOf(
         .apply(builder)
         .build()
         .also { request ->
+            request.rule().requireNotBlank("rule")
+            request.eventBusName()?.requireNotBlank("eventBusName")
             request.ids().requireSizeInOneToTen("ids")
             request.ids().requireNoBlankValues("ids")
         }
 }
+
+/**
+ * [PutEventsRequestEntry]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 source/detail 검증이 필요한 경우 [putEventsRequestEntryOf]를 사용하세요.
+ */
+inline fun putEventsRequestEntry(
+    builder: PutEventsRequestEntry.Builder.() -> Unit,
+): PutEventsRequestEntry = PutEventsRequestEntry.builder()
+    .apply(builder)
+    .build()
 
 /**
  * 사용자 정의 이벤트용 [PutEventsRequestEntry]를 구성합니다.
@@ -240,7 +330,25 @@ inline fun putEventsRequestEntryOf(
         }
         .apply(builder)
         .build()
+        .also { request ->
+            request.source().requireNotBlank("source")
+            request.detailType().requireNotBlank("detailType")
+            request.detail().requireNotBlank("detail")
+            request.eventBusName()?.requireNotBlank("eventBusName")
+            request.resources().requireNoBlankValues("resources")
+            request.traceHeader()?.requireNotBlank("traceHeader")
+        }
 }
+
+/**
+ * [PutEventsRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 entry 목록과 1..10 limit 검증이 필요한 경우 [putEventsRequestOf]를 사용하세요.
+ */
+inline fun putEventsRequest(
+    builder: PutEventsRequest.Builder.() -> Unit,
+): PutEventsRequest = PutEventsRequest.builder()
+    .apply(builder)
+    .build()
 
 /**
  * EventBridge의 요청당 항목 10개 제한에 맞춰 [PutEventsRequest]를 구성합니다.
@@ -258,6 +366,16 @@ inline fun putEventsRequestOf(
         .build()
         .also { it.entries().requireSizeInOneToTen("entries") }
 }
+
+/**
+ * [ListRulesRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * list field와 1..100 limit 검증이 필요한 경우 [listRulesRequestOf]를 사용하세요.
+ */
+inline fun listRulesRequest(
+    builder: ListRulesRequest.Builder.() -> Unit,
+): ListRulesRequest = ListRulesRequest.builder()
+    .apply(builder)
+    .build()
 
 /**
  * [ListRulesRequest]를 구성합니다.
@@ -284,8 +402,23 @@ inline fun listRulesRequestOf(
         }
         .apply(builder)
         .build()
-        .also { it.limit()?.requireEventBridgeListLimit("limit") }
+        .also { request ->
+            request.eventBusName()?.requireNotBlank("eventBusName")
+            request.namePrefix()?.requireNotBlank("namePrefix")
+            request.limit()?.requireEventBridgeListLimit("limit")
+            request.nextToken()?.requireNotBlank("nextToken")
+        }
 }
+
+/**
+ * [ListTargetsByRuleRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 rule과 1..100 limit 검증이 필요한 경우 [listTargetsByRuleRequestOf]를 사용하세요.
+ */
+inline fun listTargetsByRuleRequest(
+    builder: ListTargetsByRuleRequest.Builder.() -> Unit,
+): ListTargetsByRuleRequest = ListTargetsByRuleRequest.builder()
+    .apply(builder)
+    .build()
 
 /**
  * [ListTargetsByRuleRequest]를 구성합니다.
@@ -312,5 +445,10 @@ inline fun listTargetsByRuleRequestOf(
         }
         .apply(builder)
         .build()
-        .also { it.limit()?.requireEventBridgeListLimit("limit") }
+        .also { request ->
+            request.rule().requireNotBlank("rule")
+            request.eventBusName()?.requireNotBlank("eventBusName")
+            request.limit()?.requireEventBridgeListLimit("limit")
+            request.nextToken()?.requireNotBlank("nextToken")
+        }
 }

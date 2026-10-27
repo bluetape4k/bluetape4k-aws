@@ -9,10 +9,22 @@ import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.lambda.model.InvocationType
 import software.amazon.awssdk.services.lambda.model.LogType
+import io.bluetape4k.aws.lambda.model.invokeRequest
 
 class LambdaRequestSupportTest {
 
     companion object: KLogging()
+
+    @Test
+    fun `builder-only invoke request applies sdk builder block`() {
+        val request = invokeRequest {
+            functionName("orders")
+            invocationType(InvocationType.EVENT)
+        }
+
+        request.functionName() shouldBeEqualTo "orders"
+        request.invocationType() shouldBeEqualTo InvocationType.EVENT
+    }
 
     @Test
     fun `request maps function ARN qualifier invocation log and payload`() {

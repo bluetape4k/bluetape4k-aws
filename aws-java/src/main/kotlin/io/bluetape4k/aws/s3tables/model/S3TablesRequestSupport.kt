@@ -20,6 +20,126 @@ import software.amazon.awssdk.services.s3tables.model.ListTablesRequest
 import software.amazon.awssdk.services.s3tables.model.OpenTableFormat
 import software.amazon.awssdk.services.s3tables.model.TableBucketType
 
+/**
+ * [CreateTableBucketRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 bucket name 검증이 필요한 경우 [createTableBucketRequestOf]를 사용하세요.
+ */
+inline fun createTableBucketRequest(
+    builder: CreateTableBucketRequest.Builder.() -> Unit,
+): CreateTableBucketRequest = CreateTableBucketRequest.builder()
+    .apply(builder)
+    .build()
+
+/**
+ * [ListTableBucketsRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * page limit 검증이 필요한 경우 [listTableBucketsRequestOf]를 사용하세요.
+ */
+inline fun listTableBucketsRequest(
+    builder: ListTableBucketsRequest.Builder.() -> Unit,
+): ListTableBucketsRequest = ListTableBucketsRequest.builder()
+    .apply(builder)
+    .build()
+
+/**
+ * [GetTableBucketRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 table bucket ARN 검증이 필요한 경우 [getTableBucketRequestOf]를 사용하세요.
+ */
+inline fun getTableBucketRequest(
+    builder: GetTableBucketRequest.Builder.() -> Unit,
+): GetTableBucketRequest = GetTableBucketRequest.builder()
+    .apply(builder)
+    .build()
+
+/**
+ * [DeleteTableBucketRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 table bucket ARN 검증이 필요한 경우 [deleteTableBucketRequestOf]를 사용하세요.
+ */
+inline fun deleteTableBucketRequest(
+    builder: DeleteTableBucketRequest.Builder.() -> Unit,
+): DeleteTableBucketRequest = DeleteTableBucketRequest.builder()
+    .apply(builder)
+    .build()
+
+/**
+ * [CreateNamespaceRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 bucket ARN·namespace 검증이 필요한 경우 [createNamespaceRequestOf]를 사용하세요.
+ */
+inline fun createNamespaceRequest(
+    builder: CreateNamespaceRequest.Builder.() -> Unit,
+): CreateNamespaceRequest = CreateNamespaceRequest.builder()
+    .apply(builder)
+    .build()
+
+/**
+ * [ListNamespacesRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 bucket ARN과 page limit 검증이 필요한 경우 [listNamespacesRequestOf]를 사용하세요.
+ */
+inline fun listNamespacesRequest(
+    builder: ListNamespacesRequest.Builder.() -> Unit,
+): ListNamespacesRequest = ListNamespacesRequest.builder()
+    .apply(builder)
+    .build()
+
+/**
+ * [GetNamespaceRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 bucket ARN·namespace 검증이 필요한 경우 [getNamespaceRequestOf]를 사용하세요.
+ */
+inline fun getNamespaceRequest(
+    builder: GetNamespaceRequest.Builder.() -> Unit,
+): GetNamespaceRequest = GetNamespaceRequest.builder()
+    .apply(builder)
+    .build()
+
+/**
+ * [DeleteNamespaceRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 bucket ARN·namespace 검증이 필요한 경우 [deleteNamespaceRequestOf]를 사용하세요.
+ */
+inline fun deleteNamespaceRequest(
+    builder: DeleteNamespaceRequest.Builder.() -> Unit,
+): DeleteNamespaceRequest = DeleteNamespaceRequest.builder()
+    .apply(builder)
+    .build()
+
+/**
+ * [CreateTableRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 bucket ARN·namespace·table name 검증이 필요한 경우 [createTableRequestOf]를 사용하세요.
+ */
+inline fun createTableRequest(
+    builder: CreateTableRequest.Builder.() -> Unit,
+): CreateTableRequest = CreateTableRequest.builder()
+    .apply(builder)
+    .build()
+
+/**
+ * [ListTablesRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 bucket ARN·namespace와 page limit 검증이 필요한 경우 [listTablesRequestOf]를 사용하세요.
+ */
+inline fun listTablesRequest(
+    builder: ListTablesRequest.Builder.() -> Unit,
+): ListTablesRequest = ListTablesRequest.builder()
+    .apply(builder)
+    .build()
+
+/**
+ * [GetTableRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 selector 검증이 필요한 경우 [getTableRequestOf]를 사용하세요.
+ */
+inline fun getTableRequest(
+    builder: GetTableRequest.Builder.() -> Unit,
+): GetTableRequest = GetTableRequest.builder()
+    .apply(builder)
+    .build()
+
+/**
+ * [DeleteTableRequest]의 SDK builder 필드만 사용해 구성합니다.
+ * 필수 selector 검증이 필요한 경우 [deleteTableRequestOf]를 사용하세요.
+ */
+inline fun deleteTableRequest(
+    builder: DeleteTableRequest.Builder.() -> Unit,
+): DeleteTableRequest = DeleteTableRequest.builder()
+    .apply(builder)
+    .build()
+
 /** table bucket 생성 요청을 구성합니다. */
 fun createTableBucketRequestOf(
     name: String,

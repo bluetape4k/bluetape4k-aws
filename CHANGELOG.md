@@ -9,6 +9,7 @@
 
 ### 추가
 
+- `aws-java`의 AWS SDK Request helper에 인자 없는 Kotlin-style builder DSL을 추가했습니다. `fooRequest { }`는 SDK builder 필드만 설정하고, `fooRequestOf(...)`는 bucket/key·ARN·name 같은 필수 정보를 받고 callback 이후에도 필수값과 service limit을 검증합니다. Bedrock helper-owned 필드와 SSM `PutParameterRequest` specialization 경계를 유지했습니다 ([#665](https://github.com/bluetape4k/bluetape4k-aws/issues/665)).
 - AWS SDK for Kotlin Kinesis의 `putRecord`, `putRecords`, `getShardIterator`, `getRecords`와
   두 request helper에 builder-last named `dryRun` API를 추가했습니다. 검증 성공은 정상 응답이
   아니라 `DryRunOperationException`으로 전달됩니다

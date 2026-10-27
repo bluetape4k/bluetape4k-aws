@@ -9,8 +9,11 @@ import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.aws.auth.awsBasicCredentialsOf
 import io.bluetape4k.aws.secretsmanager.awsSecretValueOf
 import io.bluetape4k.aws.ssm.model.getParameterRequestOf
+import io.bluetape4k.aws.ssm.model.getParameterRequest
 import io.bluetape4k.aws.ssm.model.getParametersByPathRequestOf
 import io.bluetape4k.aws.ssm.model.getParametersRequestOf
+import io.bluetape4k.aws.ssm.model.putParameterRequest
+import io.bluetape4k.aws.ssm.model.putParameterRequestOf
 import io.bluetape4k.aws.ssm.model.putSecureParameterRequestOf
 import io.bluetape4k.concurrent.completableFutureOf
 import io.bluetape4k.logging.KLogging
@@ -97,6 +100,61 @@ class SsmSupportTest {
         request.path() shouldBeEqualTo "/app"
         request.maxResults() shouldBeEqualTo 5
         request.nextToken() shouldBeEqualTo "token"
+    }
+
+    @Test
+    fun `builder-only request helper applies receiver block`() {
+        val request = getParameterRequest {
+            name("/app/secret")
+            withDecryption(true)
+        }
+
+        request.name() shouldBeEqualTo "/app/secret"
+        request.withDecryption().shouldBeTrue()
+    }
+
+    @Test
+    fun `builder-only put parameter request accepts sdk fields`() {
+        val request = putParameterRequest {
+            name("/app/secret")
+            value(SENTINEL)
+            type(ParameterType.SECURE_STRING)
+        }
+
+        request.name() shouldBeEqualTo "/app/secret"
+        request.value() shouldBeEqualTo SENTINEL
+        request.type() shouldBeEqualTo ParameterType.SECURE_STRING
+    }
+
+    @Test
+    fun `request of callback overrides scalar fields and final validation remains active`() {
+        val overridden = getParameterRequestOf("/app/original") {
+            name("/app/override")
+            withDecryption(true)
+        }
+
+        overridden.name() shouldBeEqualTo "/app/override"
+        overridden.withDecryption().shouldBeTrue()
+
+        assertFailsWith<IllegalArgumentException> {
+            getParametersRequestOf(listOf("/app/original")) {
+                names(emptyList())
+            }
+        }
+        assertFailsWith<IllegalArgumentException> {
+            getParametersByPathRequestOf("/app", maxResults = 5) {
+                maxResults(11)
+            }
+        }
+        assertFailsWith<IllegalArgumentException> {
+            putParameterRequestOf(
+                name = "/app/original",
+                value = "value",
+                type = ParameterType.STRING,
+            ) {
+                type(null as ParameterType?)
+            }
+        }
     }
 
     @Test
