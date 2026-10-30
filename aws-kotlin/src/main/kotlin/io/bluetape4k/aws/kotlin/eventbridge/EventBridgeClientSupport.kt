@@ -33,7 +33,7 @@ suspend inline fun <R> withEventBridgeClient(
     endpointUrl: Url? = null,
     region: String? = null,
     credentialsProvider: CredentialsProvider? = null,
-    crossinline block: suspend (EventBridgeClient) -> R,
+    block: suspend (EventBridgeClient) -> R,
 ): R =
     eventBridgeClientOf(endpointUrl, region, credentialsProvider).use { client ->
         block(client)

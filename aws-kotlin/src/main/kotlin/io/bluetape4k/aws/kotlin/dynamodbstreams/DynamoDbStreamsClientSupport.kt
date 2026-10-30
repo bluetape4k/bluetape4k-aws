@@ -28,7 +28,7 @@ suspend inline fun <R> withDynamoDbStreamsClient(
     credentialsProvider: CredentialsProvider? = null,
     httpClient: HttpClientEngine? = null,
     crossinline builder: DynamoDbStreamsClient.Config.Builder.() -> Unit = {},
-    crossinline block: suspend (DynamoDbStreamsClient) -> R,
+    block: suspend (DynamoDbStreamsClient) -> R,
 ): R =
     dynamoDbStreamsClientOf(
         endpointUrl,

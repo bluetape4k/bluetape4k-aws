@@ -58,7 +58,7 @@ suspend inline fun <R> withCloudWatchLogsClient(
     endpointUrl: Url? = null,
     region: String? = null,
     credentialsProvider: CredentialsProvider? = null,
-    crossinline block: suspend (CloudWatchLogsClient) -> R,
+    block: suspend (CloudWatchLogsClient) -> R,
 ): R =
     cloudWatchLogsClientOf(endpointUrl, region, credentialsProvider)
         .useSafe { client ->

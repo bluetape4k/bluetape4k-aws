@@ -78,7 +78,7 @@ suspend inline fun <R> withBedrockRuntimeClient(
     credentialsProvider: CredentialsProvider? = null,
     httpClient: HttpClientEngine? = null,
     crossinline builder: BedrockRuntimeClient.Config.Builder.() -> Unit = {},
-    crossinline block: suspend (BedrockRuntimeClient) -> R,
+    block: suspend (BedrockRuntimeClient) -> R,
 ): R = withBedrockRuntimeClient(
     clientFactory = {
         bedrockRuntimeClientOf(
@@ -94,7 +94,8 @@ suspend inline fun <R> withBedrockRuntimeClient(
 
 suspend inline fun <R> withBedrockRuntimeClient(
     clientFactory: () -> BedrockRuntimeClient,
-    crossinline block: suspend (BedrockRuntimeClient) -> R,
-): R = clientFactory().useSafe { client ->
-    block(client)
-}
+    block: suspend (BedrockRuntimeClient) -> R,
+): R =
+    clientFactory().useSafe { client ->
+        block(client)
+    }
