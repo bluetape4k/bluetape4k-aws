@@ -17,7 +17,7 @@ import io.bluetape4k.aws.kotlin.secretsmanager.model.putSecretValueRequestOf
 /**
  * 원본 보안 값 응답을 가져옵니다.
  */
-suspend fun SecretsManagerClient.getSecretValueResponse(
+suspend inline fun SecretsManagerClient.getSecretValueResponse(
     secretId: String,
     versionId: String? = null,
     versionStage: String? = null,
@@ -27,7 +27,7 @@ suspend fun SecretsManagerClient.getSecretValueResponse(
 /**
  * 보안 문자열을 값이 가려진 [AwsSecretValue]로 가져옵니다.
  */
-suspend fun SecretsManagerClient.getSecretString(
+suspend inline fun SecretsManagerClient.getSecretString(
     secretId: String,
     versionId: String? = null,
     versionStage: String? = null,
@@ -40,7 +40,7 @@ suspend fun SecretsManagerClient.getSecretString(
 /**
  * 보안 값 페이지 하나를 가져오고 SDK 원본 부분 오류를 보존합니다.
  */
-suspend fun SecretsManagerClient.batchGetSecretValues(
+suspend inline fun SecretsManagerClient.batchGetSecretValues(
     secretIds: Collection<String>,
     maxResults: Int? = null,
     nextToken: String? = null,
@@ -50,7 +50,7 @@ suspend fun SecretsManagerClient.batchGetSecretValues(
 /**
  * Secrets Manager 메타데이터 페이지 하나를 조회합니다.
  */
-suspend fun SecretsManagerClient.listSecrets(
+suspend inline fun SecretsManagerClient.listSecrets(
     maxResults: Int? = null,
     nextToken: String? = null,
 ): ListSecretsResponse =
@@ -67,7 +67,7 @@ suspend fun SecretsManagerClient.describeSecret(secretId: String): DescribeSecre
  *
  * 이 작업은 AWS 측 상태를 변경하며 새 보안 값을 만들 수 있습니다. 드러낸 값을 로그에 남기거나 출력하지 마세요.
  */
-suspend fun SecretsManagerClient.createSecret(
+suspend inline fun SecretsManagerClient.createSecret(
     name: String,
     secretValue: AwsSecretValue,
     description: String? = null,
@@ -80,7 +80,7 @@ suspend fun SecretsManagerClient.createSecret(
  *
  * 이 작업은 AWS 측 상태를 변경하며 스테이징 레이블을 바꿀 수 있습니다. 드러낸 값을 로그에 남기거나 출력하지 마세요.
  */
-suspend fun SecretsManagerClient.putSecretValue(
+suspend inline fun SecretsManagerClient.putSecretValue(
     secretId: String,
     secretValue: AwsSecretValue,
     clientRequestToken: String? = null,

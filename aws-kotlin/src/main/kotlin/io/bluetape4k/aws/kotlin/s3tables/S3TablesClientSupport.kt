@@ -46,19 +46,24 @@ inline fun s3TablesClientOf(
  * @param builder [S3TablesClient.Config.Builder]를 추가로 구성하는 블록
  * @param block client를 사용하는 suspend 블록입니다.
  */
-suspend fun <R> withS3TablesClient(
+suspend inline fun <R> withS3TablesClient(
     endpointUrl: Url? = null,
     region: String? = null,
     credentialsProvider: CredentialsProvider? = null,
     httpClient: HttpClientEngine? = null,
-    builder: S3TablesClient.Config.Builder.() -> Unit = {},
-    block: suspend (S3TablesClient) -> R,
-): R = withS3TablesClient(
-    clientFactory = { s3TablesClientOf(endpointUrl, region, credentialsProvider, httpClient, builder) },
-    block = block,
-)
+    crossinline builder: S3TablesClient.Config.Builder.() -> Unit = {},
+    crossinline block: suspend (S3TablesClient) -> R,
+): R =
+    withS3TablesClient(
+        clientFactory = { s3TablesClientOf(endpointUrl, region, credentialsProvider, httpClient, builder) },
+    ) { client ->
+        block(client)
+    }
 
-internal suspend fun <R> withS3TablesClient(
+suspend fun <R> withS3TablesClient(
     clientFactory: () -> S3TablesClient,
     block: suspend (S3TablesClient) -> R,
-): R = clientFactory().useSafe { client -> block(client) }
+): R =
+    clientFactory().useSafe { client ->
+        block(client)
+    }

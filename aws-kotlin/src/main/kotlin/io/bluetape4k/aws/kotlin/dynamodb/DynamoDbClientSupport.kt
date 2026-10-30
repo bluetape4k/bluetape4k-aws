@@ -19,12 +19,12 @@ import io.bluetape4k.support.useSafe
  * @return [DynamoDbClient] 인스턴스
  * @throws IllegalArgumentException [region]이 blank인 경우
  */
-fun dynamoDbClientOf(
+inline fun dynamoDbClientOf(
     endpointUrl: Url? = null,
     region: String,
     credentialsProvider: CredentialsProvider? = null,
     httpClient: HttpClientEngine? = null,
-    builder: DynamoDbClient.Config.Builder.() -> Unit = {},
+    crossinline builder: DynamoDbClient.Config.Builder.() -> Unit = {},
 ): DynamoDbClient {
     // WHY: region은 AWS SDK Kotlin에서 필수 — null 허용 시 런타임에서 초기화 실패하므로 빠른 실패 보장
     region.requireNotBlank("region")

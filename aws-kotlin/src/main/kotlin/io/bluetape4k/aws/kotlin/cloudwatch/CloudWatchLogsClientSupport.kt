@@ -25,12 +25,12 @@ import io.bluetape4k.support.useSafe
  * @param builder [CloudWatchLogsClient.Config.Builder]에 대한 추가 설정 람다.
  * @return 설정된 [CloudWatchLogsClient] 인스턴스.
  */
-fun cloudWatchLogsClientOf(
+inline fun cloudWatchLogsClientOf(
     endpointUrl: Url? = null,
     region: String? = null,
     credentialsProvider: CredentialsProvider? = null,
     httpClient: HttpClientEngine? = null,
-    builder: Builder.() -> Unit = {},
+    crossinline builder: Builder.() -> Unit = {},
 ): CloudWatchLogsClient =
     CloudWatchLogsClient {
         endpointUrl?.let { this.endpointUrl = it }
@@ -54,11 +54,11 @@ fun cloudWatchLogsClientOf(
  *
  * @param block suspend 블록. AWS SDK의 모든 operations는 suspend 함수이므로 이 블록도 suspend로 선언합니다.
  */
-suspend fun <R> withCloudWatchLogsClient(
+suspend inline fun <R> withCloudWatchLogsClient(
     endpointUrl: Url? = null,
     region: String? = null,
     credentialsProvider: CredentialsProvider? = null,
-    block: suspend (CloudWatchLogsClient) -> R,
+    crossinline block: suspend (CloudWatchLogsClient) -> R,
 ): R =
     cloudWatchLogsClientOf(endpointUrl, region, credentialsProvider)
         .useSafe { client ->

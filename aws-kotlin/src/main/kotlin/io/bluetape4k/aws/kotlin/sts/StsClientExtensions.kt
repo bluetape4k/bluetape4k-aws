@@ -19,7 +19,7 @@ import io.bluetape4k.aws.kotlin.sts.model.assumeRoleRequestOf
  * // response.account?.isNotBlank() == true
  * ```
  */
-suspend fun StsClient.getCallerIdentity(): GetCallerIdentityResponse =
+suspend inline fun StsClient.getCallerIdentity(): GetCallerIdentityResponse =
     getCallerIdentity {}
 
 /**
@@ -39,7 +39,7 @@ suspend fun StsClient.getCallerIdentity(): GetCallerIdentityResponse =
  * // response.credentials?.accessKeyId?.isNotBlank() == true
  * ```
  */
-suspend fun StsClient.assumeRole(
+suspend inline fun StsClient.assumeRole(
     roleArn: String,
     sessionName: String,
     durationSeconds: Int = 3600,
@@ -64,7 +64,7 @@ suspend fun StsClient.assumeRole(
  * // response.credentials?.accessKeyId?.isNotBlank() == true
  * ```
  */
-suspend fun StsClient.getSessionToken(
+suspend inline fun StsClient.getSessionToken(
     durationSeconds: Int = 3600,
 ): GetSessionTokenResponse {
     requireValidSessionTokenDuration(durationSeconds)

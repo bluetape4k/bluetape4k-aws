@@ -231,7 +231,7 @@ class DynamoDbDistributedLock(
             "${DynamoDbCoordinationExpressions.FENCING_TOKEN_ALIAS} < " +
                     DynamoDbCoordinationExpressions.MAX_TOKEN_VALUE,
         ).joinToString(" AND ")
-        val values = buildMap<String, AttributeValue> {
+        val values = buildMap {
             put(DynamoDbCoordinationExpressions.OWNER_VALUE, AttributeValue.S(ownerId))
             put(DynamoDbCoordinationExpressions.EXPIRES_AT_VALUE, number(expiresAt))
             put(DynamoDbCoordinationExpressions.ZERO_VALUE, number(0L))

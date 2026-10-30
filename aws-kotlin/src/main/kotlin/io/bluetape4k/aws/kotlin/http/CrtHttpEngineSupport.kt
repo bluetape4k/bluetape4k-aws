@@ -2,6 +2,7 @@ package io.bluetape4k.aws.kotlin.http
 
 import aws.smithy.kotlin.runtime.http.engine.crt.CrtHttpEngine
 import aws.smithy.kotlin.runtime.http.engine.crt.CrtHttpEngineConfig
+import io.bluetape4k.support.useSafe
 
 /**
  * [CrtHttpEngineConfig]을 사용하여 [CrtHttpEngine] 인스턴스를 생성합니다.
@@ -20,3 +21,17 @@ import aws.smithy.kotlin.runtime.http.engine.crt.CrtHttpEngineConfig
  */
 fun crtHttpEngineOf(config: CrtHttpEngineConfig = CrtHttpEngineConfig.Default): CrtHttpEngine =
     CrtHttpEngine(config)
+
+inline fun crtHttpEngine(
+    crossinline block: CrtHttpEngineConfig.Builder.() -> Unit = {},
+): CrtHttpEngine =
+    CrtHttpEngine { block() }
+
+
+inline fun <R> withCrtHttpEngine(
+    config: CrtHttpEngineConfig = CrtHttpEngineConfig.Default,
+    crossinline block: (CrtHttpEngine) -> R,
+): R =
+    crtHttpEngineOf(config).useSafe { crtHttpEngine ->
+        block(crtHttpEngine)
+    }
