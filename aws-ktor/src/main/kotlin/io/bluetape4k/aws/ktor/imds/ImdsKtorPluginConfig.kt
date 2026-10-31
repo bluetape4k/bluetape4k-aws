@@ -1,7 +1,7 @@
 package io.bluetape4k.aws.ktor.imds
 
-import aws.smithy.kotlin.runtime.http.SdkHttpClient
 import aws.sdk.kotlin.runtime.config.imds.EndpointMode
+import aws.smithy.kotlin.runtime.http.SdkHttpClient
 import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.javatimes.hours
 import io.bluetape4k.javatimes.seconds
@@ -86,7 +86,7 @@ class ImdsKtorPluginConfig {
     }
 
     private fun validate() {
-        require(tokenTtl >= Duration.ofSeconds(1) && tokenTtl <= Duration.ofHours(6)) {
+        require(tokenTtl >= 1.seconds() && tokenTtl <= 6.hours()) {
             "tokenTtl must be between 1 second and 6 hours."
         }
         requestTimeout.requireGt(Duration.ZERO, "requestTimeout")

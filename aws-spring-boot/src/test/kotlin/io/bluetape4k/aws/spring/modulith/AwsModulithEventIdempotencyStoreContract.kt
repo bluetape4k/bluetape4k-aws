@@ -6,6 +6,7 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeGreaterThan
 import io.bluetape4k.assertions.shouldBeInstanceOf
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.javatimes.minutes
 import io.bluetape4k.javatimes.nanos
 import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.junit5.coroutines.SuspendedJobTester
@@ -161,7 +162,7 @@ abstract class AwsModulithEventIdempotencyStoreContract {
     private companion object: KLogging() {
         val EVENT_KEY = AwsModulithEventKey("order.placed", "evt-1")
         val OTHER_KEY = AwsModulithEventKey("order.placed", "evt-2")
-        val LEASE_DURATION: Duration = Duration.ofMinutes(2)
+        val LEASE_DURATION: Duration = 2.minutes()
     }
 }
 

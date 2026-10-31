@@ -7,6 +7,7 @@ import io.bluetape4k.aws.sns.model.publishBatchRequestEntryOf
 import io.bluetape4k.aws.sns.model.publishBatchRequestOf
 import io.bluetape4k.aws.sns.model.subscribeRequest
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
 import io.bluetape4k.support.hashOf
@@ -20,7 +21,6 @@ import org.junit.jupiter.api.parallel.ExecutionMode
 import software.amazon.awssdk.awscore.AwsRequestOverrideConfiguration
 import software.amazon.awssdk.services.sns.model.MessageAttributeValue
 import software.amazon.awssdk.services.sns.model.SubscribeResponse
-import java.time.Duration
 
 @Execution(ExecutionMode.SAME_THREAD)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
@@ -158,7 +158,7 @@ class SnsClientTest: AbstractSnsTest() {
             messageGroupId = "group-1",
         )
         val override = AwsRequestOverrideConfiguration.builder()
-            .apiCallTimeout(Duration.ofSeconds(1))
+            .apiCallTimeout(1.seconds())
             .build()
         val request = publishBatchRequestOf(
             topicArn = topicArn,

@@ -13,6 +13,8 @@ import io.bluetape4k.assertions.shouldStartWith
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.concurrent.await
 import io.bluetape4k.concurrent.awaitTermination
+import io.bluetape4k.javatimes.millis
+import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.logging.KLogging
 import io.mockk.clearMocks
 import io.mockk.every
@@ -22,7 +24,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.batchmanager.SqsAsyncBatchManager
-import java.time.Duration
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -229,10 +230,10 @@ class SqsBatchTransportFactoryTest {
     private fun batchProperties(): SqsBatchProperties = SqsBatchProperties(
         enabled = true,
         maxBatchSize = 4,
-        flushInterval = Duration.ofMillis(50),
+        flushInterval = 50.millis(),
         maxInFlightEntries = 8,
         schedulerThreads = 2,
-        shutdownTimeout = Duration.ofSeconds(2),
+        shutdownTimeout = 2.seconds(),
     )
 }
 

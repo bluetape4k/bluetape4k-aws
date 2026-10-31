@@ -59,11 +59,11 @@ class SqsBatchPropertiesTest {
         SqsBatchProperties(
             enabled = true,
             maxBatchSize = 10,
-            flushInterval = Duration.ofMinutes(1),
+            flushInterval = 1.minutes(),
             maxEntriesPerCall = 10_000,
             maxInFlightEntries = 10_000,
             schedulerThreads = 16,
-            shutdownTimeout = Duration.ofMinutes(1),
+            shutdownTimeout = 1.minutes(),
         )
     }
 
@@ -112,8 +112,8 @@ class SqsBatchPropertiesTest {
         assertFailsWith<IllegalArgumentException> {
             SqsBatchProperties(
                 enabled = true,
-                flushInterval = Duration.ofSeconds(2),
-                shutdownTimeout = Duration.ofSeconds(1),
+                flushInterval = 2.seconds(),
+                shutdownTimeout = 1.seconds(),
             )
         }.message shouldContain "$SQS_BATCH_PROPERTIES_PREFIX.shutdown-timeout"
     }

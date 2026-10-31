@@ -52,7 +52,6 @@ import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import software.amazon.awssdk.services.sqs.model.QueueDoesNotExistException
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
-import java.time.Duration
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CopyOnWriteArrayList
@@ -152,12 +151,12 @@ class SqsObservationAwsEmulatorTest {
 
                 runSuspendIO { operations.send(queueUrl, "retry-once") }
 
-                await.atMost(Duration.ofSeconds(10)).untilAsserted {
+                await atMost 10.seconds untilAsserted {
                     listener.attempts.get() shouldBeEqualTo 2
                     recorder.snapshots.count { it.stage == SqsObservationStage.PROCESS } shouldBeEqualTo 1
                 }
                 runSuspendIO {
-                    await.atMost(Duration.ofSeconds(10)).untilSuspending {
+                    await atMost 10.seconds untilSuspending {
                         operations.receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1).isEmpty()
                     }
                 }
@@ -589,7 +588,7 @@ class SqsObservationAwsEmulatorTest {
                 FailingResolutionListenerConfiguration::class.java,
                 "bluetape4k.aws.sqs.listener.retry.initial-backoff=10s",
             ).run {
-                await.atMost(Duration.ofSeconds(10)).untilAsserted {
+                await atMost 10.seconds untilAsserted {
                     appender.list.any { it.formattedMessage.contains("BT4K-SQS-OBS-201") }.shouldBeTrue()
                 }
             }
@@ -1002,7 +1001,7 @@ class SqsObservationAwsEmulatorTest {
 
         @SqsListener(queue = $$"${test.queue-url}", id = "cleanup-failure-listener")
         suspend fun handle(@Suppress("UNUSED_PARAMETER") body: String) {
-            delay(1_500)
+            delay(1_500.milliseconds)
             completed = true
         }
     }

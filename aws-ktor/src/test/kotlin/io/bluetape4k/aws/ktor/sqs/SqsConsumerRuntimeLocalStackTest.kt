@@ -12,6 +12,8 @@ import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.aws.kotlin.sqs.sqsClientOf
+import io.bluetape4k.javatimes.millis
+import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.junit5.awaitility.untilSuspending
 import io.bluetape4k.junit5.coroutines.SuspendedJobTester
 import io.bluetape4k.junit5.coroutines.runSuspendIO
@@ -96,7 +98,7 @@ class SqsConsumerRuntimeLocalStackTest {
             queueUrl = queueUrl,
             coroutines = 1,
             visibilityTimeoutSeconds = 1,
-            shutdownTimeout = Duration.ofMillis(200),
+            shutdownTimeout = 200.millis(),
         ) {
             handlerStarted.countDown()
             try {
@@ -207,7 +209,7 @@ class SqsConsumerRuntimeLocalStackTest {
         queueUrl: String,
         coroutines: Int = 1,
         visibilityTimeoutSeconds: Int = 5,
-        shutdownTimeout: Duration = Duration.ofSeconds(30),
+        shutdownTimeout: Duration = 30.seconds(),
         deadLetterQueueUrl: String? = null,
         handler: suspend SqsMessageContext.(Any) -> Unit,
     ): SqsConsumerRuntime =

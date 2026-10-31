@@ -1,6 +1,8 @@
 package io.bluetape4k.aws.spring.sns
 
 import io.bluetape4k.aws.spring.sns.InMemorySnsTopicArnCache.Entry
+import io.bluetape4k.javatimes.hours
+import io.bluetape4k.javatimes.minutes
 import io.bluetape4k.logging.KLogging
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.future.await
@@ -195,8 +197,8 @@ class InMemorySnsTopicArnCache(
     }
 
     companion object {
-        val DEFAULT_TTL: Duration = Duration.ofMinutes(5)
-        val MAX_TTL: Duration = Duration.ofHours(24)
+        val DEFAULT_TTL: Duration = 5.minutes()
+        val MAX_TTL: Duration = 24.hours()
         const val DEFAULT_MAX_SIZE: Int = 256
     }
 }

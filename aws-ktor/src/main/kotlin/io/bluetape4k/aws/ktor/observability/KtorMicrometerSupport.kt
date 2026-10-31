@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.ktor.observability
 
+import io.bluetape4k.javatimes.nanos
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Tag
 import io.micrometer.core.instrument.Tags
@@ -71,7 +72,7 @@ internal object KtorMicrometerSupport {
                 meterRegistry,
                 meterName,
                 tagFactory(OUTCOME_SUCCESS, EXCEPTION_NONE),
-                Duration.ofNanos(System.nanoTime() - startedAt),
+                (System.nanoTime() - startedAt).nanos(),
             )
             result
         } catch (e: CancellationException) {
@@ -79,7 +80,7 @@ internal object KtorMicrometerSupport {
                 meterRegistry,
                 meterName,
                 tagFactory(OUTCOME_CANCELLED, e::class.qualifiedName.orEmpty()),
-                Duration.ofNanos(System.nanoTime() - startedAt),
+                (System.nanoTime() - startedAt).nanos(),
             )
             throw e
         } catch (e: Exception) {
@@ -87,7 +88,7 @@ internal object KtorMicrometerSupport {
                 meterRegistry,
                 meterName,
                 tagFactory(OUTCOME_FAILURE, e::class.qualifiedName.orEmpty()),
-                Duration.ofNanos(System.nanoTime() - startedAt),
+                (System.nanoTime() - startedAt).nanos(),
             )
             throw e
         }
@@ -106,7 +107,7 @@ internal object KtorMicrometerSupport {
                 meterRegistry,
                 meterName,
                 tagFactory(OUTCOME_SUCCESS, EXCEPTION_NONE),
-                Duration.ofNanos(System.nanoTime() - startedAt),
+                (System.nanoTime() - startedAt).nanos(),
             )
             result
         } catch (e: CancellationException) {
@@ -114,7 +115,7 @@ internal object KtorMicrometerSupport {
                 meterRegistry,
                 meterName,
                 tagFactory(OUTCOME_CANCELLED, e::class.qualifiedName.orEmpty()),
-                Duration.ofNanos(System.nanoTime() - startedAt),
+                (System.nanoTime() - startedAt).nanos(),
             )
             throw e
         } catch (e: Exception) {
@@ -122,7 +123,7 @@ internal object KtorMicrometerSupport {
                 meterRegistry,
                 meterName,
                 tagFactory(OUTCOME_FAILURE, e::class.qualifiedName.orEmpty()),
-                Duration.ofNanos(System.nanoTime() - startedAt),
+                (System.nanoTime() - startedAt).nanos(),
             )
             throw e
         }

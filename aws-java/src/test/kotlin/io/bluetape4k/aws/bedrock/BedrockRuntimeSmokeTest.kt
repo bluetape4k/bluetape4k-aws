@@ -8,6 +8,8 @@ import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.aws.AbstractAwsTest
 import io.bluetape4k.aws.bedrock.model.textContents
 import io.bluetape4k.aws.bedrock.model.userMessageOf
+import io.bluetape4k.javatimes.nanos
+import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Tag
@@ -18,7 +20,6 @@ import software.amazon.awssdk.core.exception.SdkClientException
 import software.amazon.awssdk.core.exception.SdkServiceException
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.bedrockruntime.model.InferenceConfiguration
-import java.time.Duration
 import java.util.concurrent.CancellationException
 
 class BedrockRuntimeSmokeTest: AbstractAwsTest() {
@@ -40,7 +41,7 @@ class BedrockRuntimeSmokeTest: AbstractAwsTest() {
 
         try {
             val overrideConfiguration = ClientOverrideConfiguration.builder()
-                .apiCallTimeout(Duration.ofSeconds(30))
+                .apiCallTimeout(30.seconds())
                 .build()
             bedrockRuntimeClientOf(region = Region.of(regionName)) {
                 overrideConfiguration(overrideConfiguration)
@@ -110,7 +111,7 @@ private fun requiredSmokeInput(name: String): String =
         ?: throw AssertionError("bedrock-smoke: missing or invalid input=$name")
 
 private fun elapsedMillis(startedAt: Long): Long =
-    Duration.ofNanos(System.nanoTime() - startedAt).toMillis()
+    (System.nanoTime() - startedAt).nanos().toMillis()
 
 private fun smokeEvidence(
     result: String,

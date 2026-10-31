@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.cloudwatch
 
+import io.bluetape4k.javatimes.minutes
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.warn
 import io.micrometer.cloudwatch2.CloudWatchConfig
@@ -21,7 +22,7 @@ import java.time.Duration
 internal object CloudWatchMeterRegistryConfiguration: KLogging() {
 
     private const val NATIVE_PUBLISHER_THREAD_NAME = "bluetape4k-cloudwatch-metrics"
-    private val HIGH_RESOLUTION_STEP: Duration = Duration.ofMinutes(1)
+    private val HIGH_RESOLUTION_STEP: Duration = 1.minutes()
 
     fun create(
         cloudWatchAsyncClient: CloudWatchAsyncClient,

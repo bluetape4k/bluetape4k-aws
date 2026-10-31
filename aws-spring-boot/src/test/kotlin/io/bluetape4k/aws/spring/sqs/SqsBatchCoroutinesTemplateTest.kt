@@ -4,6 +4,7 @@ import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.javatimes.millis
 import io.bluetape4k.logging.KLogging
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
@@ -129,7 +130,7 @@ internal fun templateProperties(
 ): SqsBatchProperties = SqsBatchProperties(
     enabled = enabled,
     maxBatchSize = 1,
-    flushInterval = Duration.ofMillis(1),
+    flushInterval = 1.millis(),
     maxEntriesPerCall = 8,
     maxInFlightEntries = 2,
     schedulerThreads = 1,

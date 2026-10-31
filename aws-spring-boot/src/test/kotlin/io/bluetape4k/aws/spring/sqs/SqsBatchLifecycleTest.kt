@@ -12,6 +12,7 @@ import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.concurrent.awaitTermination
 import io.bluetape4k.concurrent.futureOf
 import io.bluetape4k.javatimes.millis
 import io.bluetape4k.javatimes.seconds
@@ -34,6 +35,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.time.Duration.Companion.nanoseconds
 
 class SqsBatchLifecycleTest {
 
@@ -654,7 +656,7 @@ private class RecordingCloseRuntime(
 
     override fun awaitTermination(executor: ExecutorService, timeoutNanos: Long): Boolean {
         terminationTimeouts += timeoutNanos
-        return executor.awaitTermination(timeoutNanos, TimeUnit.NANOSECONDS)
+        return executor.awaitTermination(timeoutNanos.nanoseconds)
     }
 
     override fun newManagerCleanupThread(task: Runnable): Thread {

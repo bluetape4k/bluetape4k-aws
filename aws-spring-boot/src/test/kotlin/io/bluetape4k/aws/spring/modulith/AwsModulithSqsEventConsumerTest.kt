@@ -340,7 +340,7 @@ class AwsModulithSqsEventConsumerTest {
                 dispatchEntered.countDown()
                 check(releaseDispatch.await(TEST_TIMEOUT))
             },
-            heartbeatInterval = Duration.ofMillis(10),
+            heartbeatInterval = 10.millis(),
         )
 
         val outcome = async(Dispatchers.Default) {
@@ -400,7 +400,7 @@ class AwsModulithSqsEventConsumerTest {
         val consumer = consumer(
             store = store,
             publisher = { throw IllegalStateException(HOSTILE) },
-            cleanupTimeout = Duration.ofMillis(20),
+            cleanupTimeout = 20.millis(),
         )
         val actual = withTimeout(500.milliseconds) {
             assertFails { consumer.consume(message()) }
@@ -418,7 +418,7 @@ class AwsModulithSqsEventConsumerTest {
             AwsModulithDecodedInboundEvent(EVENT, KEY)
         },
         heartbeatInterval: Duration = PROPERTIES.idempotency.leaseDuration.dividedBy(3),
-        cleanupTimeout: Duration = Duration.ofMillis(100),
+        cleanupTimeout: Duration = 100.millis(),
         metrics: AwsModulithMetrics = AwsModulithMetrics(),
     ): AwsModulithSqsEventConsumer = AwsModulithSqsEventConsumer(
         sourceDecoder = sourceDecoder,

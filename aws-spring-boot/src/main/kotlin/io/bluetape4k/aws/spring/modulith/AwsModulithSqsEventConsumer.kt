@@ -31,6 +31,7 @@ import tools.jackson.databind.json.JsonMapper
 import java.time.Clock
 import java.time.Duration
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.time.toKotlinDuration
 
 /** Public consumer가 정상적으로 완료할 수 있는 두 outcome입니다. */
 enum class AwsModulithConsumeOutcome {
@@ -208,7 +209,7 @@ class AwsModulithSqsEventConsumer internal constructor(
                         AwsModulithFailurePhase.DISPATCH,
                         AwsModulithMetricOutcome.SUCCESS,
                         AwsModulithDiagnosticCode.DISPATCH_ACK,
-                        Duration.ofNanos(System.nanoTime() - startedAt),
+                        (System.nanoTime() - startedAt).nanos(),
                     )
                 }
         } catch (failure: Throwable) {
@@ -297,7 +298,7 @@ class AwsModulithSqsEventConsumer internal constructor(
         val heartbeat = launch {
             try {
                 while (isActive) {
-                    delay(timeMillis = heartbeatInterval.toMillis())
+                    delay(heartbeatInterval.toKotlinDuration())
                     token.set(claimBoundary { store.renew(token.get(), properties.idempotency.leaseDuration) })
                 }
             } catch (cancellation: CancellationException) {

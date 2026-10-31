@@ -4,6 +4,7 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeInstanceOf
 import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.concurrent.await
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
 import io.mockk.clearMocks
@@ -36,9 +37,9 @@ import reactor.test.StepVerifier
 import reactor.test.publisher.TestPublisher
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.time.Duration.Companion.seconds
 
 class SnsHttpMessageWebFilterTest: AbstractSnsTest() {
 
@@ -302,16 +303,16 @@ class SnsHttpMessageWebFilterTest: AbstractSnsTest() {
         }
 
         fun awaitReplay(timeoutSeconds: Long) {
-            check(replayBodyRead.await(timeoutSeconds, TimeUnit.SECONDS)) {
+            check(replayBodyRead.await(timeoutSeconds.seconds)) {
                 "replay body was not read before cancellation"
             }
-            check(bodyTerminated.await(timeoutSeconds, TimeUnit.SECONDS)) {
+            check(bodyTerminated.await(timeoutSeconds.seconds)) {
                 "replay body subscription was not terminated before cancellation"
             }
         }
 
         fun awaitCancellation(timeoutSeconds: Long) {
-            check(downstreamTerminated.await(timeoutSeconds, TimeUnit.SECONDS)) {
+            check(downstreamTerminated.await(timeoutSeconds.seconds)) {
                 "downstream subscription was not terminated after cancellation"
             }
         }
@@ -352,16 +353,16 @@ class SnsHttpMessageWebFilterTest: AbstractSnsTest() {
         }
 
         fun awaitQueued(timeoutSeconds: Long) {
-            check(replayQueued.await(timeoutSeconds, TimeUnit.SECONDS)) {
+            check(replayQueued.await(timeoutSeconds.seconds)) {
                 "replay body was not queued before cancellation"
             }
         }
 
         fun awaitCancellation(timeoutSeconds: Long) {
-            check(bodyTerminated.await(timeoutSeconds, TimeUnit.SECONDS)) {
+            check(bodyTerminated.await(timeoutSeconds.seconds)) {
                 "replay body subscription was not terminated after cancellation"
             }
-            check(downstreamTerminated.await(timeoutSeconds, TimeUnit.SECONDS)) {
+            check(downstreamTerminated.await(timeoutSeconds.seconds)) {
                 "downstream subscription was not terminated after cancellation"
             }
         }
@@ -391,7 +392,7 @@ class SnsHttpMessageWebFilterTest: AbstractSnsTest() {
         override fun isDisposed(): Boolean = false
 
         fun awaitTask(timeoutSeconds: Long) {
-            check(taskStarted.await(timeoutSeconds, TimeUnit.SECONDS)) {
+            check(taskStarted.await(timeoutSeconds.seconds)) {
                 "replay drain task was not scheduled before cancellation"
             }
         }

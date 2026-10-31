@@ -5,11 +5,12 @@ import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.javatimes.millis
+import io.bluetape4k.javatimes.seconds
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Files
 import java.nio.file.Path
-import java.time.Duration
 
 class ImdsProfileResolverTest {
 
@@ -54,7 +55,7 @@ class ImdsProfileResolverTest {
         resolved.profileName shouldBeEqualTo "application"
         resolved.endpoint.toString() shouldBeEqualTo "https://credentials.example"
         resolved.endpointMode.shouldBeNull()
-        resolved.metadataServiceTimeout shouldBeEqualTo Duration.ofMillis(1250)
+        resolved.metadataServiceTimeout shouldBeEqualTo 1250.millis()
     }
 
     @Test
@@ -78,7 +79,7 @@ class ImdsProfileResolverTest {
 
         resolved.profileName shouldBeEqualTo "default"
         resolved.endpoint.toString() shouldBeEqualTo "https://last-profile-default.example"
-        resolved.metadataServiceTimeout shouldBeEqualTo Duration.ofMillis(1235)
+        resolved.metadataServiceTimeout shouldBeEqualTo 1235.millis()
     }
 
     @Test
@@ -96,7 +97,7 @@ class ImdsProfileResolverTest {
         ).resolve()
 
         resolved.endpoint.toString() shouldBeEqualTo "https://metadata.example"
-        resolved.metadataServiceTimeout shouldBeEqualTo Duration.ofMillis(1250)
+        resolved.metadataServiceTimeout shouldBeEqualTo 1250.millis()
     }
 
     @Test
@@ -126,7 +127,7 @@ class ImdsProfileResolverTest {
 
         resolved.endpoint.toString() shouldBeEqualTo "https://property.example"
         resolved.endpointMode.shouldBeNull()
-        resolved.metadataServiceTimeout shouldBeEqualTo Duration.ofMillis(2500)
+        resolved.metadataServiceTimeout shouldBeEqualTo 2500.millis()
     }
 
     @Test
@@ -203,7 +204,7 @@ class ImdsProfileResolverTest {
         resolved.profileName shouldBeEqualTo "env-app"
         resolved.endpoint.toString() shouldBeEqualTo "https://environment-credentials.example"
         resolved.endpointMode.shouldBeNull()
-        resolved.metadataServiceTimeout shouldBeEqualTo Duration.ofMillis(3500)
+        resolved.metadataServiceTimeout shouldBeEqualTo 3500.millis()
     }
 
     @Test
@@ -238,7 +239,7 @@ class ImdsProfileResolverTest {
             userHome = tempDir,
         ).resolve()
 
-        resolved.metadataServiceTimeout shouldBeEqualTo Duration.ofSeconds(7)
+        resolved.metadataServiceTimeout shouldBeEqualTo 7.seconds()
     }
 
     @Test

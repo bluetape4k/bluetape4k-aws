@@ -8,6 +8,7 @@ import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.aws.spring.sqs.SqsReceivedMessage
 import io.bluetape4k.concurrent.await
 import io.bluetape4k.concurrent.futureOf
+import io.bluetape4k.javatimes.hours
 import io.bluetape4k.javatimes.millis
 import io.bluetape4k.javatimes.nanos
 import io.bluetape4k.javatimes.seconds
@@ -97,7 +98,7 @@ class AwsModulithConcurrencyStabilityTest {
                 maxEntries = 1,
                 maxInProgress = 1,
                 maxKeyBytes = 1_024,
-                retention = Duration.ofHours(1),
+                retention = 1.hours(),
                 leaseDuration = lease,
             ),
             clock = clock,

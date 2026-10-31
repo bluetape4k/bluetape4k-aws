@@ -8,6 +8,7 @@ import io.bluetape4k.javatimes.minutes
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.support.toUtf8Bytes
+import io.ktor.http.Url
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.mockk.clearMocks
@@ -15,11 +16,9 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import io.ktor.http.Url
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import java.time.Duration
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class MicrometerS3KtorClientTest {
@@ -60,7 +59,7 @@ class MicrometerS3KtorClientTest {
         val registry = SimpleMeterRegistry()
         val expected = S3KtorPresignedRequest("GET", Url("https://s3.example.com/object"))
         coEvery {
-            delegate.presignGetObject("documents", "hello.txt", Duration.ofMinutes(15))
+            delegate.presignGetObject("documents", "hello.txt", 15.minutes())
         } returns expected
 
         val client = delegate.withMicrometer(registry, includeBucketTag = true)
