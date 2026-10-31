@@ -4,6 +4,7 @@ package io.bluetape4k.aws.lambda
 
 import io.bluetape4k.aws.auth.staticCredentialsProviderOf
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.testcontainers.aws.AwsEmulatorServer
 import io.bluetape4k.testcontainers.aws.FlociServer
 import io.bluetape4k.testcontainers.aws.LocalStackServer
@@ -54,7 +55,7 @@ class LambdaSmokeTest {
         }
     }
 
-    private companion object {
+    private companion object: KLoggingChannel() {
         const val FUNCTION_NAME_PROPERTY = "bluetape4k.lambda.smoke.functionName"
         const val REGION_PROPERTY = "bluetape4k.lambda.smoke.region"
         const val EMULATOR_PROPERTY = "bluetape4k.lambda.smoke.emulator"

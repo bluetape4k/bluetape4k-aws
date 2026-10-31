@@ -15,11 +15,11 @@ import aws.sdk.kotlin.services.kinesis.model.PutRecordsRequestEntry
 import aws.sdk.kotlin.services.kinesis.model.PutRecordsResponse
 import aws.sdk.kotlin.services.kinesis.model.Record
 import aws.sdk.kotlin.services.kinesis.model.ShardIteratorType
-import aws.smithy.kotlin.runtime.time.Instant as SmithyInstant
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.javatimes.millis
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.mockk.clearMocks
 import io.mockk.coEvery
@@ -36,6 +36,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.time.Duration
 import java.time.Instant
+import aws.smithy.kotlin.runtime.time.Instant as SmithyInstant
 
 class KinesisKtorTemplateTest {
 
@@ -374,8 +375,8 @@ class KinesisKtorTemplateTest {
                         pollInterval = Duration.ZERO,
                         emptyBackoff = Duration.ZERO,
                         maxThrottleRetries = 1,
-                        initialThrottleBackoff = Duration.ofMillis(10),
-                        maxThrottleBackoff = Duration.ofMillis(100),
+                        initialThrottleBackoff = 10.millis(),
+                        maxThrottleBackoff = 100.millis(),
                         jitterRatio = 0.5,
                     ),
                 )
@@ -408,8 +409,8 @@ class KinesisKtorTemplateTest {
                             pollInterval = Duration.ZERO,
                             emptyBackoff = Duration.ZERO,
                             maxThrottleRetries = 2,
-                            initialThrottleBackoff = Duration.ofMillis(10),
-                            maxThrottleBackoff = Duration.ofMillis(15),
+                            initialThrottleBackoff = 10.millis(),
+                            maxThrottleBackoff = 15.millis(),
                             jitterRatio = 0.5,
                         ),
                     )
@@ -443,8 +444,8 @@ class KinesisKtorTemplateTest {
                     streamName = "orders",
                     shardId = "shardId-000000000000",
                     options = KinesisRecordFlowOptions(
-                        pollInterval = Duration.ofMillis(29),
-                        emptyBackoff = Duration.ofMillis(13),
+                        pollInterval = 29.millis(),
+                        emptyBackoff = 13.millis(),
                     ),
                 )
             )
@@ -477,8 +478,8 @@ class KinesisKtorTemplateTest {
                     streamName = "orders",
                     shardId = "shardId-000000000000",
                     options = KinesisRecordFlowOptions(
-                        pollInterval = Duration.ofMillis(29),
-                        emptyBackoff = Duration.ofMillis(13),
+                        pollInterval = 29.millis(),
+                        emptyBackoff = 13.millis(),
                     ),
                 )
             )

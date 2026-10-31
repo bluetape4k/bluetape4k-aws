@@ -33,9 +33,13 @@ inline fun deleteAlias(
  * // request.aliasName() == "alias/sample"
  * ```
  */
-fun deleteAliasOf(aliasName: String): DeleteAliasRequest {
+inline fun deleteAliasOf(
+    aliasName: String,
+    builder: DeleteAliasRequest.Builder.() -> Unit = {},
+): DeleteAliasRequest {
     aliasName.requireNotBlank("aliasName")
     return deleteAlias {
         aliasName(aliasName)
+        builder()
     }
 }

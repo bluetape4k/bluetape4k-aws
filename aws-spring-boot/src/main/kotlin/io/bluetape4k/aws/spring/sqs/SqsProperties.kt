@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.sqs
 
+import io.bluetape4k.javatimes.minutes
 import io.bluetape4k.support.requireGe
 import io.bluetape4k.support.requireInRange
 import io.bluetape4k.support.requireNotBlank
@@ -39,7 +40,7 @@ data class SqsProperties(
         val fifoBatchGroupingStrategy: SqsFifoBatchGroupingStrategy =
             SqsFifoBatchGroupingStrategy.GROUP_BY_MESSAGE_GROUP_ID,
         val queueAttributeNames: Set<QueueAttributeName> = emptySet(),
-        val queueAttributeCacheTtl: Duration = Duration.ofMinutes(1),
+        val queueAttributeCacheTtl: Duration = 1.minutes(),
         val queueNotFoundStrategy: SqsQueueNotFoundStrategy = SqsQueueNotFoundStrategy.FAIL_FAST,
         val retry: Retry = Retry(),
     ): Serializable {
@@ -77,7 +78,7 @@ data class SqsProperties(
             maxInFlight = maxMessages * concurrency,
             fifoBatchGroupingStrategy = SqsFifoBatchGroupingStrategy.GROUP_BY_MESSAGE_GROUP_ID,
             queueAttributeNames = emptySet(),
-            queueAttributeCacheTtl = Duration.ofMinutes(1),
+            queueAttributeCacheTtl = 1.minutes(),
             queueNotFoundStrategy = SqsQueueNotFoundStrategy.FAIL_FAST,
             retry = retry,
         )

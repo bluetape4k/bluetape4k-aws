@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.kotlin.dynamodb.coordination
 
 import io.bluetape4k.ToStringBuilder
+import io.bluetape4k.logging.KLogging
 import java.nio.charset.StandardCharsets
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
@@ -126,7 +127,7 @@ class DynamoDbCoordinationSchema(
             .toString()
     }
 
-    companion object {
+    companion object: KLogging() {
         private const val MIN_TABLE_NAME_LENGTH = 3
         private const val MAX_TABLE_NAME_LENGTH = 255
         private const val DEFAULT_PARTITION_KEY_ATTRIBUTE_NAME = "id"

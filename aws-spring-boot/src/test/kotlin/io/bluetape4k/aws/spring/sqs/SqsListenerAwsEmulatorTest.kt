@@ -26,7 +26,6 @@ import org.springframework.context.annotation.Configuration
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import tools.jackson.databind.ObjectMapper
-import java.time.Duration
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
@@ -148,7 +147,7 @@ class SqsListenerAwsEmulatorTest: AbstractSqsTest() {
 
                 runSuspendIO { operations.send(queueUrl, "listener-suspend-ok") }
 
-                await.atMost(Duration.ofSeconds(10)).untilAsserted {
+                await atMost 10.seconds untilAsserted {
                     listener.bodies shouldContain "listener-suspend-ok"
                 }
             }
@@ -269,7 +268,7 @@ class SqsListenerAwsEmulatorTest: AbstractSqsTest() {
 
                 runSuspendIO { operations.send(queueUrl, "manual-ack-ok") }
 
-                await.atMost(Duration.ofSeconds(10)).untilAsserted {
+                await atMost 10.seconds untilAsserted {
                     listener.bodies shouldContain "manual-ack-ok"
                 }
                 runSuspendIO {

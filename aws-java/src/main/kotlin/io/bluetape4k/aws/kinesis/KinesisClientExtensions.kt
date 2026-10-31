@@ -5,7 +5,7 @@ import io.bluetape4k.aws.kinesis.model.deleteStreamRequest
 import io.bluetape4k.aws.kinesis.model.describeStreamRequest
 import io.bluetape4k.aws.kinesis.model.getRecordsRequest
 import io.bluetape4k.aws.kinesis.model.getShardIteratorRequest
-import io.bluetape4k.aws.kinesis.model.putRecordRequest
+import io.bluetape4k.aws.kinesis.model.putRecordRequestOf
 import io.bluetape4k.aws.kinesis.model.putRecordsRequest
 import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.core.SdkBytes
@@ -65,13 +65,17 @@ fun KinesisClient.putRecord(
     partitionKey: String,
     data: SdkBytes,
 ): PutRecordResponse {
-    streamName.requireNotBlank("streamName")
-    partitionKey.requireNotBlank("partitionKey")
-    val request = putRecordRequest {
-        streamName(streamName)
-        partitionKey(partitionKey)
-        data(data)
-    }
+    val request = putRecordRequestOf(streamName, partitionKey, data = data)
+    return putRecord(request)
+}
+
+fun KinesisClient.putRecord(
+    streamName: String,
+    partitionKey: String,
+    explicitPartitionKey: String,
+    data: SdkBytes,
+): PutRecordResponse {
+    val request = putRecordRequestOf(streamName, partitionKey, explicitPartitionKey, data)
     return putRecord(request)
 }
 

@@ -1,10 +1,5 @@
 package io.bluetape4k.aws.ktor.sqs
 
-import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeTrue
-import io.bluetape4k.assertions.shouldContain
-import io.bluetape4k.junit5.coroutines.runSuspendIO
-import io.bluetape4k.logging.coroutines.KLoggingChannel
 import aws.sdk.kotlin.services.sqs.SqsClient
 import aws.sdk.kotlin.services.sqs.model.ChangeMessageVisibilityRequest
 import aws.sdk.kotlin.services.sqs.model.ChangeMessageVisibilityResponse
@@ -13,6 +8,12 @@ import aws.sdk.kotlin.services.sqs.model.DeleteMessageResponse
 import aws.sdk.kotlin.services.sqs.model.Message
 import aws.sdk.kotlin.services.sqs.model.ReceiveMessageRequest
 import aws.sdk.kotlin.services.sqs.model.ReceiveMessageResponse
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.javatimes.millis
+import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -22,7 +23,6 @@ import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import java.time.Duration
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.reflect.KClass
@@ -265,7 +265,7 @@ class SqsConsumerRuntimeAdvancedTest {
                 coroutines = 1,
                 maxMessages = 1,
                 waitTimeSeconds = 0,
-                shutdownTimeout = Duration.ofMillis(100),
+                shutdownTimeout = 100.millis(),
                 deleteOnSuccess = deleteOnSuccess,
                 converter = converter,
                 conversionFailurePolicy = conversionFailurePolicy,

@@ -3,6 +3,7 @@ package io.bluetape4k.aws.lambda
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.aws.auth.staticCredentialsProviderOf
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.utils.ShutdownQueue
 import io.mockk.clearMocks
@@ -15,8 +16,6 @@ import io.mockk.unmockkStatic
 import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.http.SdkHttpClient
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.lambda.LambdaClient
@@ -39,7 +38,7 @@ class LambdaClientSupportTest {
     @Test
     fun `application factory registers client and applies explicit settings`() {
         val endpoint = URI("http://localhost:4566")
-        val credentials = StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test"))
+        val credentials = staticCredentialsProviderOf("test", "test")
 
         mockkStatic(LambdaClient::class)
         mockkObject(ShutdownQueue)

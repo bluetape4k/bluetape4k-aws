@@ -13,7 +13,7 @@ import software.amazon.awssdk.services.ssm.model.PutParameterResponse
 /**
  * 기본적으로 복호화 없이 파라미터를 가져와 완료를 기다립니다.
  */
-suspend fun SsmAsyncClient.getParameter(
+suspend inline fun SsmAsyncClient.getParameter(
     name: String,
     withDecryption: Boolean = false,
     overrideConfiguration: AwsRequestOverrideConfiguration? = null,
@@ -23,7 +23,7 @@ suspend fun SsmAsyncClient.getParameter(
 /**
  * 복호화를 활성화해 SecureString 파라미터를 가져와 완료를 기다립니다.
  */
-suspend fun SsmAsyncClient.getSecureParameter(
+suspend inline fun SsmAsyncClient.getSecureParameter(
     name: String,
     overrideConfiguration: AwsRequestOverrideConfiguration? = null,
 ): AwsSecretValue =
@@ -32,7 +32,7 @@ suspend fun SsmAsyncClient.getSecureParameter(
 /**
  * 최대 10개의 파라미터를 가져와 완료를 기다립니다.
  */
-suspend fun SsmAsyncClient.getParameters(
+suspend inline fun SsmAsyncClient.getParameters(
     names: Collection<String>,
     withDecryption: Boolean = false,
     overrideConfiguration: AwsRequestOverrideConfiguration? = null,
@@ -42,7 +42,7 @@ suspend fun SsmAsyncClient.getParameters(
 /**
  * 경로에 해당하는 파라미터 페이지 하나를 가져와 완료를 기다립니다.
  */
-suspend fun SsmAsyncClient.getParametersByPath(
+suspend inline fun SsmAsyncClient.getParametersByPath(
     path: String,
     recursive: Boolean? = null,
     withDecryption: Boolean = false,
@@ -55,7 +55,7 @@ suspend fun SsmAsyncClient.getParametersByPath(
 /**
  * 파라미터 페이지 하나를 설명하고 완료를 기다립니다.
  */
-suspend fun SsmAsyncClient.describeParameters(
+suspend inline fun SsmAsyncClient.describeParameters(
     maxResults: Int? = null,
     nextToken: String? = null,
     overrideConfiguration: AwsRequestOverrideConfiguration? = null,
@@ -69,7 +69,7 @@ suspend fun SsmAsyncClient.describeParameters(
  * [overwrite]는 기존 값을 대체할 수 있는지 제어합니다. IAM/KMS 정책과 감사 경계는 호출자가 책임집니다.
  * 드러낸 값을 로그에 남기거나 출력하지 마세요.
  */
-suspend fun SsmAsyncClient.putSecureParameter(
+suspend inline fun SsmAsyncClient.putSecureParameter(
     name: String,
     value: AwsSecretValue,
     overwrite: Boolean = false,
@@ -81,7 +81,7 @@ suspend fun SsmAsyncClient.putSecureParameter(
 /**
  * 비밀이 아닌 String 파라미터를 저장하고 완료를 기다립니다.
  */
-suspend fun SsmAsyncClient.putStringParameter(
+suspend inline fun SsmAsyncClient.putStringParameter(
     name: String,
     value: String,
     overwrite: Boolean = false,
@@ -93,7 +93,7 @@ suspend fun SsmAsyncClient.putStringParameter(
 /**
  * 비밀이 아닌 StringList 파라미터를 저장하고 완료를 기다립니다.
  */
-suspend fun SsmAsyncClient.putStringListParameter(
+suspend inline fun SsmAsyncClient.putStringListParameter(
     name: String,
     values: Collection<String>,
     overwrite: Boolean = false,

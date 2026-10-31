@@ -28,7 +28,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.springframework.context.SmartLifecycle
 import software.amazon.awssdk.services.sqs.model.QueueDoesNotExistException
-import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.ThreadLocalRandom
@@ -38,6 +37,7 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * 하나의 `@SqsListener` 엔드포인트를 실행하는 SQS 메시지 리스너 컨테이너.
@@ -979,7 +979,7 @@ class SqsMessageListenerContainer internal constructor(
             val heartbeatJob = launch(CoroutineName("sqs-visibility-heartbeat")) {
                 while (isActive) {
                     try {
-                        delay(timeMillis = Duration.ofSeconds(intervalSeconds.toLong()).toMillis())
+                        delay(intervalSeconds.seconds)
                         if (!isActive) {
                             return@launch
                         }

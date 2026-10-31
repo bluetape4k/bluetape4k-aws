@@ -68,12 +68,12 @@ inline fun transactWriteItemOf(
  * @param put 저장 작업
  * @param update 업데이트 작업
  */
-fun transactWriteItemOf(
+inline fun transactWriteItemOf(
     conditionCheck: ConditionCheck? = null,
     delete: Delete? = null,
     put: Put? = null,
     update: Update? = null,
-    builder: TransactWriteItem.Builder.() -> Unit = {},
+    crossinline builder: TransactWriteItem.Builder.() -> Unit = {},
 ): TransactWriteItem = TransactWriteItem {
     this.conditionCheck = conditionCheck
     this.put = put

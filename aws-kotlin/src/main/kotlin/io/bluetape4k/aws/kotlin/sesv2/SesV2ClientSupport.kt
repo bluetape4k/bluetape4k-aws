@@ -57,6 +57,7 @@ suspend inline fun <R> withSesV2Client(
     region: String? = null,
     credentialsProvider: CredentialsProvider? = null,
     block: suspend (SesV2Client) -> R,
-): R = sesV2ClientOf(endpointUrl, region, credentialsProvider).useSafe { client ->
-    block(client)
-}
+): R =
+    sesV2ClientOf(endpointUrl, region, credentialsProvider).useSafe { client ->
+        block(client)
+    }

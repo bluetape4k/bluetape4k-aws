@@ -38,21 +38,20 @@ inline fun putKeyPolicyRequest(
  * // request.keyId() == "key-id"
  * ```
  */
-fun putKeyPolicyRequestOf(
+inline fun putKeyPolicyRequestOf(
     keyId: String,
     policyName: String,
     policy: String,
     builder: PutKeyPolicyRequest.Builder.() -> Unit = {},
-): PutKeyPolicyRequest {
-    keyId.requireNotBlank("keyId")
-    policyName.requireNotBlank("policyName")
-    policy.requireNotBlank("policy")
+): PutKeyPolicyRequest =
+    putKeyPolicyRequest {
+        keyId.requireNotBlank("keyId")
+        policyName.requireNotBlank("policyName")
+        policy.requireNotBlank("policy")
 
-    return putKeyPolicyRequest {
         keyId(keyId)
         policyName(policyName)
         policy(policy)
 
         builder()
     }
-}

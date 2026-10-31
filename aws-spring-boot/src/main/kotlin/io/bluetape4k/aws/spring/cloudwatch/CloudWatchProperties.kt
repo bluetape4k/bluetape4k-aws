@@ -45,9 +45,9 @@ data class CloudWatchProperties(
         data class Registry(
             val enabled: Boolean = false,
             val namespace: String? = null,
-            val step: Duration = Duration.ofMinutes(DEFAULT_STEP_MINUTES),
+            val step: Duration = DEFAULT_STEP_MINUTES.minutes(),
             val batchSize: Int = DEFAULT_BATCH_SIZE,
-            val readTimeout: Duration = Duration.ofSeconds(DEFAULT_READ_TIMEOUT_SECONDS),
+            val readTimeout: Duration = DEFAULT_READ_TIMEOUT_SECONDS.seconds(),
             val commonTags: Map<String, String> = emptyMap(),
             val filters: Filters = Filters(),
         ): Serializable {

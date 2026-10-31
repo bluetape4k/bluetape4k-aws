@@ -5,6 +5,7 @@ import io.bluetape4k.assertions.shouldBeLessOrEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.javatimes.seconds
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -30,7 +31,6 @@ import software.amazon.awssdk.services.sqs.model.SendMessageBatchResultEntry
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 import software.amazon.awssdk.services.sqs.model.SqsException
-import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.Delayed
@@ -275,10 +275,10 @@ class SqsAsyncBatchManagerTransportTest {
         properties = SqsBatchProperties(
             enabled = true,
             maxBatchSize = maxBatchSize,
-            flushInterval = Duration.ofSeconds(30),
+            flushInterval = 30.seconds(),
             maxInFlightEntries = maxBatchSize * 2,
             schedulerThreads = 1,
-            shutdownTimeout = Duration.ofSeconds(30),
+            shutdownTimeout = 30.seconds(),
         ),
         client = client,
         executor = scheduler,

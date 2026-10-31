@@ -1,10 +1,10 @@
 package io.bluetape4k.aws.examples.ktor.s3
 
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.javatimes.minutes
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import org.junit.jupiter.api.Test
 import java.time.Clock
-import java.time.Duration
 import java.time.Instant
 import java.time.ZoneOffset
 
@@ -21,7 +21,7 @@ class S3KtorExamplesTest {
                 s3 = s3,
                 bucket = "demo-bucket",
                 key = "logs/2026/app.log",
-                expires = Duration.ofMinutes(15),
+                expires = 15.minutes(),
             )
 
             presigned.method shouldBeEqualTo "GET"

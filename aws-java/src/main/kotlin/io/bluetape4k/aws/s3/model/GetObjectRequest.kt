@@ -36,13 +36,15 @@ inline fun getObjectRequest(
  * // result.versionId() == "v2"
  * ```
  */
-fun getObjectRequestOf(
+inline fun getObjectRequestOf(
     bucket: String,
     key: String,
     versionId: String? = null,
     partNumber: Int? = null,
+    builder: GetObjectRequest.Builder.() -> Unit = {},
 ): GetObjectRequest =
     getObjectRequest(bucket, key) {
         versionId?.let { versionId(it) }
         partNumber?.let { partNumber(it) }
+        builder()
     }

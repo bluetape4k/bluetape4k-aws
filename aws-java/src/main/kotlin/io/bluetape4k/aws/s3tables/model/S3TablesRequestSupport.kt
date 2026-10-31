@@ -2,9 +2,7 @@
 
 package io.bluetape4k.aws.s3tables.model
 
-import io.bluetape4k.aws.dynamodb.model.DeleteTableRequest
 import io.bluetape4k.support.requireNotBlank
-
 import software.amazon.awssdk.services.s3tables.model.CreateNamespaceRequest
 import software.amazon.awssdk.services.s3tables.model.CreateTableBucketRequest
 import software.amazon.awssdk.services.s3tables.model.CreateTableRequest
@@ -106,9 +104,8 @@ inline fun deleteNamespaceRequest(
  */
 inline fun createTableRequest(
     builder: CreateTableRequest.Builder.() -> Unit,
-): CreateTableRequest = CreateTableRequest.builder()
-    .apply(builder)
-    .build()
+): CreateTableRequest =
+    CreateTableRequest.builder().apply(builder).build()
 
 /**
  * [ListTablesRequest]의 SDK builder 필드만 사용해 구성합니다.
@@ -116,9 +113,8 @@ inline fun createTableRequest(
  */
 inline fun listTablesRequest(
     builder: ListTablesRequest.Builder.() -> Unit,
-): ListTablesRequest = ListTablesRequest.builder()
-    .apply(builder)
-    .build()
+): ListTablesRequest =
+    ListTablesRequest.builder().apply(builder).build()
 
 /**
  * [GetTableRequest]의 SDK builder 필드만 사용해 구성합니다.
@@ -141,7 +137,7 @@ inline fun deleteTableRequest(
     .build()
 
 /** table bucket 생성 요청을 구성합니다. */
-fun createTableBucketRequestOf(
+inline fun createTableBucketRequestOf(
     name: String,
     builder: CreateTableBucketRequest.Builder.() -> Unit = {},
 ): CreateTableBucketRequest = CreateTableBucketRequest.builder()
@@ -169,7 +165,7 @@ fun listTableBucketsRequestOf(
     .also { it.validateList(maxBucketsField = "maxBuckets") }
 
 /** table bucket ARN으로 조회 요청을 구성합니다. */
-fun getTableBucketRequestOf(
+inline fun getTableBucketRequestOf(
     tableBucketArn: String,
     builder: GetTableBucketRequest.Builder.() -> Unit = {},
 ): GetTableBucketRequest = GetTableBucketRequest.builder()
@@ -179,7 +175,7 @@ fun getTableBucketRequestOf(
     .also { it.tableBucketARN().requireNotBlank("tableBucketARN") }
 
 /** table bucket ARN으로 삭제 요청을 구성합니다. */
-fun deleteTableBucketRequestOf(
+inline fun deleteTableBucketRequestOf(
     tableBucketArn: String,
     builder: DeleteTableBucketRequest.Builder.() -> Unit = {},
 ): DeleteTableBucketRequest = DeleteTableBucketRequest.builder()
@@ -225,7 +221,7 @@ fun listNamespacesRequestOf(
     }
 
 /** table bucket ARN과 namespace로 조회 요청을 구성합니다. */
-fun getNamespaceRequestOf(
+inline fun getNamespaceRequestOf(
     tableBucketArn: String,
     namespace: String,
     builder: GetNamespaceRequest.Builder.() -> Unit = {},
@@ -240,7 +236,7 @@ fun getNamespaceRequestOf(
     }
 
 /** table bucket ARN과 namespace로 삭제 요청을 구성합니다. */
-fun deleteNamespaceRequestOf(
+inline fun deleteNamespaceRequestOf(
     tableBucketArn: String,
     namespace: String,
     builder: DeleteNamespaceRequest.Builder.() -> Unit = {},
@@ -255,7 +251,7 @@ fun deleteNamespaceRequestOf(
     }
 
 /** namespace에 table을 생성하는 요청을 구성합니다. */
-fun createTableRequestOf(
+inline fun createTableRequestOf(
     tableBucketArn: String,
     namespace: String,
     name: String,
@@ -318,7 +314,7 @@ fun getTableRequestOf(
     .also { it.requireTableLookup() }
 
 /** table bucket/namespace/name으로 삭제 요청을 구성합니다. */
-fun deleteTableRequestOf(
+inline fun deleteTableRequestOf(
     tableBucketArn: String,
     namespace: String,
     name: String,

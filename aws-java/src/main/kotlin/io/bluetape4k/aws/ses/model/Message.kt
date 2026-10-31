@@ -168,7 +168,10 @@ inline fun content(
  * @param charset [Charset] 문자셋
  * @return [Content] 인스턴스
  */
-fun contentOf(data: String? = null, charset: Charset = Charsets.UTF_8) = content {
+fun contentOf(
+    data: String? = null,
+    charset: Charset = Charsets.UTF_8,
+) = content {
     data?.let { data(it) }
     charset(charset.name())
 }

@@ -5,6 +5,8 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.aws.sfn.model.describeExecutionRequestOf
+import io.bluetape4k.concurrent.completableFutureOf
+import io.bluetape4k.coroutines.flow.extensions.log
 import io.bluetape4k.coroutines.support.log
 import io.bluetape4k.logging.KLogging
 import io.mockk.clearAllMocks
@@ -51,12 +53,16 @@ class SfnExecutionFlowTest {
         val running = response(ExecutionStatus.RUNNING)
         val succeeded = response(ExecutionStatus.SUCCEEDED)
 
-        every { client.describeExecution(any<DescribeExecutionRequest>()) } returnsMany listOf(
-            CompletableFuture.completedFuture(running),
-            CompletableFuture.completedFuture(succeeded),
+        every {
+            client.describeExecution(any<DescribeExecutionRequest>())
+        } returnsMany listOf(
+            completableFutureOf(running),
+            completableFutureOf(succeeded),
         )
 
-        client.describeExecutionFlow(EXECUTION_ARN).toList() shouldBeEqualTo listOf(running, succeeded)
+        client.describeExecutionFlow(EXECUTION_ARN)
+            .log("Execution")
+            .toList() shouldBeEqualTo listOf(running, succeeded)
 
         verify(exactly = 2) {
             client.describeExecution(any<DescribeExecutionRequest>())
@@ -69,12 +75,18 @@ class SfnExecutionFlowTest {
         val succeeded = response(ExecutionStatus.SUCCEEDED)
         val second = CompletableFuture<DescribeExecutionResponse>()
 
-        every { client.describeExecution(any<DescribeExecutionRequest>()) } returnsMany listOf(
-            CompletableFuture.completedFuture(running),
+        every {
+            client.describeExecution(any<DescribeExecutionRequest>())
+        } returnsMany listOf(
+            completableFutureOf(running),
             second,
         )
 
-        val collector = launch { client.describeExecutionFlow(EXECUTION_ARN).toList() }
+        val collector = launch {
+            client.describeExecutionFlow(EXECUTION_ARN)
+                .log("Execution")
+                .toList()
+        }
         runCurrent()
         verify(exactly = 1) { client.describeExecution(any<DescribeExecutionRequest>()) }
 
@@ -93,10 +105,14 @@ class SfnExecutionFlowTest {
     fun `take one은 추가 조회 없이 첫 응답에서 끝난다`() = runTest {
         val running = response(ExecutionStatus.RUNNING)
 
-        every { client.describeExecution(any<DescribeExecutionRequest>()) } returns
-                CompletableFuture.completedFuture(running)
+        every {
+            client.describeExecution(any<DescribeExecutionRequest>())
+        } returns completableFutureOf(running)
 
-        client.describeExecutionFlow(EXECUTION_ARN).take(1).toList() shouldBeEqualTo listOf(running)
+        client.describeExecutionFlow(EXECUTION_ARN)
+            .log("Execution")
+            .take(1)
+            .toList() shouldBeEqualTo listOf(running)
 
         verify(exactly = 1) { client.describeExecution(any<DescribeExecutionRequest>()) }
         verify(exactly = 0) { client.stopExecution(any<StopExecutionRequest>()) }
@@ -108,17 +124,21 @@ class SfnExecutionFlowTest {
         val succeeded = response(ExecutionStatus.SUCCEEDED)
         val release = CompletableDeferred<Unit>()
 
-        every { client.describeExecution(any<DescribeExecutionRequest>()) } returnsMany listOf(
-            CompletableFuture.completedFuture(running),
-            CompletableFuture.completedFuture(succeeded),
+        every {
+            client.describeExecution(any<DescribeExecutionRequest>())
+        } returnsMany listOf(
+            completableFutureOf(running),
+            completableFutureOf(succeeded),
         )
 
         val seen = mutableListOf<DescribeExecutionResponse>()
         val collector = launch {
-            client.describeExecutionFlow(EXECUTION_ARN).collect {
-                seen += it
-                if (it === running) release.await()
-            }
+            client.describeExecutionFlow(EXECUTION_ARN)
+                .log("Execution")
+                .collect {
+                    seen += it
+                    if (it === running) release.await()
+                }
         }.log("Collector")
 
         runCurrent()
@@ -139,9 +159,15 @@ class SfnExecutionFlowTest {
     fun `취소하면 현재 future만 취소하고 client와 execution을 건드리지 않는다`() = runTest {
         val future = CompletableFuture<DescribeExecutionResponse>()
 
-        every { client.describeExecution(any<DescribeExecutionRequest>()) } returns future
+        every {
+            client.describeExecution(any<DescribeExecutionRequest>())
+        } returns future
 
-        val collector = launch { client.describeExecutionFlow(EXECUTION_ARN).toList() }
+        val collector = launch {
+            client.describeExecutionFlow(EXECUTION_ARN)
+                .log("Execution")
+                .toList()
+        }
         runCurrent()
         collector.cancelAndJoin()
 
@@ -155,11 +181,14 @@ class SfnExecutionFlowTest {
     fun `SDK 조회 실패는 같은 예외로 전파하고 추가 조회하지 않는다`() = runTest {
         val failure = IllegalStateException("describe failed")
 
-        every { client.describeExecution(any<DescribeExecutionRequest>()) } returns
-                CompletableFuture.failedFuture(failure)
+        every {
+            client.describeExecution(any<DescribeExecutionRequest>())
+        } returns CompletableFuture.failedFuture(failure)
 
         val error = assertFailsWith<IllegalStateException> {
-            client.describeExecutionFlow(EXECUTION_ARN).collect()
+            client.describeExecutionFlow(EXECUTION_ARN)
+                .log("Execution")
+                .collect()
         }
 
         error shouldBeSameInstanceAs failure
@@ -170,10 +199,14 @@ class SfnExecutionFlowTest {
     fun `pending redrive는 terminal raw response로 끝난다`() = runTest {
         val pendingRedrive = response(ExecutionStatus.PENDING_REDRIVE)
 
-        every { client.describeExecution(any<DescribeExecutionRequest>()) } returns
-                CompletableFuture.completedFuture(pendingRedrive)
+        every {
+            client.describeExecution(any<DescribeExecutionRequest>())
+        } returns completableFutureOf(pendingRedrive)
 
-        client.describeExecutionFlow(EXECUTION_ARN).toList() shouldBeEqualTo listOf(pendingRedrive)
+        client.describeExecutionFlow(EXECUTION_ARN)
+            .log("Execution")
+            .toList() shouldBeEqualTo listOf(pendingRedrive)
+
         verify(exactly = 1) { client.describeExecution(any<DescribeExecutionRequest>()) }
     }
 
@@ -181,12 +214,15 @@ class SfnExecutionFlowTest {
     fun `null status는 방출하지 않고 고정 예외 메시지를 반환한다`() = runTest {
         val response = response(null)
 
-        every { client.describeExecution(any<DescribeExecutionRequest>()) } returns
-                CompletableFuture.completedFuture(response)
+        every {
+            client.describeExecution(any<DescribeExecutionRequest>())
+        } returns completableFutureOf(response)
         val emissions = mutableListOf<DescribeExecutionResponse>()
 
         val error = assertFailsWith<IllegalStateException> {
-            client.describeExecutionFlow(EXECUTION_ARN).collect { emissions += it }
+            client.describeExecutionFlow(EXECUTION_ARN)
+                .log("Execution")
+                .collect { emissions += it }
         }
 
         error.message shouldBeEqualTo "Unsupported Step Functions execution status: <null>"
@@ -199,12 +235,15 @@ class SfnExecutionFlowTest {
     fun `unknown status는 statusAsString을 예외 메시지에 사용한다`() = runTest {
         val response = DescribeExecutionResponse.builder().status("FUTURE_STATUS").build()
 
-        every { client.describeExecution(any<DescribeExecutionRequest>()) } returns
-                CompletableFuture.completedFuture(response)
+        every {
+            client.describeExecution(any<DescribeExecutionRequest>())
+        } returns completableFutureOf(response)
         val emissions = mutableListOf<DescribeExecutionResponse>()
 
         val error = assertFailsWith<IllegalStateException> {
-            client.describeExecutionFlow(EXECUTION_ARN).collect { emissions += it }
+            client.describeExecutionFlow(EXECUTION_ARN)
+                .log("Execution")
+                .collect { emissions += it }
         }
 
         error.message shouldBeEqualTo "Unsupported Step Functions execution status: FUTURE_STATUS"
@@ -231,12 +270,14 @@ class SfnExecutionFlowTest {
         val succeeded = response(ExecutionStatus.SUCCEEDED)
         val requests = mutableListOf<DescribeExecutionRequest>()
 
-        every { client.describeExecution(capture(requests)) } returnsMany listOf(
-            CompletableFuture.completedFuture(running),
-            CompletableFuture.completedFuture(succeeded),
+        every {
+            client.describeExecution(capture(requests))
+        } returnsMany listOf(
+            completableFutureOf(running),
+            completableFutureOf(succeeded),
         )
 
-        client.describeExecutionFlow(request).toList()
+        client.describeExecutionFlow(request).log("Execution").toList()
 
         requests.size shouldBeEqualTo 2
         requests[0] shouldBeSameInstanceAs request
@@ -249,13 +290,15 @@ class SfnExecutionFlowTest {
         val running = response(ExecutionStatus.RUNNING)
         val succeeded = response(ExecutionStatus.SUCCEEDED)
 
-        every { client.describeExecution(any<DescribeExecutionRequest>()) } returnsMany listOf(
-            CompletableFuture.completedFuture(running),
-            CompletableFuture.completedFuture(succeeded),
-            CompletableFuture.completedFuture(running),
-            CompletableFuture.completedFuture(succeeded),
+        every {
+            client.describeExecution(any<DescribeExecutionRequest>())
+        } returnsMany listOf(
+            completableFutureOf(running),
+            completableFutureOf(succeeded),
+            completableFutureOf(running),
+            completableFutureOf(succeeded),
         )
-        val flow = client.describeExecutionFlow(EXECUTION_ARN)
+        val flow = client.describeExecutionFlow(EXECUTION_ARN).log("Execution")
 
         flow.toList() shouldBeEqualTo listOf(running, succeeded)
         flow.toList() shouldBeEqualTo listOf(running, succeeded)

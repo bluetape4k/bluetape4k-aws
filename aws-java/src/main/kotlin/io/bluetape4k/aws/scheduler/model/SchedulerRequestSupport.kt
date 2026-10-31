@@ -78,7 +78,8 @@ inline fun flexibleTimeWindowOf(
 }
 
 /** 정확한 스케줄에 필요한 `OFF` 유연한 시간 창을 구성합니다. */
-fun flexibleTimeWindowOff(): FlexibleTimeWindow = flexibleTimeWindowOf(FlexibleTimeWindowMode.OFF)
+fun flexibleTimeWindowOff(): FlexibleTimeWindow =
+    flexibleTimeWindowOf(FlexibleTimeWindowMode.OFF)
 
 /** EventBridge Scheduler 재시도 정책을 구성합니다. */
 inline fun retryPolicyOf(

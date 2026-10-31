@@ -37,12 +37,13 @@ inline fun cloudWatchClientOf(
     region: Region,
     httpClient: SdkHttpClient = SdkHttpClientProvider.defaultHttpClient,
     builder: CloudWatchClientBuilder.() -> Unit = {},
-): CloudWatchClient = cloudWatchClient {
-    region(region)
-    httpClient(httpClient)
+): CloudWatchClient =
+    cloudWatchClient {
+        region(region)
+        httpClient(httpClient)
 
-    builder()
-}
+        builder()
+    }
 
 /**
  * endpoint + credentials 기반으로 [CloudWatchClient]를 생성합니다.
@@ -59,11 +60,12 @@ inline fun cloudWatchClientOf(
     credentialsProvider: AwsCredentialsProvider? = null,
     httpClient: SdkHttpClient = SdkHttpClientProvider.defaultHttpClient,
     builder: CloudWatchClientBuilder.() -> Unit = {},
-): CloudWatchClient = cloudWatchClient {
-    endpoint?.let { endpointOverride(it) }
-    region?.let { region(it) }
-    credentialsProvider?.let { credentialsProvider(it) }
-    httpClient(httpClient)
+): CloudWatchClient =
+    cloudWatchClient {
+        endpoint?.let { endpointOverride(it) }
+        region?.let { region(it) }
+        credentialsProvider?.let { credentialsProvider(it) }
+        httpClient(httpClient)
 
-    builder()
-}
+        builder()
+    }

@@ -9,7 +9,6 @@ import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
-import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient
@@ -24,6 +23,7 @@ class DynamoDbTableExtensionsTest: AbstractDynamodbTest() {
 
     companion object: KLoggingChannel()
 
+    private val enhancedClient = dynamoDbEnhancedClientOf(client)
 
     @Test
     fun `getItem by partition key should return item`() = runSuspendIO {
@@ -33,10 +33,7 @@ class DynamoDbTableExtensionsTest: AbstractDynamodbTest() {
         client.createTestTable(tableName)
 
         // EnhancedClient는 동기 버전을 생성
-        val enhancedClient = DynamoDbEnhancedClient
-            .builder()
-            .dynamoDbClient(client)
-            .build()
+        val enhancedClient = dynamoDbEnhancedClientOf(client)
         val table = enhancedClient.table<TestEntity>(tableName)
 
         val entity = TestEntity(Uuid.V7.nextIdAsString(), "John", 30)
@@ -57,10 +54,6 @@ class DynamoDbTableExtensionsTest: AbstractDynamodbTest() {
         // 테이블 생성
         client.createTestTable(tableName)
 
-        val enhancedClient = DynamoDbEnhancedClient
-            .builder()
-            .dynamoDbClient(client)
-            .build()
         val table = enhancedClient.table<TestEntity>(tableName)
 
         table.getItem("non-existent-id").shouldBeNull()
@@ -76,10 +69,6 @@ class DynamoDbTableExtensionsTest: AbstractDynamodbTest() {
         // 테이블 생성
         client.createTestTable(tableName)
 
-        val enhancedClient = DynamoDbEnhancedClient
-            .builder()
-            .dynamoDbClient(client)
-            .build()
         val table = enhancedClient.table<TestEntity>(tableName)
 
         val entity = TestEntity(Uuid.V7.nextIdAsString(), "Jane", 25)
@@ -104,10 +93,6 @@ class DynamoDbTableExtensionsTest: AbstractDynamodbTest() {
         // 테이블 생성
         client.createTestTable(tableName)
 
-        val enhancedClient = DynamoDbEnhancedClient
-            .builder()
-            .dynamoDbClient(client)
-            .build()
         val table = enhancedClient.table<TestEntity>(tableName)
 
         val entities = List(5) {
@@ -131,10 +116,6 @@ class DynamoDbTableExtensionsTest: AbstractDynamodbTest() {
         // 테이블 생성
         client.createTestTable(tableName)
 
-        val enhancedClient = DynamoDbEnhancedClient
-            .builder()
-            .dynamoDbClient(client)
-            .build()
         val table = enhancedClient.table<TestEntity>(tableName)
 
         val entities = List(3) {

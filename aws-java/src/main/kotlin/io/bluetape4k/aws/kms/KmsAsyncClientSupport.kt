@@ -55,11 +55,12 @@ inline fun kmsAsyncClientOf(
     credentialsProvider: AwsCredentialsProvider? = null,
     httpClient: SdkAsyncHttpClient = SdkAsyncHttpClientProvider.defaultHttpClient,
     builder: KmsAsyncClientBuilder.() -> Unit,
-): KmsAsyncClient = kmsAsyncClient {
-    endpointOverride?.let { endpointOverride(it) }
-    region?.let { region(it) }
-    credentialsProvider?.let { credentialsProvider(it) }
-    httpClient(httpClient)
+): KmsAsyncClient =
+    kmsAsyncClient {
+        endpointOverride?.let { endpointOverride(it) }
+        region?.let { region(it) }
+        credentialsProvider?.let { credentialsProvider(it) }
+        httpClient(httpClient)
 
-    builder()
-}
+        builder()
+    }

@@ -41,24 +41,29 @@ data class SfnExecutionPollingOptions(
 fun SfnAsyncClient.describeExecutionFlow(
     request: DescribeExecutionRequest,
     options: SfnExecutionPollingOptions = SfnExecutionPollingOptions(),
-): Flow<DescribeExecutionResponse> = flow {
-    val response = describeExecution(request).await()
-    when (response.status()) {
-        ExecutionStatus.RUNNING,
-        ExecutionStatus.SUCCEEDED,
-        ExecutionStatus.FAILED,
-        ExecutionStatus.TIMED_OUT,
-        ExecutionStatus.ABORTED,
-        ExecutionStatus.PENDING_REDRIVE -> emit(response)
-        null,
-        ExecutionStatus.UNKNOWN_TO_SDK_VERSION -> error(
-            "Unsupported Step Functions execution status: ${response.statusAsString() ?: "<null>"}",
-        )
+): Flow<DescribeExecutionResponse> =
+    flow {
+        val response = describeExecution(request).await()
+        when (response.status()) {
+            ExecutionStatus.RUNNING,
+            ExecutionStatus.SUCCEEDED,
+            ExecutionStatus.FAILED,
+            ExecutionStatus.TIMED_OUT,
+            ExecutionStatus.ABORTED,
+            ExecutionStatus.PENDING_REDRIVE,
+                -> emit(response)
+            null,
+            ExecutionStatus.UNKNOWN_TO_SDK_VERSION,
+                -> error(
+                "Unsupported Step Functions execution status: ${response.statusAsString() ?: "<null>"}",
+            )
+        }
     }
-}.repeat(options.pollInterval).transformWhile { response ->
-    emit(response)
-    response.status() == ExecutionStatus.RUNNING
-}
+        .repeat(options.pollInterval)
+        .transformWhile { response ->
+            emit(response)
+            response.status() == ExecutionStatus.RUNNING
+        }
 
 /**
  * [executionArn]으로 실행 상태를 polling하는 cold Flow를 반환합니다.
@@ -68,7 +73,8 @@ fun SfnAsyncClient.describeExecutionFlow(
 fun SfnAsyncClient.describeExecutionFlow(
     executionArn: String,
     options: SfnExecutionPollingOptions = SfnExecutionPollingOptions(),
-): Flow<DescribeExecutionResponse> = describeExecutionFlow(
-    describeExecutionRequestOf(executionArn),
-    options,
-)
+): Flow<DescribeExecutionResponse> =
+    describeExecutionFlow(
+        describeExecutionRequestOf(executionArn),
+        options,
+    )

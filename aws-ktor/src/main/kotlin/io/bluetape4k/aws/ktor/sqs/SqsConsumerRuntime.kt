@@ -1,13 +1,5 @@
 package io.bluetape4k.aws.ktor.sqs
 
-import io.bluetape4k.ToStringBuilder
-import io.bluetape4k.javatimes.millis
-import io.bluetape4k.javatimes.seconds
-import io.bluetape4k.logging.KLogging
-import io.bluetape4k.logging.warn
-import io.bluetape4k.support.requireGe
-import io.bluetape4k.support.requireInRange
-import io.bluetape4k.support.requirePositiveNumber
 import aws.sdk.kotlin.services.sqs.SqsClient
 import aws.sdk.kotlin.services.sqs.model.ChangeMessageVisibilityRequest
 import aws.sdk.kotlin.services.sqs.model.DeleteMessageRequest
@@ -18,6 +10,15 @@ import aws.sdk.kotlin.services.sqs.model.MessageSystemAttributeName
 import aws.sdk.kotlin.services.sqs.model.ReceiveMessageRequest
 import aws.sdk.kotlin.services.sqs.model.SendMessageRequest
 import aws.sdk.kotlin.services.sqs.model.SendMessageResponse
+import io.bluetape4k.ToStringBuilder
+import io.bluetape4k.javatimes.millis
+import io.bluetape4k.javatimes.nanos
+import io.bluetape4k.javatimes.seconds
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.warn
+import io.bluetape4k.support.requireGe
+import io.bluetape4k.support.requireInRange
+import io.bluetape4k.support.requirePositiveNumber
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineName
@@ -89,9 +90,9 @@ internal object KtorSqsObservationTags {
  */
 data class SqsPollBackoff(
     /** 첫 receive 실패 후 기다릴 초기 지연 시간입니다. */
-    val initialDelay: Duration = Duration.ofMillis(250),
+    val initialDelay: Duration = 250.millis(),
     /** backoff가 증가할 때 허용되는 최대 지연 시간입니다. */
-    val maxDelay: Duration = Duration.ofSeconds(5),
+    val maxDelay: Duration = 5.seconds(),
     /** 다음 지연 시간을 계산할 때 이전 지연 시간에 곱할 배율입니다. */
     val multiplier: Double = 2.0,
 ): Serializable {
@@ -883,7 +884,7 @@ class SqsConsumerRuntime(
             return
         }
 
-        val duration = startedAt?.let { Duration.ofNanos(System.nanoTime() - it) }
+        val duration = startedAt?.let { (System.nanoTime() - it).nanos() }
         val observation = SqsConsumerObservation(
             operation = operation,
             outcome = outcome,

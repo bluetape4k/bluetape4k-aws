@@ -1,6 +1,10 @@
 package io.bluetape4k.aws.ktor.cloudwatch
 
+import aws.sdk.kotlin.services.cloudwatchlogs.CloudWatchLogsClient
+import aws.sdk.kotlin.services.cloudwatchlogs.model.InputLogEvent
+import aws.sdk.kotlin.services.cloudwatchlogs.model.PutLogEventsResponse
 import io.bluetape4k.aws.kotlin.cloudwatch.model.cloudwatchlogs.inputLogEventOf
+import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.warn
 import io.bluetape4k.support.requireInRange
@@ -22,12 +26,10 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import aws.sdk.kotlin.services.cloudwatchlogs.CloudWatchLogsClient
-import aws.sdk.kotlin.services.cloudwatchlogs.model.InputLogEvent
-import aws.sdk.kotlin.services.cloudwatchlogs.model.PutLogEventsResponse
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.time.toKotlinDuration
 
 /**
  * Ktor CloudWatch Logs 작업, 버퍼링, 클라이언트 수명 주기를 보관하는 런타임입니다.
@@ -45,8 +47,8 @@ class CloudWatchLogsKtorRuntime(
     private val ownedClient: CloudWatchLogsClient? = null,
     private val logStream: CloudWatchLogStream? = null,
     private val batchSize: Int = CLOUDWATCH_LOGS_MAX_BATCH_SIZE,
-    private val flushInterval: Duration = Duration.ofSeconds(5),
-    private val shutdownFlushTimeout: Duration = Duration.ofSeconds(5),
+    private val flushInterval: Duration = 5.seconds(),
+    private val shutdownFlushTimeout: Duration = 5.seconds(),
     private val createLogGroupOnStart: Boolean = false,
     private val createLogStreamOnStart: Boolean = false,
     private val shutdownPolicy: CloudWatchLogsShutdownPolicy = CloudWatchLogsShutdownPolicy.WarnAndContinue,
@@ -124,7 +126,7 @@ class CloudWatchLogsKtorRuntime(
             scope = currentScope
             flushJob = currentScope.launch(CoroutineName("cloudwatch-logs-flush")) {
                 while (isActive) {
-                    delay(timeMillis = flushInterval.toMillis())
+                    delay(flushInterval.toKotlinDuration())
                     try {
                         flush()
                     } catch (e: CancellationException) {

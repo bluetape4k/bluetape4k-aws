@@ -14,9 +14,7 @@ import java.net.URI
  */
 inline fun ssmAsyncClient(builder: SsmAsyncClientBuilder.() -> Unit): SsmAsyncClient =
     SsmAsyncClient.builder().apply(builder).build()
-        .apply {
-            ShutdownQueue.register(this)
-        }
+        .apply { ShutdownQueue.register(this) }
 
 /**
  * 선택적인 로컬 엔드포인트와 자격 증명으로 [SsmAsyncClient]를 생성합니다.
@@ -27,11 +25,12 @@ inline fun ssmAsyncClientOf(
     credentialsProvider: AwsCredentialsProvider? = null,
     httpClient: SdkAsyncHttpClient = SdkAsyncHttpClientProvider.defaultHttpClient,
     builder: SsmAsyncClientBuilder.() -> Unit = {},
-): SsmAsyncClient = ssmAsyncClient {
-    endpoint?.let { endpointOverride(it) }
-    region?.let { region(it) }
-    credentialsProvider?.let { credentialsProvider(it) }
-    httpClient(httpClient)
+): SsmAsyncClient =
+    ssmAsyncClient {
+        endpoint?.let { endpointOverride(it) }
+        region?.let { region(it) }
+        credentialsProvider?.let { credentialsProvider(it) }
+        httpClient(httpClient)
 
-    builder()
-}
+        builder()
+    }

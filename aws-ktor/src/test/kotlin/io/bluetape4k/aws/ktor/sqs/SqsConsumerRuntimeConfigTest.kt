@@ -1,5 +1,9 @@
 package io.bluetape4k.aws.ktor.sqs
 
+import aws.sdk.kotlin.services.sqs.SqsClient
+import aws.sdk.kotlin.services.sqs.model.Message
+import aws.sdk.kotlin.services.sqs.model.ReceiveMessageRequest
+import aws.sdk.kotlin.services.sqs.model.ReceiveMessageResponse
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
@@ -7,20 +11,17 @@ import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.AwsKtorSqsClientCustomizer
+import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
-import aws.sdk.kotlin.services.sqs.SqsClient
-import aws.sdk.kotlin.services.sqs.model.Message
-import aws.sdk.kotlin.services.sqs.model.ReceiveMessageRequest
-import aws.sdk.kotlin.services.sqs.model.ReceiveMessageResponse
 import io.mockk.clearMocks
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import io.mockk.coEvery
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineDispatcher
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.during
@@ -397,7 +398,7 @@ class SqsConsumerRuntimeConfigTest {
         coroutines: Int = 1,
         maxMessages: Int = 10,
         waitTimeSeconds: Int = 20,
-        shutdownTimeout: Duration = Duration.ofSeconds(30),
+        shutdownTimeout: Duration = 30.seconds(),
         deadLetterQueueUrl: String? = null,
         failureVisibilityTimeoutSeconds: Int? = null,
         failureVisibilityStrategy: SqsFailureVisibilityStrategy? = null,

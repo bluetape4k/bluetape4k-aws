@@ -25,9 +25,10 @@ inline fun lambdaAsyncClientOf(
     region: Region? = null,
     credentialsProvider: AwsCredentialsProvider? = null,
     httpClient: SdkAsyncHttpClient = SdkAsyncHttpClientProvider.defaultHttpClient,
-    noinline builder: LambdaAsyncClientBuilder.() -> Unit = {},
-): LambdaAsyncClient = buildLambdaAsyncClient(endpoint, region, credentialsProvider, httpClient, builder)
-    .apply { ShutdownQueue.register(this) }
+    builder: LambdaAsyncClientBuilder.() -> Unit = {},
+): LambdaAsyncClient =
+    buildLambdaAsyncClient(endpoint, region, credentialsProvider, httpClient, builder)
+        .apply { ShutdownQueue.register(this) }
 
 /**
  * 짧은 범위에서 사용할 미등록 [LambdaAsyncClient]를 생성하고 block 종료 시 service client만 닫습니다.
@@ -38,8 +39,8 @@ suspend inline fun <R> withLambdaAsyncClient(
     region: Region? = null,
     credentialsProvider: AwsCredentialsProvider? = null,
     httpClient: SdkAsyncHttpClient = SdkAsyncHttpClientProvider.defaultHttpClient,
-    noinline builder: LambdaAsyncClientBuilder.() -> Unit = {},
-    crossinline block: suspend (LambdaAsyncClient) -> R,
+    builder: LambdaAsyncClientBuilder.() -> Unit = {},
+    block: suspend (LambdaAsyncClient) -> R,
 ): R {
     val client = buildLambdaAsyncClient(endpoint, region, credentialsProvider, httpClient, builder)
     return try {
@@ -50,18 +51,19 @@ suspend inline fun <R> withLambdaAsyncClient(
 }
 
 @PublishedApi
-internal fun buildLambdaAsyncClient(
+internal inline fun buildLambdaAsyncClient(
     endpoint: URI?,
     region: Region?,
     credentialsProvider: AwsCredentialsProvider?,
     httpClient: SdkAsyncHttpClient,
     builder: LambdaAsyncClientBuilder.() -> Unit,
-): LambdaAsyncClient = LambdaAsyncClient.builder()
-    .apply {
-        endpoint?.let { endpointOverride(it) }
-        region?.let { region(it) }
-        credentialsProvider?.let { credentialsProvider(it) }
-        httpClient(httpClient)
-        builder()
-    }
-    .build()
+): LambdaAsyncClient =
+    LambdaAsyncClient.builder()
+        .apply {
+            endpoint?.let { endpointOverride(it) }
+            region?.let { region(it) }
+            credentialsProvider?.let { credentialsProvider(it) }
+            httpClient(httpClient)
+            builder()
+        }
+        .build()

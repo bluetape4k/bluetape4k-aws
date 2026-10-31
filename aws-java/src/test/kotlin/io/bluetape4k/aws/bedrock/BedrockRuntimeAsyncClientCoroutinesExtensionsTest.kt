@@ -5,7 +5,10 @@ import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.aws.AbstractAwsTest
 import io.bluetape4k.aws.bedrock.model.userMessageOf
+import io.bluetape4k.concurrent.completableFutureOf
+import io.bluetape4k.coroutines.support.log
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
@@ -36,9 +39,14 @@ class BedrockRuntimeAsyncClientCoroutinesExtensionsTest: AbstractAwsTest() {
     @Test
     fun `suspend converse awaits the SDK future`() = runTest {
         val expected = ConverseResponse.builder().build()
-        every { client.converse(any<ConverseRequest>()) } returns CompletableFuture.completedFuture(expected)
+        every {
+            client.converse(any<ConverseRequest>())
+        } returns completableFutureOf(expected)
 
-        client.converse("model-id", listOf(userMessageOf("hello"))) shouldBeSameInstanceAs expected
+        client.converse(
+            "model-id",
+            listOf(userMessageOf("hello"))
+        ) shouldBeSameInstanceAs expected
 
         verify(exactly = 1) { client.converse(any<ConverseRequest>()) }
     }
@@ -50,7 +58,8 @@ class BedrockRuntimeAsyncClientCoroutinesExtensionsTest: AbstractAwsTest() {
 
         val job = launch {
             client.converse("model-id", listOf(userMessageOf("hello")))
-        }
+        }.log(("Job"))
+
         runCurrent()
         job.cancelAndJoin()
 
@@ -68,6 +77,7 @@ class BedrockRuntimeAsyncClientCoroutinesExtensionsTest: AbstractAwsTest() {
             client.converse("model-id", listOf(userMessageOf("hello")))
         }
 
+        log.debug { "actual=$actual" }
         actual shouldBeSameInstanceAs expected
     }
 }

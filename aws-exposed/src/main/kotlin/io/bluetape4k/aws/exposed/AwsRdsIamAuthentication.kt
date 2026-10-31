@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.exposed
 
+import io.bluetape4k.javatimes.minutes
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.support.requireGt
 import io.bluetape4k.support.requireInRange
@@ -79,12 +80,12 @@ data class AwsRdsIamAuthenticationProperties(
         /**
          * Amazon RDS IAM database authentication token의 최대 수명입니다.
          */
-        val MAX_TOKEN_TTL: Duration = Duration.ofMinutes(15)
+        val MAX_TOKEN_TTL: Duration = 15.minutes()
 
         /**
          * AWS가 강제하는 TTL에 도달하기 전 token을 갱신할 기본 여유 시간입니다.
          */
-        val DEFAULT_REFRESH_BEFORE_EXPIRY: Duration = Duration.ofMinutes(2)
+        val DEFAULT_REFRESH_BEFORE_EXPIRY: Duration = 2.minutes()
 
         private const val MIN_PORT: Int = 1
         private const val MAX_PORT: Int = 65_535

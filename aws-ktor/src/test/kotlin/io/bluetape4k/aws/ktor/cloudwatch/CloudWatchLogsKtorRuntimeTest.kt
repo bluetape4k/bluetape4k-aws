@@ -1,8 +1,13 @@
 package io.bluetape4k.aws.ktor.cloudwatch
 
+import aws.sdk.kotlin.services.cloudwatchlogs.CloudWatchLogsClient
+import aws.sdk.kotlin.services.cloudwatchlogs.model.InputLogEvent
+import aws.sdk.kotlin.services.cloudwatchlogs.model.PutLogEventsResponse
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.javatimes.millis
+import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.mockk.clearMocks
 import io.mockk.coEvery
@@ -18,11 +23,9 @@ import kotlinx.coroutines.joinAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import aws.sdk.kotlin.services.cloudwatchlogs.CloudWatchLogsClient
-import aws.sdk.kotlin.services.cloudwatchlogs.model.InputLogEvent
-import aws.sdk.kotlin.services.cloudwatchlogs.model.PutLogEventsResponse
 import java.time.Duration
 import java.time.Instant
+import kotlin.time.Duration.Companion.milliseconds
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CloudWatchLogsKtorRuntimeTest {
@@ -67,7 +70,7 @@ class CloudWatchLogsKtorRuntimeTest {
     fun `concurrent flush does not duplicate events`() = runSuspendIO {
         val captured = mutableListOf<List<InputLogEvent>>()
         coEvery { operations.putLogEvents(any(), any()) } coAnswers {
-            delay(50)
+            delay(50.milliseconds)
             captured += secondArg<List<InputLogEvent>>()
             listOf(PutLogEventsResponse {})
         }
@@ -105,12 +108,12 @@ class CloudWatchLogsKtorRuntimeTest {
         every { client.close() } answers { order += "close" }
         coEvery { operations.putLogEvents(any(), any()) } coAnswers {
             order += "flush"
-            delay(250)
+            delay(250.milliseconds)
             listOf(PutLogEventsResponse {})
         }
         val runtime = runtime(
             ownedClient = client,
-            shutdownFlushTimeout = Duration.ofMillis(10),
+            shutdownFlushTimeout = 10.millis(),
             shutdownObservers = listOf(CloudWatchLogsShutdownObserver { observations += it }),
         )
 
@@ -132,12 +135,12 @@ class CloudWatchLogsKtorRuntimeTest {
         every { client.close() } answers { order += "close" }
         coEvery { operations.putLogEvents(any(), any()) } coAnswers {
             order += "flush"
-            delay(250)
+            delay(250.milliseconds)
             listOf(PutLogEventsResponse {})
         }
         val runtime = runtime(
             ownedClient = client,
-            shutdownFlushTimeout = Duration.ofMillis(10),
+            shutdownFlushTimeout = 10.millis(),
             shutdownPolicy = CloudWatchLogsShutdownPolicy.ThrowOnTimeout,
             shutdownObservers = listOf(CloudWatchLogsShutdownObserver { observations += it }),
         )
@@ -160,7 +163,7 @@ class CloudWatchLogsKtorRuntimeTest {
         every { client.close() } answers { order += "close" }
         coEvery { operations.putLogEvents(any(), any()) } coAnswers {
             order += "flush"
-            delay(250)
+            delay(250.milliseconds)
             listOf(PutLogEventsResponse {})
         }
         val runtime = runtime(
@@ -170,7 +173,7 @@ class CloudWatchLogsKtorRuntimeTest {
 
         runtime.append("message", Instant.EPOCH)
         val stopping = async { runtime.stop() }
-        delay(20)
+        delay(20.milliseconds)
         stopping.cancelAndJoin()
 
         observations.single().outcome shouldBeEqualTo CloudWatchLogsShutdownOutcome.Cancelled
@@ -187,19 +190,19 @@ class CloudWatchLogsKtorRuntimeTest {
         every { client.close() } answers { order += "close" }
         coEvery { operations.putLogEvents(any(), any()) } coAnswers {
             order += "flush"
-            delay(250)
+            delay(250.milliseconds)
             listOf(PutLogEventsResponse {})
         }
         val runtime = runtime(
             ownedClient = client,
-            flushInterval = Duration.ofSeconds(5),
+            flushInterval = 5.seconds(),
             shutdownObservers = listOf(CloudWatchLogsShutdownObserver { observations += it }),
         )
 
         runtime.start()
         runtime.append("message", Instant.EPOCH)
         val stopping = async { runtime.stop() }
-        delay(20)
+        delay(20.milliseconds)
         stopping.cancelAndJoin()
 
         observations.single().outcome shouldBeEqualTo CloudWatchLogsShutdownOutcome.Cancelled
@@ -267,7 +270,7 @@ class CloudWatchLogsKtorRuntimeTest {
         val runtime = runtime(
             createLogGroupOnStart = true,
             createLogStreamOnStart = true,
-            flushInterval = Duration.ofMillis(500),
+            flushInterval = 500.millis(),
         )
 
         runtime.start()
@@ -296,11 +299,11 @@ class CloudWatchLogsKtorRuntimeTest {
     fun `periodic flush continues after transient failure`() = runSuspendIO {
         coEvery { operations.putLogEvents(any(), any()) } throws IllegalStateException("boom") andThen
                 listOf(PutLogEventsResponse {})
-        val runtime = runtime(flushInterval = Duration.ofMillis(20))
+        val runtime = runtime(flushInterval = 20.millis())
 
         runtime.append("message", Instant.EPOCH)
         runtime.start()
-        delay(120)
+        delay(120.milliseconds)
         runtime.stop()
 
         coVerify(atLeast = 2) { operations.putLogEvents(any(), any()) }
@@ -369,8 +372,8 @@ class CloudWatchLogsKtorRuntimeTest {
 
     private fun runtime(
         ownedClient: CloudWatchLogsClient? = null,
-        flushInterval: Duration = Duration.ofSeconds(5),
-        shutdownFlushTimeout: Duration = Duration.ofSeconds(5),
+        flushInterval: Duration = 5.seconds(),
+        shutdownFlushTimeout: Duration = 5.seconds(),
         shutdownPolicy: CloudWatchLogsShutdownPolicy = CloudWatchLogsShutdownPolicy.WarnAndContinue,
         shutdownObservers: List<CloudWatchLogsShutdownObserver> = emptyList(),
         createLogGroupOnStart: Boolean = false,

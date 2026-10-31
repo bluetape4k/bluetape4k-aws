@@ -355,7 +355,7 @@ fun SqsClient.deleteQueue(queueUrl: String): DeleteQueueResponse {
     }
 }
 
-private fun validateReceiveMessageCount(maxResults: Int) {
+fun validateReceiveMessageCount(maxResults: Int) {
     require(maxResults in MIN_RECEIVE_MESSAGES..MAX_RECEIVE_MESSAGES) {
         "maxResults must be in $MIN_RECEIVE_MESSAGES..$MAX_RECEIVE_MESSAGES, but was $maxResults"
     }

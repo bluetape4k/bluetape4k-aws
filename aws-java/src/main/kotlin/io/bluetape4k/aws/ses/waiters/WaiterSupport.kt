@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.ses.waiters
 
+import io.bluetape4k.javatimes.millis
+import io.bluetape4k.javatimes.seconds
 import software.amazon.awssdk.core.waiters.WaiterOverrideConfiguration
 import software.amazon.awssdk.retries.api.BackoffStrategy
 import java.time.Duration
@@ -14,7 +16,7 @@ import java.time.Duration
  * }
  * ```
  */
-fun waiterOverrideConfiguration(
+inline fun waiterOverrideConfiguration(
     builder: WaiterOverrideConfiguration.Builder.() -> Unit,
 ): WaiterOverrideConfiguration =
     WaiterOverrideConfiguration.builder().apply(builder).build()
@@ -31,12 +33,16 @@ fun waiterOverrideConfiguration(
  * // cfg.maxAttempts().get() == 5
  * ```
  */
-fun waiterOverrideConfigurationOf(
+inline fun waiterOverrideConfigurationOf(
     maxAttempts: Int = 3,
-    waitTimeout: Duration = Duration.ofSeconds(5),
-    backoffStrategy: BackoffStrategy = BackoffStrategy.fixedDelay(Duration.ofMillis(10)),
-): WaiterOverrideConfiguration = waiterOverrideConfiguration {
-    this.backoffStrategyV2(backoffStrategy)
-    this.maxAttempts(maxAttempts)
-    this.waitTimeout(waitTimeout)
-}
+    waitTimeout: Duration = 5.seconds(),
+    backoffStrategy: BackoffStrategy = BackoffStrategy.fixedDelay(10.millis()),
+    builder: WaiterOverrideConfiguration.Builder.() -> Unit = {},
+): WaiterOverrideConfiguration =
+    waiterOverrideConfiguration {
+        this.backoffStrategyV2(backoffStrategy)
+        this.maxAttempts(maxAttempts)
+        this.waitTimeout(waitTimeout)
+
+        builder()
+    }

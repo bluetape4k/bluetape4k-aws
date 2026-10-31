@@ -1,11 +1,5 @@
 package io.bluetape4k.aws.ktor.sqs
 
-import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeFalse
-import io.bluetape4k.assertions.shouldBeGreaterOrEqualTo
-import io.bluetape4k.assertions.shouldBeLessThan
-import io.bluetape4k.junit5.coroutines.runSuspendIO
-import io.bluetape4k.logging.coroutines.KLoggingChannel
 import aws.sdk.kotlin.services.sqs.SqsClient
 import aws.sdk.kotlin.services.sqs.model.ChangeMessageVisibilityRequest
 import aws.sdk.kotlin.services.sqs.model.ChangeMessageVisibilityResponse
@@ -18,14 +12,20 @@ import aws.sdk.kotlin.services.sqs.model.ReceiveMessageRequest
 import aws.sdk.kotlin.services.sqs.model.ReceiveMessageResponse
 import aws.sdk.kotlin.services.sqs.model.SendMessageRequest
 import aws.sdk.kotlin.services.sqs.model.SendMessageResponse
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldBeGreaterOrEqualTo
+import io.bluetape4k.assertions.shouldBeLessThan
+import io.bluetape4k.javatimes.millis
+import io.bluetape4k.javatimes.seconds
+import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.mockk.clearMocks
-import io.mockk.every
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import io.mockk.verify
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -38,7 +38,6 @@ import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import java.time.Duration
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.system.measureTimeMillis
@@ -80,7 +79,7 @@ class SqsConsumerRuntimeFailureTest {
                 coroutines = 1,
                 maxMessages = 1,
                 waitTimeSeconds = 0,
-                shutdownTimeout = Duration.ofMillis(100),
+                shutdownTimeout = 100.millis(),
                 messageType = String::class,
                 messageHandler = {
                     handlerStarted.countDown()
@@ -125,7 +124,7 @@ class SqsConsumerRuntimeFailureTest {
                     coroutines = 1,
                     maxMessages = 1,
                     waitTimeSeconds = 0,
-                    shutdownTimeout = Duration.ofSeconds(3),
+                    shutdownTimeout = 3.seconds(),
                     messageType = String::class,
                     messageHandler = {
                         handlerStarted.countDown()
@@ -187,7 +186,7 @@ class SqsConsumerRuntimeFailureTest {
                     waitTimeSeconds = 0,
                     visibilityTimeoutSeconds = 5,
                     visibilityHeartbeatSeconds = 1,
-                    shutdownTimeout = Duration.ofSeconds(3),
+                    shutdownTimeout = 3.seconds(),
                     messageType = String::class,
                     messageHandler = {
                         handlerStarted.countDown()
@@ -248,7 +247,7 @@ class SqsConsumerRuntimeFailureTest {
                     waitTimeSeconds = 0,
                     visibilityTimeoutSeconds = 5,
                     visibilityHeartbeatSeconds = 1,
-                    shutdownTimeout = Duration.ofMillis(100),
+                    shutdownTimeout = 100.millis(),
                     messageType = String::class,
                     messageHandler = {
                         handlerStarted.countDown()
@@ -321,7 +320,7 @@ class SqsConsumerRuntimeFailureTest {
                 maxMessages = 1,
                 waitTimeSeconds = 0,
                 deadLetterQueueUrl = "https://sqs.local/dlq",
-                pollBackoff = SqsPollBackoff(Duration.ofMillis(10), Duration.ofMillis(10)),
+                pollBackoff = SqsPollBackoff(10.millis(), 10.millis()),
                 messageType = String::class,
                 messageHandler = {},
             )
@@ -365,7 +364,7 @@ class SqsConsumerRuntimeFailureTest {
                 coroutines = 1,
                 maxMessages = 1,
                 waitTimeSeconds = 0,
-                pollBackoff = SqsPollBackoff(Duration.ofMillis(10), Duration.ofMillis(10)),
+                pollBackoff = SqsPollBackoff(10.millis(), 10.millis()),
                 messageType = String::class,
                 messageHandler = {},
             )

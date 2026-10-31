@@ -26,6 +26,7 @@ class FoodRepository(
     companion object: KLoggingChannel()
 
     override val itemClass: Class<FoodDocument> = FoodDocument::class.java
+
     override val table: DynamoDbAsyncTable<FoodDocument> by lazy {
         client.table("$tablePrefix${Schema.TABLE_NAME}")
     }

@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.sfn
 
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.aws.auth.staticCredentialsProviderOf
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.utils.ShutdownQueue
 import io.mockk.clearMocks
@@ -14,8 +15,6 @@ import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sfn.SfnAsyncClient
@@ -40,9 +39,7 @@ class SfnAsyncClientSupportTest {
 
         val endpoint = URI("http://localhost:4566")
         val httpClient = mockk<SdkAsyncHttpClient>()
-        val credentials = StaticCredentialsProvider.create(
-            AwsBasicCredentials.create("test", "test")
-        )
+        val credentials = staticCredentialsProviderOf("test", "test")
 
         mockkStatic(SfnAsyncClient::class)
         mockkObject(ShutdownQueue)

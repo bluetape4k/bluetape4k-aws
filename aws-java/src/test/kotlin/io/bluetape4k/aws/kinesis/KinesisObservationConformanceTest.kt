@@ -3,7 +3,7 @@ package io.bluetape4k.aws.kinesis
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotContain
-import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.KLogging
 import io.bluetape4k.support.requireNotNull
 import io.bluetape4k.utils.Resourcex
 import org.junit.jupiter.api.Test
@@ -11,7 +11,7 @@ import java.util.*
 
 class KinesisObservationConformanceTest: AbstractKinesisTest() {
 
-    companion object: KLoggingChannel()
+    companion object: KLogging()
 
     private val contract = loadContract()
     private val streamToken = redactedKinesisToken(contract.required("token.input.stream"))

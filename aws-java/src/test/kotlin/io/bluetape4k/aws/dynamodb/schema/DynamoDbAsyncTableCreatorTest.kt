@@ -3,11 +3,14 @@ package io.bluetape4k.aws.dynamodb.schema
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.aws.dynamodb.AbstractDynamodbTest
+import io.bluetape4k.aws.exceptions.AwsBluetapeException
 import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable
 import software.amazon.awssdk.enhanced.dynamodb.model.CreateTableEnhancedRequest
@@ -22,6 +25,11 @@ class DynamoDbAsyncTableCreatorTest: AbstractDynamodbTest() {
     private val table = mockk<DynamoDbAsyncTable<String>>()
     private val request = CreateTableEnhancedRequest.builder().build()
     private val creator = DynamoDbAsyncTableCreator()
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(table)
+    }
 
     @Test
     fun `direct ResourceInUse exception is idempotent success`() = runTest {
@@ -58,7 +66,7 @@ class DynamoDbAsyncTableCreatorTest: AbstractDynamodbTest() {
         every { table.tableName() } returns "orders"
         every { table.createTable(request) } returns failedFuture(IllegalStateException("boom"))
 
-        val error = assertFailsWith<io.bluetape4k.aws.exceptions.AwsBluetapeException> {
+        val error = assertFailsWith<AwsBluetapeException> {
             creator.tryCreateAsyncTable(table, request)
         }
 
@@ -66,5 +74,5 @@ class DynamoDbAsyncTableCreatorTest: AbstractDynamodbTest() {
     }
 
     private fun <T> failedFuture(error: Throwable): CompletableFuture<T> =
-        CompletableFuture<T>().also { it.completeExceptionally(error) }
+        CompletableFuture.failedFuture<T>(error)
 }

@@ -3,6 +3,7 @@ package io.bluetape4k.aws.kinesis
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -14,6 +15,7 @@ class KinesisRecordFlowOptionsTest: AbstractKinesisTest() {
     fun `defaults match the consumer polling contract`() {
         val options = KinesisRecordFlowOptions()
 
+        log.debug { "options=$options" }
         options.batchLimit shouldBeEqualTo KinesisRecordFlowOptions.DEFAULT_BATCH_LIMIT
         options.pollInterval shouldBeEqualTo KinesisRecordFlowOptions.DEFAULT_POLL_INTERVAL
         options.emptyBackoff shouldBeEqualTo KinesisRecordFlowOptions.DEFAULT_EMPTY_BACKOFF

@@ -7,6 +7,9 @@ import io.bluetape4k.assertions.shouldMatch
 import io.bluetape4k.assertions.shouldNotStartWith
 import io.bluetape4k.assertions.shouldStartWith
 import io.bluetape4k.idgenerators.uuid.Uuid
+import io.bluetape4k.javatimes.minutes
+import io.bluetape4k.javatimes.nanos
+import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -35,7 +38,7 @@ class S3TablesSmokeTest {
         const val EXPECTED_ACCOUNT_ID = "S3_TABLES_EXPECTED_ACCOUNT_ID"
         const val MUTATING_REGION = "S3_TABLES_MUTATING_REGION"
         const val MUTATING_PREFIX = "S3_TABLES_MUTATING_PREFIX"
-        val SMOKE_TIMEOUT: Duration = Duration.ofMinutes(2)
+        val SMOKE_TIMEOUT: Duration = 2.minutes()
     }
 
     @Test
@@ -284,8 +287,8 @@ private fun requiredInput(name: String): String =
 
 private fun timeoutConfiguration(): ClientOverrideConfiguration =
     ClientOverrideConfiguration.builder()
-        .apiCallTimeout(Duration.ofSeconds(30))
-        .apiCallAttemptTimeout(Duration.ofSeconds(15))
+        .apiCallTimeout(30.seconds())
+        .apiCallAttemptTimeout(15.seconds())
         .build()
 
 private fun configureTimeout(builder: software.amazon.awssdk.services.s3tables.S3TablesClientBuilder) {
@@ -338,7 +341,7 @@ private fun isAlreadyAbsent(failure: Throwable): Boolean {
 }
 
 private fun elapsedMillis(startedAt: Long): Long =
-    Duration.ofNanos(System.nanoTime() - startedAt).toMillis()
+    (System.nanoTime() - startedAt).nanos().toMillis()
 
 private fun smokeEvidence(
     lane: String,

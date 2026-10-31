@@ -14,8 +14,8 @@ import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotBeEqualTo
 import io.bluetape4k.assertions.shouldNotContain
-import io.bluetape4k.aws.ktor.AwsKtorHttpClientCustomizer
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
+import io.bluetape4k.aws.ktor.AwsKtorHttpClientCustomizer
 import io.bluetape4k.aws.ktor.client.AwsSigV4AuthLocation
 import io.bluetape4k.aws.ktor.client.AwsSigV4Plugin
 import io.bluetape4k.codec.decodeBase64String
@@ -422,7 +422,7 @@ class S3KtorClientTest {
         val presigned = s3.presignGetObject(
             bucket = "demo.bucket",
             key = "logs/2026/app log.txt",
-            expires = Duration.ofMinutes(15),
+            expires = 15.minutes(),
         )
 
         presigned.method shouldBeEqualTo "GET"

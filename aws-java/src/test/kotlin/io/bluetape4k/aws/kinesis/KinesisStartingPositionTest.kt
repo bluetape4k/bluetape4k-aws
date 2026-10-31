@@ -3,13 +3,10 @@ package io.bluetape4k.aws.kinesis
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBe
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.io.serializer.BinarySerializers
 import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
-import java.io.ObjectInputStream
-import java.io.ObjectOutputStream
 import java.time.Instant
 
 class KinesisStartingPositionTest: AbstractKinesisTest() {
@@ -17,10 +14,8 @@ class KinesisStartingPositionTest: AbstractKinesisTest() {
     companion object: KLogging()
 
     private fun roundtrip(value: KinesisStartingPosition): KinesisStartingPosition {
-        val bytes = ByteArrayOutputStream().also { output ->
-            ObjectOutputStream(output).use { it.writeObject(value) }
-        }.toByteArray()
-        return ObjectInputStream(ByteArrayInputStream(bytes)).use { it.readObject() } as KinesisStartingPosition
+        val bytes = BinarySerializers.JdkUnfiltered.serialize(value)
+        return BinarySerializers.JdkUnfiltered.deserialize<KinesisStartingPosition>(bytes).shouldNotBeNull()
     }
 
     @Test
@@ -29,10 +24,8 @@ class KinesisStartingPositionTest: AbstractKinesisTest() {
         KinesisStartingPosition.Latest shouldBeEqualTo KinesisStartingPosition.Latest
         KinesisStartingPosition.AtSequenceNumber("seq-at").sequenceNumber shouldBeEqualTo "seq-at"
         KinesisStartingPosition.AfterSequenceNumber("seq-after").sequenceNumber shouldBeEqualTo "seq-after"
-        KinesisStartingPosition.AtTimestamp(
-            Instant.parse("2026-08-27T00:00:00.123456789Z"),
-        ).timestamp.nano shouldBeEqualTo
-                123_456_789
+        KinesisStartingPosition.AtTimestamp(Instant.parse("2026-08-27T00:00:00.123456789Z"))
+            .timestamp.nano shouldBeEqualTo 123_456_789
     }
 
     @Test

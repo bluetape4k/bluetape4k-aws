@@ -3,21 +3,18 @@ package io.bluetape4k.aws.dynamodbstreams
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBe
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.io.serializer.BinarySerializers
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
-import java.io.ObjectInputStream
-import java.io.ObjectOutputStream
 
 class DynamoDbStreamsStartingPositionTest {
 
+    companion object: KLogging()
+
     private fun roundtrip(value: DynamoDbStreamsStartingPosition): DynamoDbStreamsStartingPosition {
-        val bytes = ByteArrayOutputStream().also { output ->
-            ObjectOutputStream(output).use { it.writeObject(value) }
-        }.toByteArray()
-        return ObjectInputStream(ByteArrayInputStream(bytes)).use { it.readObject() }
-                as DynamoDbStreamsStartingPosition
+        val bytes = BinarySerializers.JdkUnfiltered.serialize(value)
+        return BinarySerializers.JdkUnfiltered.deserialize<DynamoDbStreamsStartingPosition>(bytes).shouldNotBeNull()
     }
 
     @Test

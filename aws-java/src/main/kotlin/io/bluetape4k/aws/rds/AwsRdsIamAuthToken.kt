@@ -66,4 +66,4 @@ class AwsRdsIamAuthToken private constructor(private val value: String): Seriali
  * Amazon RDS IAM 인증 토큰 값을 숨기는 래퍼를 생성합니다.
  */
 fun awsRdsIamAuthTokenOf(value: String): AwsRdsIamAuthToken =
-    AwsRdsIamAuthToken.of(value)
+    AwsRdsIamAuthToken(value)

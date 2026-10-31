@@ -37,18 +37,17 @@ inline fun revokeGrantRequest(
  * // request.keyId() == "key-id"
  * ```
  */
-fun revokeGrantRequestOf(
+inline fun revokeGrantRequestOf(
     keyId: String,
     grantId: String,
     builder: RevokeGrantRequest.Builder.() -> Unit = {},
-): RevokeGrantRequest {
-    keyId.requireNotBlank("keyId")
-    grantId.requireNotBlank("grantId")
+): RevokeGrantRequest =
+    revokeGrantRequest {
+        keyId.requireNotBlank("keyId")
+        grantId.requireNotBlank("grantId")
 
-    return revokeGrantRequest {
         keyId(keyId)
         grantId(grantId)
 
         builder()
     }
-}

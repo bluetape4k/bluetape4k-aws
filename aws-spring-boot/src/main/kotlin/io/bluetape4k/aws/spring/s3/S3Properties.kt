@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.s3
 
+import io.bluetape4k.javatimes.minutes
 import io.bluetape4k.support.requireNotBlank
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.io.Serializable
@@ -32,7 +33,7 @@ data class S3Properties(
     val clientSideEncryption: ClientSideEncryption = ClientSideEncryption(),
 ): Serializable {
     data class Presign(
-        val duration: Duration = Duration.ofMinutes(15),
+        val duration: Duration = 15.minutes(),
     ): Serializable {
         companion object {
             private const val serialVersionUID: Long = 6142960232232931590L

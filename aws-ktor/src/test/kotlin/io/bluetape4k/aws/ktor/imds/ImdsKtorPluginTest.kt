@@ -1,15 +1,16 @@
 package io.bluetape4k.aws.ktor.imds
 
-import aws.smithy.kotlin.runtime.http.engine.CloseableHttpClientEngine
-import aws.smithy.kotlin.runtime.http.HttpException
 import aws.sdk.kotlin.runtime.config.imds.EndpointMode
+import aws.smithy.kotlin.runtime.http.HttpException
+import aws.smithy.kotlin.runtime.http.engine.CloseableHttpClientEngine
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
-import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldBeTrue
-import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.javatimes.millis
 import io.bluetape4k.logging.KLogging
 import io.ktor.server.application.install
 import io.ktor.server.testing.testApplication
@@ -19,8 +20,8 @@ import io.mockk.mockk
 import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.net.URI
 import java.net.Proxy
+import java.net.URI
 import java.time.Duration
 
 class ImdsKtorPluginTest {
@@ -164,7 +165,7 @@ class ImdsKtorPluginTest {
 
     @Test
     fun `plugin owned engine disables retries proxies and redirects`() {
-        val engine = ImdsHttpClientFactory.createEngine(Duration.ofMillis(1500)) as ImdsOwnedHttpClientEngine
+        val engine = ImdsHttpClientFactory.createEngine(1500.millis()) as ImdsOwnedHttpClientEngine
         try {
             engine.client.retryOnConnectionFailure.shouldBeFalse()
             engine.client.proxy shouldBeEqualTo Proxy.NO_PROXY

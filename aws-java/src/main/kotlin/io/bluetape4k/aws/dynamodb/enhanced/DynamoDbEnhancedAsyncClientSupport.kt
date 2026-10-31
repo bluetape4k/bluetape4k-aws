@@ -1,6 +1,5 @@
 package io.bluetape4k.aws.dynamodb.enhanced
 
-import io.bluetape4k.utils.ShutdownQueue
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClientExtension
 import software.amazon.awssdk.enhanced.dynamodb.internal.client.ExtensionResolver

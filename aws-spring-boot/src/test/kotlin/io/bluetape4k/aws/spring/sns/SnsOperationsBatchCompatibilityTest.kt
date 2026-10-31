@@ -125,7 +125,7 @@ class SnsOperationsBatchCompatibilityTest: AbstractSnsTest() {
                 publishedIds += request.message
                 cancellation?.let { throw it }
                 if (request.message == failureMessage) {
-                    throw IllegalStateException("secret transport failure")
+                    error("secret transport failure")
                 }
                 delay(1.milliseconds)
                 return PublishResponse.builder().messageId(request.message).build()

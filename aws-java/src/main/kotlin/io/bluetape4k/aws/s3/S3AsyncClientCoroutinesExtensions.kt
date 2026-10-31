@@ -49,9 +49,9 @@ suspend inline fun S3AsyncClient.existsBucket(bucketName: String): Boolean =
  * // result.location().contains("demo-bucket")
  * ```
  */
-suspend fun S3AsyncClient.createBucket(
+suspend inline fun S3AsyncClient.createBucket(
     bucketName: String,
-    builder: CreateBucketConfiguration.Builder.() -> Unit = {},
+    crossinline builder: CreateBucketConfiguration.Builder.() -> Unit = {},
 ): CreateBucketResponse =
     createBucketAsync(bucketName, builder).await()
 

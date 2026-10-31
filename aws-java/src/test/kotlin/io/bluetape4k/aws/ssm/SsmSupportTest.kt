@@ -6,10 +6,10 @@ import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotContain
-import io.bluetape4k.aws.auth.awsBasicCredentialsOf
+import io.bluetape4k.aws.auth.staticCredentialsProviderOf
 import io.bluetape4k.aws.secretsmanager.awsSecretValueOf
-import io.bluetape4k.aws.ssm.model.getParameterRequestOf
 import io.bluetape4k.aws.ssm.model.getParameterRequest
+import io.bluetape4k.aws.ssm.model.getParameterRequestOf
 import io.bluetape4k.aws.ssm.model.getParametersByPathRequestOf
 import io.bluetape4k.aws.ssm.model.getParametersRequestOf
 import io.bluetape4k.aws.ssm.model.putParameterRequest
@@ -29,7 +29,6 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.ssm.SsmAsyncClient
 import software.amazon.awssdk.services.ssm.SsmClient
@@ -54,17 +53,17 @@ class SsmSupportTest {
         private const val SENTINEL = "raw-secret-value"
     }
 
-    private val client = mockk<SsmClient>(relaxed = true)
+    private val syncClient = mockk<SsmClient>(relaxed = true)
     private val asyncClient = mockk<SsmAsyncClient>(relaxed = true)
 
     @BeforeEach
     fun beforeEach() {
-        clearMocks(client, asyncClient)
+        clearMocks(syncClient, asyncClient)
     }
 
     @Test
     fun `client factories use local endpoint static credentials and explicit region`() {
-        val credentialsProvider = StaticCredentialsProvider.create(awsBasicCredentialsOf("test", "test"))
+        val credentialsProvider = staticCredentialsProviderOf("test", "test")
 
         ssmClientOf(
             endpoint = URI("http://localhost:4566"),
@@ -109,6 +108,7 @@ class SsmSupportTest {
             withDecryption(true)
         }
 
+        log.debug { "request: $request" }
         request.name() shouldBeEqualTo "/app/secret"
         request.withDecryption().shouldBeTrue()
     }
@@ -121,6 +121,7 @@ class SsmSupportTest {
             type(ParameterType.SECURE_STRING)
         }
 
+        log.debug { "request: $request" }
         request.name() shouldBeEqualTo "/app/secret"
         request.value() shouldBeEqualTo SENTINEL
         request.type() shouldBeEqualTo ParameterType.SECURE_STRING
@@ -133,6 +134,7 @@ class SsmSupportTest {
             withDecryption(true)
         }
 
+        log.debug { "overridden: $overridden" }
         overridden.name() shouldBeEqualTo "/app/override"
         overridden.withDecryption().shouldBeTrue()
 
@@ -163,7 +165,7 @@ class SsmSupportTest {
         val requestSlot = slot<GetParameterRequest>()
 
         every {
-            client.getParameter(capture(requestSlot))
+            syncClient.getParameter(capture(requestSlot))
         } returns GetParameterResponse.builder()
             .parameter(
                 Parameter.builder()
@@ -174,13 +176,14 @@ class SsmSupportTest {
             )
             .build()
 
-        val secret = client.getSecureParameter("/app/secret")
+        val secret = syncClient.getSecureParameter("/app/secret")
 
+        log.debug { "secret: $secret" }
         secret.reveal() shouldBeEqualTo SENTINEL
         requestSlot.captured.withDecryption().shouldBeTrue()
 
         every {
-            client.getParameter(capture(requestSlot))
+            syncClient.getParameter(capture(requestSlot))
         } returns GetParameterResponse.builder()
             .parameter(
                 Parameter.builder()
@@ -191,7 +194,7 @@ class SsmSupportTest {
             )
             .build()
 
-        val response = client.getParameter("/app/plain")
+        val response = syncClient.getParameter("/app/plain")
 
         response.parameter().value() shouldBeEqualTo "plain"
         requestSlot.captured.withDecryption().shouldBeFalse()
@@ -200,10 +203,10 @@ class SsmSupportTest {
             .message("missing parameter")
             .build()
 
-        every { client.getParameter(any<GetParameterRequest>()) } throws missing
+        every { syncClient.getParameter(any<GetParameterRequest>()) } throws missing
 
         val error = assertFailsWith<ParameterNotFoundException> {
-            client.getSecureParameter("/app/missing")
+            syncClient.getSecureParameter("/app/missing")
         }
         error.message shouldContain "missing parameter"
     }
@@ -212,11 +215,15 @@ class SsmSupportTest {
     fun `put secure parameter accepts redacted value and prevents raw string secure overload`() {
         val client = mockk<SsmClient>()
         val putSlot = slot<PutParameterRequest>()
-        every { client.putParameter(capture(putSlot)) } returns PutParameterResponse.builder().version(1L).build()
+        every {
+            client.putParameter(capture(putSlot))
+        } returns PutParameterResponse.builder().version(1L).build()
+
         val secret = awsSecretValueOf(SENTINEL)
 
         client.putSecureParameter(name = "/app/secret", value = secret, overwrite = true)
 
+        log.debug { "captured: ${putSlot.captured}" }
         putSlot.captured.name() shouldBeEqualTo "/app/secret"
         putSlot.captured.value() shouldBeEqualTo SENTINEL
         putSlot.captured.type() shouldBeEqualTo ParameterType.SECURE_STRING
@@ -230,14 +237,14 @@ class SsmSupportTest {
         val parametersResponse = GetParametersResponse.builder().invalidParameters("/app/missing").build()
         val pathResponse = GetParametersByPathResponse.builder().nextToken("next").build()
 
-        every { client.getParameters(any<GetParametersRequest>()) } returns parametersResponse
-        every { client.getParametersByPath(any<GetParametersByPathRequest>()) } returns pathResponse
+        every { syncClient.getParameters(any<GetParametersRequest>()) } returns parametersResponse
+        every { syncClient.getParametersByPath(any<GetParametersByPathRequest>()) } returns pathResponse
 
-        client.getParameters(listOf("/app/a", "/app/b")) shouldBeEqualTo parametersResponse
-        client.getParametersByPath(path = "/app", maxResults = 5, nextToken = "token") shouldBeEqualTo pathResponse
+        syncClient.getParameters(listOf("/app/a", "/app/b")) shouldBeEqualTo parametersResponse
+        syncClient.getParametersByPath(path = "/app", maxResults = 5, nextToken = "token") shouldBeEqualTo pathResponse
 
-        verify(exactly = 1) { client.getParameters(any<GetParametersRequest>()) }
-        verify(exactly = 1) { client.getParametersByPath(any<GetParametersByPathRequest>()) }
+        verify(exactly = 1) { syncClient.getParameters(any<GetParametersRequest>()) }
+        verify(exactly = 1) { syncClient.getParametersByPath(any<GetParametersByPathRequest>()) }
     }
 
     @Test

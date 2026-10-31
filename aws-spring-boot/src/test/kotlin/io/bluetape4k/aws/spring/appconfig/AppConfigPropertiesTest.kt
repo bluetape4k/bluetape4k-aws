@@ -6,6 +6,7 @@ import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.javatimes.hours
+import io.bluetape4k.javatimes.minutes
 import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
@@ -33,8 +34,8 @@ class AppConfigPropertiesTest {
         AppConfigProperties(
             region = "ap-northeast-2",
             endpointOverride = URI("http://localhost:2772"),
-            refreshInterval = Duration.ofMinutes(1),
-            requiredMinimumPollInterval = Duration.ofSeconds(30),
+            refreshInterval = 1.minutes(),
+            requiredMinimumPollInterval = 30.seconds(),
         )
 
         listOf(

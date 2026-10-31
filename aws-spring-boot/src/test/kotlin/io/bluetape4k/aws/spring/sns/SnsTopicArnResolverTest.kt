@@ -11,6 +11,7 @@ import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.concurrent.completableFutureOf
+import io.bluetape4k.javatimes.hours
 import io.bluetape4k.javatimes.minutes
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
@@ -32,7 +33,6 @@ import software.amazon.awssdk.services.sns.model.ListTopicsResponse
 import software.amazon.awssdk.services.sns.model.Topic
 import java.net.URI
 import java.time.Clock
-import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import java.util.concurrent.CompletableFuture
@@ -260,10 +260,10 @@ class SnsTopicArnResolverTest: AbstractSnsTest() {
             InMemorySnsTopicArnCache(maxSize = 0)
         }
         assertFailsWith<IllegalArgumentException> {
-            InMemorySnsTopicArnCache(ttl = Duration.ofHours(25))
+            InMemorySnsTopicArnCache(ttl = 25.hours())
         }
         assertFailsWith<IllegalArgumentException> {
-            SnsProperties.TopicArnCache(ttl = Duration.ofHours(25))
+            SnsProperties.TopicArnCache(ttl = 25.hours())
         }
     }
 

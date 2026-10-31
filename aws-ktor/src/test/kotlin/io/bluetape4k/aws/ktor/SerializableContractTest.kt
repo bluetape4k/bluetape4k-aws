@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.ktor
 
+import aws.sdk.kotlin.services.sqs.model.MessageAttributeValue
+import aws.sdk.kotlin.services.sqs.model.MessageSystemAttributeName
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.aws.ktor.kinesis.KinesisKtorStream
@@ -15,10 +17,8 @@ import io.bluetape4k.aws.ktor.sqs.SqsConsumerRuntimeConfig
 import io.bluetape4k.aws.ktor.sqs.SqsFixedFailureVisibilityStrategy
 import io.bluetape4k.aws.ktor.sqs.SqsLinearFailureVisibilityStrategy
 import io.bluetape4k.aws.ktor.sqs.SqsPollBackoff
-import aws.sdk.kotlin.services.kinesis.model.ShardIteratorType as KotlinShardIteratorType
-import aws.sdk.kotlin.services.sqs.model.Message as KotlinSqsMessage
-import aws.sdk.kotlin.services.sqs.model.MessageAttributeValue
-import aws.sdk.kotlin.services.sqs.model.MessageSystemAttributeName
+import io.bluetape4k.javatimes.millis
+import io.bluetape4k.javatimes.seconds
 import org.junit.jupiter.api.Test
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -26,8 +26,9 @@ import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 import java.io.Serializable
 import java.lang.reflect.Modifier
-import java.time.Duration
 import java.time.Instant
+import aws.sdk.kotlin.services.kinesis.model.ShardIteratorType as KotlinShardIteratorType
+import aws.sdk.kotlin.services.sqs.model.Message as KotlinSqsMessage
 
 class SerializableContractTest {
 
@@ -51,24 +52,24 @@ class SerializableContractTest {
                 position = KinesisStartingPosition.AtTimestamp(Instant.parse("2026-01-02T03:04:05Z")),
                 options = KinesisRecordFlowOptions(
                     batchLimit = 25,
-                    pollInterval = Duration.ofMillis(150),
-                    emptyBackoff = Duration.ofMillis(350),
+                    pollInterval = 150.millis(),
+                    emptyBackoff = 350.millis(),
                     maxIteratorRetries = 2,
                     maxThrottleRetries = 4,
-                    initialThrottleBackoff = Duration.ofMillis(125),
-                    maxThrottleBackoff = Duration.ofSeconds(4),
+                    initialThrottleBackoff = 125.millis(),
+                    maxThrottleBackoff = 4.seconds(),
                     jitterRatio = 0.25,
                 ),
             ),
             KinesisKtorStream(shardCount = 2),
             KinesisRecordFlowOptions(
                 batchLimit = 10,
-                pollInterval = Duration.ofMillis(100),
-                emptyBackoff = Duration.ofMillis(250),
+                pollInterval = 100.millis(),
+                emptyBackoff = 250.millis(),
                 maxIteratorRetries = 1,
                 maxThrottleRetries = 2,
-                initialThrottleBackoff = Duration.ofMillis(200),
-                maxThrottleBackoff = Duration.ofSeconds(3),
+                initialThrottleBackoff = 200.millis(),
+                maxThrottleBackoff = 3.seconds(),
                 jitterRatio = 0.1,
             ),
             KinesisStartingPosition.TrimHorizon,
@@ -108,8 +109,8 @@ class SerializableContractTest {
     @Test
     fun `selected SQS value DTOs round trip through Java serialization`() {
         val pollBackoff = SqsPollBackoff(
-            initialDelay = Duration.ofMillis(125),
-            maxDelay = Duration.ofSeconds(3),
+            initialDelay = 125.millis(),
+            maxDelay = 3.seconds(),
             multiplier = 1.5,
         )
         val visibilityStrategy = SqsFixedFailureVisibilityStrategy(timeoutSeconds = 42)
@@ -118,7 +119,7 @@ class SerializableContractTest {
             outcome = "success",
             queueUrl = "https://sqs.local/orders",
             messageId = "message-1",
-            duration = Duration.ofMillis(17),
+            duration = 17.millis(),
             tags = mapOf("message_count" to "1"),
         )
 

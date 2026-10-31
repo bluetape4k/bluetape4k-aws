@@ -24,6 +24,7 @@ class CustomerRepository(
     companion object: KLoggingChannel()
 
     override val itemClass: Class<CustomerDocument> = CustomerDocument::class.java
+
     override val table: DynamoDbAsyncTable<CustomerDocument> by lazy {
         client.table("$tablePrefix${Schema.TABLE_NAME}")
     }
