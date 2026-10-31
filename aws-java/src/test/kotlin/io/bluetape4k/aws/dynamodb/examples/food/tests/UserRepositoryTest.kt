@@ -8,6 +8,7 @@ import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.dynamodb.examples.food.AbstractFoodApplicationTest
 import io.bluetape4k.aws.dynamodb.examples.food.model.UserDocument
 import io.bluetape4k.aws.dynamodb.examples.food.repository.UserRepository
+import io.bluetape4k.coroutines.flow.extensions.log
 import io.bluetape4k.idgenerators.uuid.Uuid
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
@@ -19,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import kotlin.random.Random
 
 class UserRepositoryTest: AbstractFoodApplicationTest() {
+
     companion object: KLoggingChannel() {
         private fun createUser(): UserDocument {
             return UserDocument(
@@ -71,13 +73,14 @@ class UserRepositoryTest: AbstractFoodApplicationTest() {
     fun `save many items`() = runSuspendIO {
         val users = List(100) { createUser() }
 
-        val saved = repository.saveAll(users).toList()
+        val saved = repository.saveAll(users).log("saveAll").toList()
         saved.all {
             it.unprocessedPutItemsForTable(repository.table).isEmpty()
         }.shouldBeTrue()
 
         val loaded = repository.findFirstByPartitionKey(users.random().partitionKey)
-        log.debug { "loaded size=${loaded.size}" }
+            .onEach { log.debug { "Loaded user: $it" } }
+
         loaded.shouldNotBeEmpty()
         loaded.size shouldBeLessThan users.size
     }

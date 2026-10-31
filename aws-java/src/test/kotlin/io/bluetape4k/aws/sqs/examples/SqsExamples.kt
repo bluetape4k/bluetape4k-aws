@@ -116,11 +116,11 @@ class SqsExamples: AbstractSqsTest() {
         val messages = client
             .receiveMessage { it.queueUrl(queueUrl).maxNumberOfMessages(3) }
             .messages()
+            .onEach { log.debug { "message=$it" } }
 
         val responses = messages.map { message ->
             client.deleteMessage {
-                it.queueUrl(queueUrl)
-                    .receiptHandle(message.receiptHandle())
+                it.queueUrl(queueUrl).receiptHandle(message.receiptHandle())
             }
         }
         responses.forEach { log.debug { "response=$it" } }
@@ -131,6 +131,7 @@ class SqsExamples: AbstractSqsTest() {
     @Order(8)
     fun `delete queue`() {
         val response: DeleteQueueResponse = client.deleteQueue { it.queueUrl(queueUrl) }
+        log.debug { "deleteQueue=$response" }
         response.responseMetadata().requestId().shouldNotBeEmpty()
     }
 }

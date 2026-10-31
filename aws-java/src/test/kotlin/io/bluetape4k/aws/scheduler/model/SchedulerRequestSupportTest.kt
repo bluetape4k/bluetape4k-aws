@@ -5,9 +5,9 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
-import java.time.Instant
 import software.amazon.awssdk.services.scheduler.model.FlexibleTimeWindowMode
 import software.amazon.awssdk.services.scheduler.model.ScheduleState
+import java.time.Instant
 
 class SchedulerRequestSupportTest {
 

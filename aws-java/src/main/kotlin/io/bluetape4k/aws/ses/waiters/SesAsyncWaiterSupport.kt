@@ -29,7 +29,7 @@ import java.util.concurrent.ScheduledExecutorService
  * @param builder [SesAsyncWaiter.Builder] 초기화 람다
  * @return [sesAsyncWaiter] 인스턴스
  */
-fun sesAsyncWaiter(
+inline fun sesAsyncWaiter(
     builder: SesAsyncWaiter.Builder.() -> Unit,
 ): SesAsyncWaiter {
     return SesAsyncWaiter.builder().apply(builder).build()
@@ -51,7 +51,7 @@ fun sesAsyncWaiter(
  * @param configuration [WaiterOverrideConfiguration] 인스턴스
  * @return [SesAsyncWaiter] 인스턴스
  */
-fun sesAsyncWaiterOf(
+inline fun sesAsyncWaiterOf(
     client: SesAsyncClient,
     scheduledExecutorService: ScheduledExecutorService,
     configuration: WaiterOverrideConfiguration = waiterOverrideConfigurationOf(),

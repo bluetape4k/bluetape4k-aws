@@ -13,7 +13,7 @@ abstract class AbstractFoodApplicationTest: AbstractDynamodbTest() {
     companion object: KLoggingChannel() {
 
         @JvmStatic
-        protected val dynamodb = localStackServer
+        protected val dynamodb by lazy { awsEmulator }
 
         @JvmStatic
         protected val snowflake = GlobalSnowflake()

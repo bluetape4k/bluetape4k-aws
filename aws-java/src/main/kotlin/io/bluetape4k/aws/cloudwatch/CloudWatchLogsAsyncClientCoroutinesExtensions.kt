@@ -20,7 +20,7 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.PutLogEventsResponse
  * val response = cloudWatchLogsAsyncClient.createLogGroup("/aws/lambda/my-function")
  * ```
  */
-suspend fun CloudWatchLogsAsyncClient.createLogGroup(
+suspend inline fun CloudWatchLogsAsyncClient.createLogGroup(
     logGroupName: String,
 ): CreateLogGroupResponse {
     logGroupName.requireNotBlank("logGroupName")
@@ -41,7 +41,7 @@ suspend fun CloudWatchLogsAsyncClient.createLogGroup(
  * )
  * ```
  */
-suspend fun CloudWatchLogsAsyncClient.createLogStream(
+suspend inline fun CloudWatchLogsAsyncClient.createLogStream(
     logGroupName: String,
     logStreamName: String,
 ): CreateLogStreamResponse {
@@ -68,7 +68,7 @@ suspend fun CloudWatchLogsAsyncClient.createLogStream(
  * )
  * ```
  */
-suspend fun CloudWatchLogsAsyncClient.putLogEvents(
+suspend inline fun CloudWatchLogsAsyncClient.putLogEvents(
     logGroupName: String,
     logStreamName: String,
     logEvents: List<InputLogEvent>,
@@ -90,7 +90,7 @@ suspend fun CloudWatchLogsAsyncClient.putLogEvents(
  * response.logGroups().forEach { group -> println(group.logGroupName()) }
  * ```
  */
-suspend fun CloudWatchLogsAsyncClient.describeLogGroups(
+suspend inline fun CloudWatchLogsAsyncClient.describeLogGroups(
     logGroupNamePrefix: String? = null,
 ): DescribeLogGroupsResponse =
     describeLogGroups {
@@ -108,7 +108,7 @@ suspend fun CloudWatchLogsAsyncClient.describeLogGroups(
  * response.logStreams().forEach { stream -> println(stream.logStreamName()) }
  * ```
  */
-suspend fun CloudWatchLogsAsyncClient.describeLogStreams(
+suspend inline fun CloudWatchLogsAsyncClient.describeLogStreams(
     logGroupName: String,
     logStreamNamePrefix: String? = null,
 ): DescribeLogStreamsResponse {

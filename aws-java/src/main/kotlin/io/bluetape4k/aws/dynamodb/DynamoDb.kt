@@ -1,6 +1,5 @@
 package io.bluetape4k.aws.dynamodb
 
-import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 
 /**

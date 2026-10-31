@@ -2,7 +2,6 @@ package io.bluetape4k.aws.cloudwatch
 
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotBeEmpty
-import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.cloudwatch.model.cloudwatchlogs.inputLogEventOf
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.logging.KLogging

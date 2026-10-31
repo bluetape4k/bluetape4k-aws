@@ -7,7 +7,6 @@ import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.io.deleteIfExists
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
-import io.bluetape4k.support.toUtf8String
 import io.bluetape4k.utils.Resourcex
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.io.TempDir

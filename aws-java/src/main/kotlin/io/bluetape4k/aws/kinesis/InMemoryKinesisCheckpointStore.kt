@@ -28,7 +28,7 @@ class InMemoryKinesisCheckpointStore: KinesisCheckpointStore {
     override suspend fun save(
         key: KinesisShardKey,
         checkpoint: KinesisCheckpoint,
-        lease: KinesisLease
+        lease: KinesisLease,
     ) {
         mutex.withLock {
             require(key == lease.key) { "lease key must match checkpoint key" }

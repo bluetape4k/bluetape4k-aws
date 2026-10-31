@@ -118,19 +118,19 @@ inline fun listExecutionsRequestOf(
     redriveFilter: ExecutionRedriveFilter? = null,
     maxResults: Int? = null,
     nextToken: String? = null,
-    noinline builder: ListExecutionsRequest.Builder.() -> Unit = {},
-): ListExecutionsRequest = buildListExecutionsRequest(
-    stateMachineArn,
-    mapRunArn,
-    statusFilter,
-    redriveFilter,
-    maxResults,
-    nextToken,
-    builder,
-).validate()
+    builder: ListExecutionsRequest.Builder.() -> Unit = {},
+): ListExecutionsRequest =
+    buildListExecutionsRequest(
+        stateMachineArn,
+        mapRunArn,
+        statusFilter,
+        redriveFilter,
+        maxResults,
+        nextToken,
+        builder,
+    ).validate()
 
-@PublishedApi
-internal fun buildListExecutionsRequest(
+inline fun buildListExecutionsRequest(
     stateMachineArn: String?,
     mapRunArn: String?,
     statusFilter: ExecutionStatus?,
@@ -148,8 +148,7 @@ internal fun buildListExecutionsRequest(
     .apply(builder)
     .build()
 
-@PublishedApi
-internal fun StartExecutionRequest.validateAndNormalize(): StartExecutionRequest {
+fun StartExecutionRequest.validateAndNormalize(): StartExecutionRequest {
     stateMachineArn().requireNotBlank("stateMachineArn")
     name()?.let {
         require(it.isNotBlank() && it.length <= MAX_EXECUTION_NAME_LENGTH) {
@@ -162,8 +161,8 @@ internal fun StartExecutionRequest.validateAndNormalize(): StartExecutionRequest
     return if (input() == null) toBuilder().input(normalizedInput).build() else this
 }
 
-@PublishedApi
-internal fun ListExecutionsRequest.validate(): ListExecutionsRequest {
+
+fun ListExecutionsRequest.validate(): ListExecutionsRequest {
     val hasStateMachineArn = stateMachineArn() != null
     val hasMapRunArn = mapRunArn() != null
     require(hasStateMachineArn xor hasMapRunArn) {
@@ -181,7 +180,7 @@ internal fun ListExecutionsRequest.validate(): ListExecutionsRequest {
     return this
 }
 
-internal fun ListExecutionsRequest.validateCommon() = apply {
+fun ListExecutionsRequest.validateCommon() = apply {
     stateMachineArn()?.requireNotBlank("stateMachineArn")
     mapRunArn()?.requireNotBlank("mapRunArn")
     nextToken()?.requireNotBlank("nextToken")

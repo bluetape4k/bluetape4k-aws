@@ -4,6 +4,7 @@ import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.aws.AbstractAwsTest
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -16,6 +17,7 @@ class DynamoDbStreamsRecordFlowOptionsTest: AbstractAwsTest() {
     fun `defaults respect service and polling limits`() {
         val options = DynamoDbStreamsRecordFlowOptions()
 
+        log.debug { "options=$options" }
         options.batchLimit shouldBeEqualTo 100
         options.pollInterval shouldBeEqualTo 200.milliseconds
         options.emptyBackoff shouldBeEqualTo 1.seconds

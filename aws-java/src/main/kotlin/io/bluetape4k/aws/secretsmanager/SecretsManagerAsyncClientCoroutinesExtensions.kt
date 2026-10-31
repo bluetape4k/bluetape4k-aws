@@ -13,7 +13,7 @@ import software.amazon.awssdk.services.secretsmanager.model.PutSecretValueRespon
 /**
  * 비동기 클라이언트에서 원본 보안 값 응답을 가져와 완료를 기다립니다.
  */
-suspend fun SecretsManagerAsyncClient.getSecretValueResponse(
+suspend inline fun SecretsManagerAsyncClient.getSecretValueResponse(
     secretId: String,
     versionId: String? = null,
     versionStage: String? = null,
@@ -24,7 +24,7 @@ suspend fun SecretsManagerAsyncClient.getSecretValueResponse(
 /**
  * 보안 문자열을 값이 가려진 [AwsSecretValue]로 가져와 완료를 기다립니다.
  */
-suspend fun SecretsManagerAsyncClient.getSecretString(
+suspend inline fun SecretsManagerAsyncClient.getSecretString(
     secretId: String,
     versionId: String? = null,
     versionStage: String? = null,
@@ -35,7 +35,7 @@ suspend fun SecretsManagerAsyncClient.getSecretString(
 /**
  * 배치 페이지 하나를 가져와 완료를 기다립니다.
  */
-suspend fun SecretsManagerAsyncClient.batchGetSecretValues(
+suspend inline fun SecretsManagerAsyncClient.batchGetSecretValues(
     secretIds: Collection<String>,
     maxResults: Int? = null,
     nextToken: String? = null,
@@ -46,7 +46,7 @@ suspend fun SecretsManagerAsyncClient.batchGetSecretValues(
 /**
  * 메타데이터 페이지 하나를 조회하고 완료를 기다립니다.
  */
-suspend fun SecretsManagerAsyncClient.listSecrets(
+suspend inline fun SecretsManagerAsyncClient.listSecrets(
     maxResults: Int? = null,
     nextToken: String? = null,
     overrideConfiguration: AwsRequestOverrideConfiguration? = null,
@@ -56,7 +56,7 @@ suspend fun SecretsManagerAsyncClient.listSecrets(
 /**
  * 보안 값을 설명하고 완료를 기다립니다.
  */
-suspend fun SecretsManagerAsyncClient.describeSecret(
+suspend inline fun SecretsManagerAsyncClient.describeSecret(
     secretId: String,
     overrideConfiguration: AwsRequestOverrideConfiguration? = null,
 ): DescribeSecretResponse =
@@ -67,7 +67,7 @@ suspend fun SecretsManagerAsyncClient.describeSecret(
  *
  * 이 작업은 AWS 측 상태를 변경하며 새 보안 값을 만들 수 있습니다. 드러낸 값을 로그에 남기거나 출력하지 마세요.
  */
-suspend fun SecretsManagerAsyncClient.createSecret(
+suspend inline fun SecretsManagerAsyncClient.createSecret(
     name: String,
     secretValue: AwsSecretValue,
     description: String? = null,
@@ -81,7 +81,7 @@ suspend fun SecretsManagerAsyncClient.createSecret(
  *
  * 이 작업은 AWS 측 상태를 변경하며 스테이징 레이블을 바꿀 수 있습니다. 드러낸 값을 로그에 남기거나 출력하지 마세요.
  */
-suspend fun SecretsManagerAsyncClient.putSecretValue(
+suspend inline fun SecretsManagerAsyncClient.putSecretValue(
     secretId: String,
     secretValue: AwsSecretValue,
     clientRequestToken: String? = null,

@@ -32,7 +32,7 @@ import kotlin.time.Duration.Companion.seconds
 class KinesisClientTest: AbstractKinesisTest() {
 
     companion object: KLogging() {
-        private val STREAM_NAME = "test-stream-" + Base58.randomString(6).lowercase()
+        private val STREAM_NAME = "test-stream-" + Base58.randomString(8).lowercase()
     }
 
     private lateinit var shardId: String

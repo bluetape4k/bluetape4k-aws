@@ -5,7 +5,10 @@ import io.bluetape4k.assertions.shouldBeLessOrEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.concurrent.completableFutureOf
+import io.bluetape4k.coroutines.flow.extensions.log
+import io.bluetape4k.coroutines.support.awaitUntil
 import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
@@ -91,22 +94,25 @@ class KinesisConsumerFlowUnitTest: AbstractKinesisTest() {
 
         val records = mutableListOf<KinesisShardRecord>()
         val job = launch {
-            mockClient.consumerFlow(
-                streamName = "orders",
-                consumerGroup = "consumer",
-                streamIdentity = "orders-v1",
-                position = KinesisStartingPosition.TrimHorizon,
-                options = options,
-                checkpointStore = checkpointStore,
-                leaseStore = leaseStore,
-                metrics = canonicalRecorder.metrics,
-            ).collect {
-                records += it
-                events += "emit"
-            }
+            mockClient
+                .consumerFlow(
+                    streamName = "orders",
+                    consumerGroup = "consumer",
+                    streamIdentity = "orders-v1",
+                    position = KinesisStartingPosition.TrimHorizon,
+                    options = options,
+                    checkpointStore = checkpointStore,
+                    leaseStore = leaseStore,
+                    metrics = canonicalRecorder.metrics,
+                )
+                .log("Records")
+                .collect {
+                    records += it
+                    events += "emit"
+                }
         }
-        withTimeout(5.seconds) { terminalSave.await() }
-        withTimeout(5.seconds) { canonicalRecorder.completed.await() }
+        terminalSave.awaitUntil(5.seconds)
+        canonicalRecorder.completed.awaitUntil(5.seconds)
         job.cancel()
         job.join()
 
@@ -156,17 +162,20 @@ class KinesisConsumerFlowUnitTest: AbstractKinesisTest() {
         }
 
         val job = launch {
-            mockClient.consumerFlow(
-                streamName = "orders",
-                consumerGroup = "consumer",
-                streamIdentity = "orders-v1",
-                position = KinesisStartingPosition.Latest,
-                options = KinesisConsumerOptions(ownerId = "worker-1"),
-                checkpointStore = NoopKinesisCheckpointStore,
-                leaseStore = NoopKinesisLeaseStore,
-            ).collect()
+            mockClient
+                .consumerFlow(
+                    streamName = "orders",
+                    consumerGroup = "consumer",
+                    streamIdentity = "orders-v1",
+                    position = KinesisStartingPosition.Latest,
+                    options = KinesisConsumerOptions(ownerId = "worker-1"),
+                    checkpointStore = NoopKinesisCheckpointStore,
+                    leaseStore = NoopKinesisLeaseStore,
+                )
+                .log("Records")
+                .collect()
         }
-        withTimeout(5.seconds) { firstRequest.await() }
+        firstRequest.awaitUntil(5.seconds)
         job.cancel()
         job.join()
 
@@ -180,6 +189,7 @@ class KinesisConsumerFlowUnitTest: AbstractKinesisTest() {
 
         val result = terminateConsumer(cancellation)
 
+        log.debug { "result=$result" }
         result.leaseStore.releaseCount.get() shouldBeEqualTo 1
         result.leaseStore.releaseCompleted.isCompleted.shouldBeTrue()
         result.completion::class shouldBeEqualTo cancellation::class
@@ -194,6 +204,7 @@ class KinesisConsumerFlowUnitTest: AbstractKinesisTest() {
 
         val result = terminateConsumer(cancellation, leaseStore)
 
+        log.debug { "result=$result" }
         result.leaseStore.releaseCount.get() shouldBeEqualTo 1
         result.leaseStore.releaseCompleted.isCompleted shouldBeEqualTo false
         result.completion::class shouldBeEqualTo cancellation::class
@@ -208,6 +219,7 @@ class KinesisConsumerFlowUnitTest: AbstractKinesisTest() {
 
         val result = failShardStart(primaryFailure, releaseFailure)
 
+        log.debug { "result=$result" }
         result.leaseStore.releaseCount.get() shouldBeEqualTo 1
         val failureChain = result.completion.failureChain()
         result.completion::class shouldBeEqualTo primaryFailure::class
@@ -223,6 +235,7 @@ class KinesisConsumerFlowUnitTest: AbstractKinesisTest() {
 
         val result = finishShard(releaseFailure)
 
+        log.debug { "result=$result" }
         result.leaseStore.releaseCount.get() shouldBeEqualTo 1
         result.completion::class shouldBeEqualTo releaseFailure::class
         result.completion.message shouldBeEqualTo releaseFailure.message
@@ -261,23 +274,26 @@ class KinesisConsumerFlowUnitTest: AbstractKinesisTest() {
 
         val completion = CompletableDeferred<Throwable?>()
         val job = async {
-            mockClient.consumerFlow(
-                streamName = "stream",
-                consumerGroup = "group",
-                streamIdentity = "stream-v1",
-                position = KinesisStartingPosition.TrimHorizon,
-                options = KinesisConsumerOptions(
-                    ownerId = "owner",
-                    leaseDuration = 10.seconds,
-                    leaseRenewInterval = 5.seconds,
-                    leaseReleaseTimeout = 1.seconds,
-                ),
-                checkpointStore = InMemoryKinesisCheckpointStore(),
-                leaseStore = leaseStore,
-            ).collect {
-                collecting.complete(Unit)
-                throw cancellation
-            }
+            mockClient
+                .consumerFlow(
+                    streamName = "stream",
+                    consumerGroup = "group",
+                    streamIdentity = "stream-v1",
+                    position = KinesisStartingPosition.TrimHorizon,
+                    options = KinesisConsumerOptions(
+                        ownerId = "owner",
+                        leaseDuration = 10.seconds,
+                        leaseRenewInterval = 5.seconds,
+                        leaseReleaseTimeout = 1.seconds,
+                    ),
+                    checkpointStore = InMemoryKinesisCheckpointStore(),
+                    leaseStore = leaseStore,
+                )
+                .log("Records")
+                .collect {
+                    collecting.complete(Unit)
+                    throw cancellation
+                }
         }
         job.invokeOnCompletion { completion.complete(it) }
 
@@ -308,21 +324,24 @@ class KinesisConsumerFlowUnitTest: AbstractKinesisTest() {
 
         val completion = CompletableDeferred<Throwable?>()
         val job = async {
-            mockClient.consumerFlow(
-                streamName = "stream",
-                consumerGroup = "group",
-                streamIdentity = "stream-v1",
-                position = KinesisStartingPosition.TrimHorizon,
-                options = KinesisConsumerOptions(ownerId = "owner", leaseReleaseTimeout = 1.seconds),
-                checkpointStore = InMemoryKinesisCheckpointStore(),
-                leaseStore = leaseStore,
-                metrics = { event: KinesisFlowEvent ->
-                    if (event is KinesisFlowEvent.Shard && event.outcome == "started") {
-                        shardStarted.complete(Unit)
-                        throw primaryFailure
-                    }
-                },
-            ).collect()
+            mockClient
+                .consumerFlow(
+                    streamName = "stream",
+                    consumerGroup = "group",
+                    streamIdentity = "stream-v1",
+                    position = KinesisStartingPosition.TrimHorizon,
+                    options = KinesisConsumerOptions(ownerId = "owner", leaseReleaseTimeout = 1.seconds),
+                    checkpointStore = InMemoryKinesisCheckpointStore(),
+                    leaseStore = leaseStore,
+                    metrics = { event: KinesisFlowEvent ->
+                        if (event is KinesisFlowEvent.Shard && event.outcome == "started") {
+                            shardStarted.complete(Unit)
+                            throw primaryFailure
+                        }
+                    },
+                )
+                .log("Records")
+                .collect()
         }
         job.invokeOnCompletion { completion.complete(it) }
 
@@ -362,15 +381,18 @@ class KinesisConsumerFlowUnitTest: AbstractKinesisTest() {
 
         val completion = CompletableDeferred<Throwable?>()
         val job = async {
-            mockClient.consumerFlow(
-                streamName = "stream",
-                consumerGroup = "group",
-                streamIdentity = "stream-v1",
-                position = KinesisStartingPosition.TrimHorizon,
-                options = KinesisConsumerOptions(ownerId = "owner", leaseReleaseTimeout = 1.seconds),
-                checkpointStore = InMemoryKinesisCheckpointStore(),
-                leaseStore = leaseStore,
-            ).collect()
+            mockClient
+                .consumerFlow(
+                    streamName = "stream",
+                    consumerGroup = "group",
+                    streamIdentity = "stream-v1",
+                    position = KinesisStartingPosition.TrimHorizon,
+                    options = KinesisConsumerOptions(ownerId = "owner", leaseReleaseTimeout = 1.seconds),
+                    checkpointStore = InMemoryKinesisCheckpointStore(),
+                    leaseStore = leaseStore,
+                )
+                .log("Records")
+                .collect()
         }
         job.invokeOnCompletion { completion.complete(it) }
 
@@ -410,5 +432,6 @@ class KinesisConsumerFlowUnitTest: AbstractKinesisTest() {
         val leaseStore: RecordingLeaseStore,
     )
 
-    private fun Throwable.failureChain(): List<Throwable> = generateSequence(this) { it.cause }.toList()
+    private fun Throwable.failureChain(): List<Throwable> =
+        generateSequence(this) { it.cause }.toList()
 }

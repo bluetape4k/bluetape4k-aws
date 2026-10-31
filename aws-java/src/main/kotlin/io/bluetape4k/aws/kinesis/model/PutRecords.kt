@@ -65,7 +65,7 @@ inline fun putRecordsRequestOf(
  * ```
  */
 inline fun putRecordsRequestEntry(
-    builder: PutRecordsRequestEntry.Builder.() -> Unit
+    builder: PutRecordsRequestEntry.Builder.() -> Unit,
 ): PutRecordsRequestEntry =
     PutRecordsRequestEntry.builder().apply(builder).build()
 
@@ -82,10 +82,10 @@ inline fun putRecordsRequestEntry(
  * )
  * ```
  */
-fun putRecordsRequestEntryOf(
+inline fun putRecordsRequestEntryOf(
     partitionKey: String,
     data: SdkBytes,
-    builder: PutRecordsRequestEntry.Builder.() -> Unit = {}
+    builder: PutRecordsRequestEntry.Builder.() -> Unit = {},
 ): PutRecordsRequestEntry {
     partitionKey.requireNotBlank("partitionKey")
 

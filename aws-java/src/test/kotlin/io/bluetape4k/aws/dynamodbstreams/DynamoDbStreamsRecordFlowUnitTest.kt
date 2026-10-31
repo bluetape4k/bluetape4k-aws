@@ -3,11 +3,16 @@ package io.bluetape4k.aws.dynamodbstreams
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldHaveSize
+import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.AbstractAwsTest
+import io.bluetape4k.aws.dynamodb.model.Record
+import io.bluetape4k.aws.dynamodb.model.StreamRecord
 import io.bluetape4k.concurrent.completableFutureOf
+import io.bluetape4k.coroutines.flow.extensions.log
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
 import io.mockk.clearMocks
@@ -33,7 +38,7 @@ import software.amazon.awssdk.services.dynamodb.model.Record
 import software.amazon.awssdk.services.dynamodb.model.Shard
 import software.amazon.awssdk.services.dynamodb.model.ShardIteratorType
 import software.amazon.awssdk.services.dynamodb.model.StreamDescription
-import software.amazon.awssdk.services.dynamodb.model.StreamRecord
+import software.amazon.awssdk.services.dynamodb.model.TrimmedDataAccessException
 import software.amazon.awssdk.services.dynamodb.streams.DynamoDbStreamsAsyncClient
 import java.util.concurrent.CompletableFuture
 
@@ -49,9 +54,9 @@ class DynamoDbStreamsRecordFlowUnitTest: AbstractAwsTest() {
     }
 
     private fun record(sequenceNumber: String): Record =
-        Record.builder()
-            .dynamodb(StreamRecord.builder().sequenceNumber(sequenceNumber).build())
-            .build()
+        Record {
+            dynamodb(StreamRecord { sequenceNumber(sequenceNumber) })
+        }
 
     private fun iteratorResponse(iterator: String) =
         GetShardIteratorResponse.builder()
@@ -73,10 +78,12 @@ class DynamoDbStreamsRecordFlowUnitTest: AbstractAwsTest() {
                 eventLog += "save:$sequenceNumber"
             }
         }
-        every { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-                completableFutureOf(iteratorResponse("iter-1"))
-        every { client.getRecords(any<GetRecordsRequest>()) } returns
-                completableFutureOf(recordsResponse(listOf(record("seq-1"))))
+        every {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } returns completableFutureOf(iteratorResponse("iter-1"))
+        every {
+            client.getRecords(any<GetRecordsRequest>())
+        } returns completableFutureOf(recordsResponse(listOf(record("seq-1"))))
 
         client.recordFlow("stream", "shard", checkpointStore = store)
             .collect {
@@ -93,16 +100,19 @@ class DynamoDbStreamsRecordFlowUnitTest: AbstractAwsTest() {
         store.save("stream", "shard", "seq-7")
 
         val request = slot<GetShardIteratorRequest>()
-        every { client.getShardIterator(capture(request)) } returns
-                CompletableFuture.completedFuture(iteratorResponse("iter-1"))
-        every { client.getRecords(any<GetRecordsRequest>()) } returns
-                CompletableFuture.completedFuture(recordsResponse(listOf(record("seq-7"))))
+        every {
+            client.getShardIterator(capture(request))
+        } returns completableFutureOf(iteratorResponse("iter-1"))
+        every {
+            client.getRecords(any<GetRecordsRequest>())
+        } returns completableFutureOf(recordsResponse(listOf(record("seq-7"))))
 
         val records = client
             .recordFlow("stream", "shard", checkpointStore = store)
+            .log("Records")
             .toList()
 
-        log.debug { "records=${records.joinToString()}" }
+        records.shouldNotBeEmpty()
         request.captured.shardIteratorType() shouldBeEqualTo ShardIteratorType.AT_SEQUENCE_NUMBER
         request.captured.sequenceNumber() shouldBeEqualTo "seq-7"
     }
@@ -121,16 +131,19 @@ class DynamoDbStreamsRecordFlowUnitTest: AbstractAwsTest() {
         for ((position, expected) in cases) {
             clearMocks(client)
             val request = slot<GetShardIteratorRequest>()
-            every { client.getShardIterator(capture(request)) } returns
-                    CompletableFuture.completedFuture(iteratorResponse("iter-position"))
-            every { client.getRecords(any<GetRecordsRequest>()) } returns
-                    CompletableFuture.completedFuture(recordsResponse(emptyList()))
+
+            every {
+                client.getShardIterator(capture(request))
+            } returns completableFutureOf(iteratorResponse("iter-position"))
+            every {
+                client.getRecords(any<GetRecordsRequest>())
+            } returns completableFutureOf(recordsResponse(emptyList()))
 
             val records = client
                 .recordFlow("stream", "shard", position = position)
+                .log("Records")
                 .toList()
 
-            records.forEach { record -> log.debug { "record=$record" } }
             records.shouldBeEmpty()
 
             request.captured.shardIteratorType() shouldBeEqualTo expected.first
@@ -141,13 +154,15 @@ class DynamoDbStreamsRecordFlowUnitTest: AbstractAwsTest() {
     @Test
     fun `latest fails fast when iterator expires before first checkpoint`() = runTest {
         every { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-                CompletableFuture.completedFuture(iteratorResponse("iter-latest"))
+                completableFutureOf(iteratorResponse("iter-latest"))
         every { client.getRecords(any<GetRecordsRequest>()) } returns failedFuture(
             ExpiredIteratorException.builder().message("expired").build(),
         )
 
         assertFailsWith<ExpiredIteratorException> {
-            client.recordFlow("stream", "shard", position = DynamoDbStreamsStartingPosition.Latest).toList()
+            client.recordFlow("stream", "shard", position = DynamoDbStreamsStartingPosition.Latest)
+                .log("Records")
+                .toList()
         }
         verify(exactly = 1) { client.getShardIterator(any<GetShardIteratorRequest>()) }
     }
@@ -158,54 +173,61 @@ class DynamoDbStreamsRecordFlowUnitTest: AbstractAwsTest() {
             every { retryable() } returns true
         }
         var calls = 0
-        every { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-                CompletableFuture.completedFuture(iteratorResponse("iter-1"))
-        every { client.getRecords(any<GetRecordsRequest>()) } answers {
+        every {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } returns completableFutureOf(iteratorResponse("iter-1"))
+        every {
+            client.getRecords(any<GetRecordsRequest>())
+        } answers {
             if (calls++ == 0) failedFuture(retryable)
-            else CompletableFuture.completedFuture(recordsResponse(listOf(record("seq-2"))))
+            else completableFutureOf(recordsResponse(listOf(record("seq-2"))))
         }
 
         val records = client
             .recordFlow("stream", "shard")
+            .log("Records")
             .toList()
 
-        records.forEach { log.debug { "record=$it" } }
         records shouldHaveSize 1
         verify(exactly = 2) { client.getRecords(any<GetRecordsRequest>()) }
     }
 
     @Test
     fun `recovers from expired iterator using the last emitted sequence`() = runTest {
-        every { client.getShardIterator(any<GetShardIteratorRequest>()) } returnsMany listOf(
-            CompletableFuture.completedFuture(iteratorResponse("iter-1")),
-            CompletableFuture.completedFuture(iteratorResponse("iter-recovered")),
+        every {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } returnsMany listOf(
+            completableFutureOf(iteratorResponse("iter-1")),
+            completableFutureOf(iteratorResponse("iter-recovered")),
         )
         var calls = 0
-        every { client.getRecords(any<GetRecordsRequest>()) } answers {
+        every {
+            client.getRecords(any<GetRecordsRequest>())
+        } answers {
             when (calls++) {
-                0 -> CompletableFuture.completedFuture(recordsResponse(listOf(record("seq-1")), "iter-expired"))
-                1 -> failedFuture(ExpiredIteratorException.builder().message("expired").build())
-                else -> CompletableFuture.completedFuture(recordsResponse(listOf(record("seq-2"))))
+                0    -> completableFutureOf(recordsResponse(listOf(record("seq-1")), "iter-expired"))
+                1    -> failedFuture(ExpiredIteratorException.builder().message("expired").build())
+                else -> completableFutureOf(recordsResponse(listOf(record("seq-2"))))
             }
         }
 
-        val records = client.recordFlow("stream", "shard").toList()
-        records.forEach { log.debug { "record=$it" } }
+        val records = client.recordFlow("stream", "shard")
+            .log("Records")
+            .toList()
         records shouldHaveSize 2
         verify(exactly = 2) { client.getShardIterator(any<GetShardIteratorRequest>()) }
     }
 
     @Test
     fun `propagates trimmed data without fallback`() = runTest {
-        every { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-                CompletableFuture.completedFuture(iteratorResponse("iter-1"))
-        every { client.getRecords(any<GetRecordsRequest>()) } returns failedFuture(
-            software.amazon.awssdk.services.dynamodb.model.TrimmedDataAccessException.builder()
-                .message("trimmed")
-                .build(),
-        )
+        every {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } returns completableFutureOf(iteratorResponse("iter-1"))
+        every {
+            client.getRecords(any<GetRecordsRequest>())
+        } returns failedFuture(TrimmedDataAccessException.builder().message("trimmed").build())
 
-        assertFailsWith<software.amazon.awssdk.services.dynamodb.model.TrimmedDataAccessException> {
+        assertFailsWith<TrimmedDataAccessException> {
             client.recordFlow("stream", "shard").toList()
         }
         verify(exactly = 1) { client.getRecords(any<GetRecordsRequest>()) }
@@ -216,9 +238,12 @@ class DynamoDbStreamsRecordFlowUnitTest: AbstractAwsTest() {
         val nonRetryable = mockk<SdkException>(relaxed = true) {
             every { retryable() } returns false
         }
-        every { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-                CompletableFuture.completedFuture(iteratorResponse("iter-1"))
-        every { client.getRecords(any<GetRecordsRequest>()) } returns failedFuture(nonRetryable)
+        every {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } returns completableFutureOf(iteratorResponse("iter-1"))
+        every {
+            client.getRecords(any<GetRecordsRequest>())
+        } returns failedFuture(nonRetryable)
 
         assertFailsWith<SdkException> {
             client.recordFlow("stream", "shard").toList()
@@ -232,9 +257,12 @@ class DynamoDbStreamsRecordFlowUnitTest: AbstractAwsTest() {
         val retryable = mockk<SdkException>(relaxed = true) {
             every { retryable() } returns true
         }
-        every { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-                CompletableFuture.completedFuture(iteratorResponse("iter-1"))
-        every { client.getRecords(any<GetRecordsRequest>()) } returns failedFuture(retryable)
+        every {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } returns completableFutureOf(iteratorResponse("iter-1"))
+        every {
+            client.getRecords(any<GetRecordsRequest>())
+        } returns failedFuture(retryable)
 
         assertFailsWith<SdkException> {
             client.recordFlow("stream", "shard", options = options).toList()
@@ -253,10 +281,12 @@ class DynamoDbStreamsRecordFlowUnitTest: AbstractAwsTest() {
                 throw expected
             }
         }
-        every { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-                CompletableFuture.completedFuture(iteratorResponse("iter-1"))
-        every { client.getRecords(any<GetRecordsRequest>()) } returns
-                CompletableFuture.completedFuture(recordsResponse(listOf(record("seq-save"))))
+        every {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } returns completableFutureOf(iteratorResponse("iter-1"))
+        every {
+            client.getRecords(any<GetRecordsRequest>())
+        } returns completableFutureOf(recordsResponse(listOf(record("seq-save"))))
 
         assertFailsWith<IllegalStateException> {
             client.recordFlow("stream", "shard", checkpointStore = failingStore).toList()
@@ -267,21 +297,25 @@ class DynamoDbStreamsRecordFlowUnitTest: AbstractAwsTest() {
     @Test
     fun `cancellation during downstream collection prevents checkpoint save`() = runTest {
         val store = InMemoryDynamoDbStreamsCheckpointStore()
-        every { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-                CompletableFuture.completedFuture(iteratorResponse("iter-1"))
-        every { client.getRecords(any<GetRecordsRequest>()) } returns
-                CompletableFuture.completedFuture(
-                    recordsResponse(listOf(record("seq-cancel-1"), record("seq-cancel-2")), "iter-2"),
-                )
+        every {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } returns completableFutureOf(iteratorResponse("iter-1"))
+        every {
+            client.getRecords(any<GetRecordsRequest>())
+        } returns completableFutureOf(
+            recordsResponse(listOf(record("seq-cancel-1"), record("seq-cancel-2")), "iter-2"),
+        )
 
         val record = client
             .recordFlow("stream", "shard", checkpointStore = store)
+            .log("Records")
             .take(1)
             .firstOrNull()
+
         record.shouldNotBeNull()
         log.debug { "record=$record" }
 
-        store.load("stream", "shard") shouldBeEqualTo null
+        store.load("stream", "shard").shouldBeNull()
         verify(exactly = 1) { client.getRecords(any<GetRecordsRequest>()) }
     }
 
@@ -299,17 +333,20 @@ class DynamoDbStreamsRecordFlowUnitTest: AbstractAwsTest() {
             every { retryable() } returns true
         }
         var calls = 0
-        every { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-                CompletableFuture.completedFuture(iteratorResponse("iter-1"))
-        every { client.getRecords(any<GetRecordsRequest>()) } answers {
+        every {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } returns completableFutureOf(iteratorResponse("iter-1"))
+        every {
+            client.getRecords(any<GetRecordsRequest>())
+        } answers {
             if (calls++ == 0) failedFuture(retryable)
-            else CompletableFuture.completedFuture(recordsResponse(listOf(record("seq-metrics"))))
+            else completableFutureOf(recordsResponse(listOf(record("seq-metrics"))))
         }
 
         val records = client
             .recordFlow("stream", "shard", metrics = metrics)
+            .log("Records")
             .toList()
-        records.forEach { log.debug { "record=$it" } }
         records shouldHaveSize 1
 
         events shouldBeEqualTo listOf(
@@ -327,25 +364,30 @@ class DynamoDbStreamsRecordFlowUnitTest: AbstractAwsTest() {
         val child = Shard.builder().shardId("child").parentShardId("parent").build()
         val description = StreamDescription.builder().shards(parent, child).build()
 
-        every { client.describeStream(any<DescribeStreamRequest>()) } returns CompletableFuture.completedFuture(
+        every {
+            client.describeStream(any<DescribeStreamRequest>())
+        } returns completableFutureOf(
             DescribeStreamResponse.builder().streamDescription(description).build(),
         )
-        every { client.getShardIterator(any<GetShardIteratorRequest>()) } answers {
+        every {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } answers {
             val shardId = firstArg<GetShardIteratorRequest>().shardId()
-            CompletableFuture.completedFuture(iteratorResponse("iter-$shardId"))
+            completableFutureOf(iteratorResponse("iter-$shardId"))
         }
-        every { client.getRecords(any<GetRecordsRequest>()) } answers {
+        every {
+            client.getRecords(any<GetRecordsRequest>())
+        } answers {
             val iterator = firstArg<GetRecordsRequest>().shardIterator()
-            CompletableFuture.completedFuture(recordsResponse(listOf(record(iterator))))
+            completableFutureOf(recordsResponse(listOf(record(iterator))))
         }
 
-        val result = client.shardRecordFlow("stream").toList()
+        val result = client.shardRecordFlow("stream").log("Records").toList()
         result.size shouldBeEqualTo 2
         result.map { it.shardId } shouldBeEqualTo listOf("parent", "child")
         result.all { it.streamArn == "stream" }.shouldBeTrue()
     }
 
-    private fun <T> failedFuture(cause: Throwable): CompletableFuture<T> = CompletableFuture<T>().apply {
-        completeExceptionally(cause)
-    }
+    private fun <T> failedFuture(cause: Throwable): CompletableFuture<T> =
+        CompletableFuture.failedFuture(cause)
 }

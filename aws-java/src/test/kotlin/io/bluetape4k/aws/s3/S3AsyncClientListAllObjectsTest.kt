@@ -4,7 +4,8 @@ import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldHaveSize
-import io.bluetape4k.logging.KLogging
+import io.bluetape4k.coroutines.flow.extensions.log
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
@@ -24,7 +25,7 @@ import java.util.function.Consumer
 
 class S3AsyncClientListAllObjectsTest {
 
-    companion object: KLogging()
+    companion object: KLoggingChannel()
 
     private val client = mockk<S3AsyncClient>(relaxed = true)
 
@@ -61,21 +62,23 @@ class S3AsyncClientListAllObjectsTest {
             )
         }
 
-        val objects = client.listAllObjects("demo-bucket", prefix = "logs/").toList()
+        val objects = client.listAllObjects("demo-bucket", prefix = "logs/")
+            .log("Objects")
+            .toList()
 
         objects shouldHaveSize 1_001
         objects.first().key() shouldBeEqualTo "logs/0000.txt"
         objects.last().key() shouldBeEqualTo "logs/1001.txt"
 
         requests shouldHaveSize 2
-        val reqs = requests.toList()
-        reqs[0].bucket() shouldBeEqualTo "demo-bucket"
-        reqs[0].prefix() shouldBeEqualTo "logs/"
-        reqs[0].continuationToken().shouldBeNull()
-        reqs[1].bucket() shouldBeEqualTo "demo-bucket"
-        reqs[1].prefix() shouldBeEqualTo "logs/"
-        reqs[1].continuationToken() shouldBeEqualTo "page-2"
-
+        requests.toList().also { reqs ->
+            reqs[0].bucket() shouldBeEqualTo "demo-bucket"
+            reqs[0].prefix() shouldBeEqualTo "logs/"
+            reqs[0].continuationToken().shouldBeNull()
+            reqs[1].bucket() shouldBeEqualTo "demo-bucket"
+            reqs[1].prefix() shouldBeEqualTo "logs/"
+            reqs[1].continuationToken() shouldBeEqualTo "page-2"
+        }
         verify(exactly = 2) {
             client.listObjectsV2(any<Consumer<ListObjectsV2Request.Builder>>())
         }

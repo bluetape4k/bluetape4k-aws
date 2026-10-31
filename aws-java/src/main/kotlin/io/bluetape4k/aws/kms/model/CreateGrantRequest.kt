@@ -40,7 +40,7 @@ inline fun createGrantRequest(
  * // request.operations().size == 1
  * ```
  */
-fun createGrantRequestOf(
+inline fun createGrantRequestOf(
     keyId: String,
     granteePrincipal: String,
     vararg operations: GrantOperation,

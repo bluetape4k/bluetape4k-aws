@@ -18,12 +18,17 @@ inline fun headObjectRequest(
         .build()
 }
 
-fun headObjectRequestOf(bucket: String, key: String): HeadObjectRequest {
+inline fun headObjectRequestOf(
+    bucket: String,
+    key: String,
+    builder: HeadObjectRequest.Builder.() -> Unit = {},
+): HeadObjectRequest {
     bucket.requireNotBlank("bucket")
     key.requireNotBlank("key")
 
     return HeadObjectRequest.builder()
         .bucket(bucket)
         .key(key)
+        .apply(builder)
         .build()
 }

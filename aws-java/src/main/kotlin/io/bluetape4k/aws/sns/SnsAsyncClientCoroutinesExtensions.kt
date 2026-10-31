@@ -21,7 +21,7 @@ import software.amazon.awssdk.services.sns.model.PublishBatchResponse
  * // response.endpointArn().isNotBlank() == true
  * ```
  */
-suspend fun SnsAsyncClient.createPlatformEndpoint(
+suspend inline fun SnsAsyncClient.createPlatformEndpoint(
     token: String,
     platformApplicationArn: String,
 ): CreatePlatformEndpointResponse =
@@ -38,7 +38,7 @@ suspend fun SnsAsyncClient.createPlatformEndpoint(
  * // response.topicArn().isNotBlank() == true
  * ```
  */
-suspend fun SnsAsyncClient.createTopic(
+suspend inline fun SnsAsyncClient.createTopic(
     topicName: String,
     attributes: Map<String, String> = emptyMap(),
 ): CreateTopicResponse =
@@ -56,14 +56,14 @@ suspend fun SnsAsyncClient.createTopic(
  * // response.topicArn().contains(".fifo") == true
  * ```
  */
-suspend fun SnsAsyncClient.createFIFOTopic(
+suspend inline fun SnsAsyncClient.createFIFOTopic(
     topicName: String,
     attributes: Map<String, String> = mapOf("FifoTopic" to "true", "ContentBasedDeduplication" to "true"),
 ): CreateTopicResponse =
     createFIFOTopicAsync(topicName, attributes).await()
 
 /** 준비된 SNS 배치 요청을 suspend API로 실행합니다. */
-suspend fun SnsAsyncClient.publishBatchSuspend(
+suspend inline fun SnsAsyncClient.publishBatchSuspend(
     request: PublishBatchRequest,
 ): PublishBatchResponse =
     publishBatchAsync(request).await()

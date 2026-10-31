@@ -35,7 +35,7 @@ class InMemoryKinesisLeaseStore(
     override suspend fun acquire(
         key: KinesisShardKey,
         ownerId: String,
-        leaseDuration: Duration
+        leaseDuration: Duration,
     ): KinesisLease? = mutex.withLock {
         ownerId.requireKinesisIdentifier("ownerId")
         require(leaseDuration.isPositive()) { "leaseDuration must be positive" }
@@ -62,7 +62,7 @@ class InMemoryKinesisLeaseStore(
 
     override suspend fun renew(
         lease: KinesisLease,
-        leaseDuration: Duration
+        leaseDuration: Duration,
     ): KinesisLease? = mutex.withLock {
         require(leaseDuration.isPositive()) { "leaseDuration must be positive" }
         log.debug { "renew KinesisLease. leaseDuration=$leaseDuration" }

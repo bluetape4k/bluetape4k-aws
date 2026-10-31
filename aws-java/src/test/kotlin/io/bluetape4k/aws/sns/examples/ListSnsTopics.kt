@@ -15,8 +15,6 @@ class ListSnsTopics: AbstractSnsTest() {
 
         topics
             .flatMap { it.topics() }
-            .forEach { topic ->
-                log.debug { "topicArn=${topic.topicArn()}" }
-            }
+            .onEach { log.debug { "topic: $it" } }
     }
 }

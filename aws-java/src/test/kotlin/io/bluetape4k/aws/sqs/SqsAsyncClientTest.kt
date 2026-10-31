@@ -107,6 +107,7 @@ class SqsAsyncClientTest: AbstractSqsTest() {
         val messages = asyncClient
             .receiveMessages(queueUrl, 3)
             .messages()
+            .onEach { log.debug { "messages=$it" } }
 
         val responses = messages.map { message ->
             asyncClient.deleteMessage(queueUrl, message.receiptHandle())

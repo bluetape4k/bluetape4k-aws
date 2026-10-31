@@ -123,6 +123,7 @@ class AwsRdsIamAuthTokenTest {
             )
         }
 
+        log.debug { "error=$error" }
         error.message shouldContain "database.example.com:5432"
         error.message shouldNotContain "raw-token"
     }

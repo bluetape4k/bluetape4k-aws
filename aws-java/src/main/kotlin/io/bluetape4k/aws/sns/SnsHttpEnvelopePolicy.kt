@@ -213,7 +213,8 @@ private fun SnsHttpEnvelope.validateTypeContract(): SnsHttpEnvelope {
         }
 
         SnsHttpEnvelopeType.SUBSCRIPTION_CONFIRMATION,
-        SnsHttpEnvelopeType.UNSUBSCRIBE_CONFIRMATION -> {
+        SnsHttpEnvelopeType.UNSUBSCRIBE_CONFIRMATION,
+            -> {
             if (token.isNullOrBlank()) {
                 fail(
                     SnsHttpEnvelopeRejectionReason.TYPE_CONTRACT,

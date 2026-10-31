@@ -40,9 +40,10 @@ inline fun deleteMessageRequest(
  * // request.queueUrl().contains("my-queue") == true
  * ```
  */
-fun deleteMessageRequestOf(
+inline fun deleteMessageRequestOf(
     queueUrl: String,
     receiptHandle: String,
+    builder: DeleteMessageRequest.Builder.() -> Unit = {},
 ): DeleteMessageRequest {
     queueUrl.requireNotBlank("queueUrl")
     receiptHandle.requireNotBlank("receiptHandle")
@@ -50,6 +51,7 @@ fun deleteMessageRequestOf(
     return deleteMessageRequest {
         queueUrl(queueUrl)
         receiptHandle(receiptHandle)
+        builder()
     }
 }
 
@@ -85,15 +87,18 @@ inline fun deleteMessageBatchRequest(
  * // request.entries().size == 1
  * ```
  */
-fun deleteMessageBatchRequestOf(
+inline fun deleteMessageBatchRequestOf(
     queueUrl: String,
     entries: Collection<DeleteMessageBatchRequestEntry>,
+    builder: DeleteMessageBatchRequest.Builder.() -> Unit = {},
 ): DeleteMessageBatchRequest {
     queueUrl.requireNotBlank("queueUrl")
 
     return deleteMessageBatchRequest {
         queueUrl(queueUrl)
         entries(entries)
+
+        builder()
     }
 }
 
@@ -129,9 +134,10 @@ inline fun deleteMessageBatchRequestEntry(
  * // entry.receiptHandle() == "handle-xyz"
  * ```
  */
-fun deleteMessageBatchRequestEntryOf(
+inline fun deleteMessageBatchRequestEntryOf(
     id: String,
     receiptHandle: String,
+    builder: DeleteMessageBatchRequestEntry.Builder.() -> Unit = {},
 ): DeleteMessageBatchRequestEntry {
     id.requireNotBlank("id")
     receiptHandle.requireNotBlank("receiptHandle")
@@ -139,5 +145,7 @@ fun deleteMessageBatchRequestEntryOf(
     return deleteMessageBatchRequestEntry {
         id(id)
         receiptHandle(receiptHandle)
+
+        builder()
     }
 }

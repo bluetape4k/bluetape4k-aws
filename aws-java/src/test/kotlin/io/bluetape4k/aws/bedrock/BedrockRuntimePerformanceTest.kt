@@ -8,6 +8,7 @@ import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.aws.AbstractAwsTest
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import java.nio.file.Files
 import java.nio.file.Path
@@ -40,6 +41,7 @@ class BedrockRuntimePerformanceTest: AbstractAwsTest() {
     fun controlledPublisherRecordsNormalCancellationFailureReplacementPaths() = runSuspendIO {
         val adapter = BedrockRuntimePerformanceRuntimeAdapter()
         val scenarios = BedrockRuntimePerformanceRuntimeAdapter.Scenario.entries
+
         repeat(WARMUP_ITERATIONS) {
             scenarios.forEach { adapter.run(it) }
         }
@@ -64,6 +66,7 @@ class BedrockRuntimePerformanceTest: AbstractAwsTest() {
             failureVolume = DISTINCT_FAILURE_VOLUME,
         )
 
+        log.debug { "sample=$sample" }
         sample.operationFailureIsPrimary.shouldBeTrue()
         sample.retainedSuppressedCount shouldBeEqualTo MAX_RETAINED_SUPPRESSED_FAILURES
         sample.overflowMarkerCount shouldBeEqualTo 1

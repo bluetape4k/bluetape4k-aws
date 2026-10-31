@@ -6,7 +6,7 @@ import io.bluetape4k.aws.s3.model.headObjectRequestOf
 import io.bluetape4k.aws.s3.model.putObjectRequest
 import io.bluetape4k.aws.s3.model.toRequestBody
 import io.bluetape4k.io.exists
-import io.bluetape4k.logging.KotlinLogging
+import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.error
 import io.bluetape4k.logging.warn
 import io.bluetape4k.support.requireNotBlank
@@ -32,7 +32,7 @@ import java.nio.file.Path
 import java.util.concurrent.CompletionException
 import java.util.concurrent.ExecutionException
 
-private val log = KotlinLogging.logger {}
+private object S3ClientLogger: KLogging()
 
 /**
  * [bucketName]의 Bucket 이 존재하는지 알아봅니다.
@@ -70,7 +70,7 @@ private fun Throwable.isMissingBucketError(): Boolean {
         is NoSuchBucketException -> true
         is S3Exception -> cause.statusCode() == 404 ||
                 cause.awsErrorDetails()?.errorCode() in setOf("NoSuchBucket", "NotFound")
-        else -> false
+        else           -> false
     }
 }
 
@@ -436,7 +436,7 @@ fun S3Client.moveObject(
             runCatching {
                 deleteObject { it.bucket(srcBucketName).key(srcKey) }
             }.onFailure { error ->
-                log.warn(
+                S3ClientLogger.log.warn(
                     "Failed to delete source object after copy. Source: {}/{}, Dest: {}/{}",
                     srcBucketName,
                     srcKey,
@@ -478,18 +478,18 @@ fun S3Client.moveObject(
  * // result.isPartialSuccess == false
  * ```
  */
-fun S3Client.moveObject(
-    copyRequest: CopyObjectRequest.Builder.() -> Unit,
-    deleteRequest: DeleteObjectRequest.Builder.() -> Unit,
+inline fun S3Client.moveObject(
+    crossinline copyRequest: CopyObjectRequest.Builder.() -> Unit,
+    crossinline deleteRequest: DeleteObjectRequest.Builder.() -> Unit,
 ): MoveObjectResult {
-    val copyResponse = copyObject(copyRequest)
+    val copyResponse = copyObject { copyRequest(it) }
 
     val deleteResponse =
         if (copyResponse.copyObjectResult().eTag()?.isNotBlank() == true) {
             runCatching {
-                deleteObject(deleteRequest)
+                deleteObject { deleteRequest(it) }
             }.onFailure { error ->
-                log.warn(error) { "Failed to delete source object after copy." }
+                S3ClientLogger.log.warn(error) { "Failed to delete source object after copy." }
             }.getOrNull()
         } else {
             null
@@ -526,12 +526,12 @@ fun S3Client.moveObjectAtomic(
 
     if (result.isPartialSuccess) {
         // 복사는 성공했지만 삭제가 실패한 경우, 롤백 시도
-        log.warn { "Move partially succeeded. Attempting rollback by deleting copied object. Dest: $destBucketName/$destKey" }
+        S3ClientLogger.log.warn { "Move partially succeeded. Attempting rollback by deleting copied object. Dest: $destBucketName/$destKey" }
 
         runCatching {
             deleteObject { it.bucket(destBucketName).key(destKey) }
         }.onFailure { error ->
-            log.error(error) { "Rollback failed! Copied object may remain at destination. Dest: $destBucketName/$destKey" }
+            S3ClientLogger.log.error(error) { "Rollback failed! Copied object may remain at destination. Dest: $destBucketName/$destKey" }
             throw IllegalStateException(
                 "Move failed and rollback also failed. Copied object remains at $destBucketName/$destKey",
                 error

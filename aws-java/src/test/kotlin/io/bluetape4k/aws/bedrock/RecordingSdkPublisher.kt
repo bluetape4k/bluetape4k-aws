@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.bedrock
 
+import io.bluetape4k.logging.KLogging
 import org.reactivestreams.Subscriber
 import org.reactivestreams.Subscription
 import software.amazon.awssdk.core.async.SdkPublisher
@@ -10,6 +11,8 @@ internal class RecordingSdkPublisher<T>(
     private val onSubscribed: () -> Unit = {},
     private val onCancelled: () -> Unit = {},
 ): SdkPublisher<T> {
+
+    companion object: KLogging()
 
     private val lock = ReentrantLock()
     private var subscriber: Subscriber<in T>? = null

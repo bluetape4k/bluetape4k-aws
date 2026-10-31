@@ -5,7 +5,8 @@ import io.bluetape4k.aws.kinesis.model.deleteStreamRequest
 import io.bluetape4k.aws.kinesis.model.describeStreamRequest
 import io.bluetape4k.aws.kinesis.model.getRecordsRequest
 import io.bluetape4k.aws.kinesis.model.getShardIteratorRequest
-import io.bluetape4k.aws.kinesis.model.putRecordRequest
+import io.bluetape4k.aws.kinesis.model.listShardsRequest
+import io.bluetape4k.aws.kinesis.model.putRecordRequestOf
 import io.bluetape4k.aws.kinesis.model.putRecordsRequest
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
@@ -17,6 +18,7 @@ import software.amazon.awssdk.services.kinesis.model.DeleteStreamResponse
 import software.amazon.awssdk.services.kinesis.model.DescribeStreamResponse
 import software.amazon.awssdk.services.kinesis.model.GetRecordsResponse
 import software.amazon.awssdk.services.kinesis.model.GetShardIteratorResponse
+import software.amazon.awssdk.services.kinesis.model.ListShardsResponse
 import software.amazon.awssdk.services.kinesis.model.PutRecordResponse
 import software.amazon.awssdk.services.kinesis.model.PutRecordsRequestEntry
 import software.amazon.awssdk.services.kinesis.model.PutRecordsResponse
@@ -63,14 +65,17 @@ fun KinesisAsyncClient.putRecordAsync(
     partitionKey: String,
     data: SdkBytes,
 ): CompletableFuture<PutRecordResponse> {
-    streamName.requireNotBlank("streamName")
-    partitionKey.requireNotBlank("partitionKey")
+    val request = putRecordRequestOf(streamName, partitionKey, data = data)
+    return putRecord(request)
+}
 
-    val request = putRecordRequest {
-        streamName(streamName)
-        partitionKey(partitionKey)
-        data(data)
-    }
+fun KinesisAsyncClient.putRecordAsync(
+    streamName: String,
+    partitionKey: String,
+    explicitHashKey: String,
+    data: SdkBytes,
+): CompletableFuture<PutRecordResponse> {
+    val request = putRecordRequestOf(streamName, partitionKey, explicitHashKey, data)
     return putRecord(request)
 }
 
@@ -177,4 +182,11 @@ fun KinesisAsyncClient.deleteStreamAsync(
         streamName(streamName)
     }
     return deleteStream(request)
+}
+
+fun KinesisAsyncClient.listShardsAsync(streamName: String): CompletableFuture<ListShardsResponse> {
+    streamName.requireNotBlank("streamName")
+
+    val request = listShardsRequest { streamName(streamName) }
+    return listShards(request)
 }

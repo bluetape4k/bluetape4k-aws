@@ -9,7 +9,7 @@ import software.amazon.awssdk.services.lambda.model.LogType
 import java.util.concurrent.CompletableFuture
 
 /** 원시 바이트 payload로 Lambda를 비동기 호출합니다. */
-fun LambdaAsyncClient.invokeBytesAsync(
+inline fun LambdaAsyncClient.invokeBytesAsync(
     functionName: String,
     payload: ByteArray? = null,
     qualifier: String? = null,
@@ -22,7 +22,7 @@ fun LambdaAsyncClient.invokeBytesAsync(
 )
 
 /** UTF-8 문자열 payload로 Lambda를 비동기 호출합니다. */
-fun LambdaAsyncClient.invokeStringAsync(
+inline fun LambdaAsyncClient.invokeStringAsync(
     functionName: String,
     payload: String? = null,
     qualifier: String? = null,
@@ -42,7 +42,7 @@ fun LambdaAsyncClient.invokeStringAsync(
 )
 
 /** caller가 제공한 codec으로 typed payload를 비동기 호출합니다. */
-fun <T> LambdaAsyncClient.invokeTypedAsync(
+inline fun <T> LambdaAsyncClient.invokeTypedAsync(
     functionName: String,
     payload: T,
     codec: LambdaPayloadCodec<T>,
@@ -62,7 +62,8 @@ fun <T> LambdaAsyncClient.invokeTypedAsync(
     codec,
 )
 
-private fun <T> LambdaAsyncClient.invokeAsync(
+@PublishedApi
+internal fun <T> LambdaAsyncClient.invokeAsync(
     request: InvokeRequest,
     codec: LambdaPayloadCodec<T>,
 ): CompletableFuture<LambdaInvocationResult<T>> {

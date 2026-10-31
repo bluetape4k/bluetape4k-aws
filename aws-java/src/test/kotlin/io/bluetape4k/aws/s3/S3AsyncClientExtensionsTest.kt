@@ -33,7 +33,7 @@ class S3AsyncClientExtensionsTest: AbstractS3Test() {
     fun `exists bucket async returns false for missing bucket`() = runSuspendIO {
         val missingBucket = "missing-${randomKey()}"
 
-        s3AsyncClient.existsBucketAsync(missingBucket).await().shouldBeFalse()
+        s3AsyncClient.existsBucket(missingBucket).shouldBeFalse()
     }
 
     @RepeatedTest(value = REPEAT_SIZE)
@@ -45,7 +45,7 @@ class S3AsyncClientExtensionsTest: AbstractS3Test() {
         response.eTag().shouldNotBeNull()
         log.debug { "put response=$response" }
 
-        val downContent = s3AsyncClient.getAsStringAsync(BUCKET_NAME, key).await()
+        val downContent = s3AsyncClient.getAsString(BUCKET_NAME, key)
         downContent shouldBeEqualTo content
     }
 
@@ -58,7 +58,7 @@ class S3AsyncClientExtensionsTest: AbstractS3Test() {
         val response = s3AsyncClient.putAsByteArrayAsync(BUCKET_NAME, key, bytes).await()
         response.eTag().shouldNotBeNull()
 
-        val download = s3AsyncClient.getAsByteArrayAsync(BUCKET_NAME, key).await()
+        val download = s3AsyncClient.getAsByteArray(BUCKET_NAME, key)
         download.toUtf8String() shouldBeEqualTo bytes.toUtf8String()
     }
 
@@ -70,11 +70,11 @@ class S3AsyncClientExtensionsTest: AbstractS3Test() {
         val file = File(path)
         file.exists().shouldBeTrue()
 
-        val response = s3AsyncClient.putAsFileAsync(BUCKET_NAME, key, file).await()
+        val response = s3AsyncClient.putAsFile(BUCKET_NAME, key, file)
         response.eTag().shouldNotBeNull()
 
         val downloadFile = tempDir.resolve(filename)
-        val response2 = s3AsyncClient.getAsFileAsync(BUCKET_NAME, key, downloadFile.toPath()).await()
+        val response2 = s3AsyncClient.getAsFile(BUCKET_NAME, key, downloadFile.toPath())
         response2.eTag().shouldNotBeNull()
 
         log.debug { "downloadFile=$downloadFile, size=${downloadFile.length()}" }

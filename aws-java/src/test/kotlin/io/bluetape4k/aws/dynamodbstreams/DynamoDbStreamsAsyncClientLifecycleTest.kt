@@ -3,7 +3,7 @@ package io.bluetape4k.aws.dynamodbstreams
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.aws.AbstractAwsTest
-import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.just
@@ -17,7 +17,7 @@ import software.amazon.awssdk.services.dynamodb.streams.DynamoDbStreamsAsyncClie
 
 class DynamoDbStreamsAsyncClientLifecycleTest: AbstractAwsTest() {
 
-    companion object: KLogging()
+    companion object: KLoggingChannel()
 
     private val client = mockk<DynamoDbStreamsAsyncClient>(relaxed = true)
 
@@ -43,7 +43,7 @@ class DynamoDbStreamsAsyncClientLifecycleTest: AbstractAwsTest() {
         val expected = IllegalStateException("boom")
 
         val actual = assertFailsWith<IllegalStateException> {
-            withDynamoDbStreamsAsyncClient<Unit>({ client }) { throw expected }
+            withDynamoDbStreamsAsyncClient({ client }) { throw expected }
         }
 
         actual shouldBeSameInstanceAs expected

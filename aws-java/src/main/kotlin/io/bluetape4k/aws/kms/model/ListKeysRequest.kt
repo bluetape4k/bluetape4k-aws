@@ -32,16 +32,14 @@ inline fun listKeysRequest(
  * // request.limit() == 25
  * ```
  */
-fun listKeysRequestOf(
+inline fun listKeysRequestOf(
     limit: Int? = null,
     marker: String? = null,
     builder: ListKeysRequest.Builder.() -> Unit = {},
-): ListKeysRequest {
-
-    return listKeysRequest {
+): ListKeysRequest =
+    listKeysRequest {
         limit?.let { limit(it) }
         marker?.let { marker(it) }
 
         builder()
     }
-}

@@ -6,8 +6,6 @@ import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
-import io.bluetape4k.aws.sfn.model.listExecutionsRequest
-import io.bluetape4k.aws.sfn.model.startExecutionRequest
 import software.amazon.awssdk.services.sfn.model.ExecutionRedriveFilter
 import software.amazon.awssdk.services.sfn.model.ExecutionStatus
 

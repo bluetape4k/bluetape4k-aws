@@ -1,7 +1,6 @@
 package io.bluetape4k.aws.lambda
 
 import io.bluetape4k.jackson3.Jackson
-import tools.jackson.databind.ObjectMapper
 import tools.jackson.databind.json.JsonMapper
 
 /**

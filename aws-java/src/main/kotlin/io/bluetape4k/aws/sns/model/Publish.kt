@@ -102,12 +102,14 @@ inline fun publishBatchRequestOf(
 ): PublishBatchRequest {
     validatePublishBatchRequest(topicArn, entries)
 
-    val request = PublishBatchRequest.builder().apply {
-        topicArn(topicArn)
-        publishBatchRequestEntries(entries)
-        overrideConfiguration?.let(::overrideConfiguration)
-        builder()
-    }.build()
+    val request = PublishBatchRequest.builder()
+        .apply {
+            topicArn(topicArn)
+            publishBatchRequestEntries(entries)
+            overrideConfiguration?.let(::overrideConfiguration)
+            builder()
+        }
+        .build()
     request.validatePublishBatchRequest()
     return request
 }

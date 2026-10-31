@@ -53,6 +53,7 @@ fun destinationOf(
  * @param toAddrs 수신자 주소 목록
  * @return [Destination] 인스턴스
  */
-fun destinationOf(vararg toAddrs: String): Destination = destination {
-    toAddresses(*toAddrs)
-}
+fun destinationOf(vararg toAddrs: String): Destination =
+    destination {
+        toAddresses(*toAddrs)
+    }
