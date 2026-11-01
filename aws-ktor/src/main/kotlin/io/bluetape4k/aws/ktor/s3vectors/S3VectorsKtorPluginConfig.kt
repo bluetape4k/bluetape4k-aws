@@ -1,17 +1,17 @@
 package io.bluetape4k.aws.ktor.s3vectors
 
+import aws.sdk.kotlin.services.s3vectors.S3VectorsClient
 import aws.sdk.kotlin.services.s3vectors.endpoints.DefaultS3VectorsEndpointProvider
 import aws.sdk.kotlin.services.s3vectors.endpoints.S3VectorsEndpointProvider
-import io.bluetape4k.aws.ktor.AwsKotlinEndpointPolicyInterceptor
-import io.bluetape4k.aws.ktor.checkedAwsKotlinEndpointProvider
-import io.bluetape4k.aws.ktor.requireAwsKotlinEndpointProviderUnset
-import aws.sdk.kotlin.services.s3vectors.S3VectorsClient
 import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
 import aws.smithy.kotlin.runtime.http.engine.HttpClientEngine
 import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.ToStringBuilder
+import io.bluetape4k.aws.ktor.AwsKotlinEndpointPolicyInterceptor
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.AwsKtorS3VectorsClientCustomizer
+import io.bluetape4k.aws.ktor.checkedAwsKotlinEndpointProvider
+import io.bluetape4k.aws.ktor.requireAwsKotlinEndpointProviderUnset
 
 /**
  * [S3VectorsKtorPlugin] 구성입니다.
@@ -94,12 +94,12 @@ class S3VectorsKtorPluginConfig {
                 create = { resolver -> S3VectorsEndpointProvider { parameters -> resolver(parameters) } },
             )
             interceptors.add(
-                    AwsKotlinEndpointPolicyInterceptor(
-                        configuredEndpoint = this.endpointUrl?.toString(),
-                        region = this.region,
-                        allowInsecureLocalHttpEndpoint = defaults.allowInsecureLocalHttpEndpoint,
-                    ),
-                )
+                AwsKotlinEndpointPolicyInterceptor(
+                    configuredEndpoint = this.endpointUrl?.toString(),
+                    region = this.region,
+                    allowInsecureLocalHttpEndpoint = defaults.allowInsecureLocalHttpEndpoint,
+                ),
+            )
         }
     }
 

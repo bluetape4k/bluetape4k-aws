@@ -17,7 +17,7 @@ import io.bluetape4k.testcontainers.aws.FlociServer
 import io.bluetape4k.testcontainers.aws.LocalStackServer
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import java.util.UUID
+import java.util.*
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SnsKtorTemplateAwsEmulatorTest {
@@ -82,6 +82,6 @@ class SnsKtorTemplateAwsEmulatorTest {
         when (val emulator = System.getProperty("bluetape4k.aws.emulator", "floci").trim().lowercase()) {
             "floci" -> FlociServer.Launcher.floci
             "localstack" -> LocalStackServer.Launcher.getLocalStack(*services)
-            else -> error("Unsupported AWS emulator: $emulator. Use floci or localstack.")
+            else    -> error("Unsupported AWS emulator: $emulator. Use floci or localstack.")
         }
 }

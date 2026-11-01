@@ -177,18 +177,18 @@ class SqsObservationBenchmark {
         require(registry.currentObservation == null) { "current observation leaked after invocation" }
 
         when (scenario) {
-            Scenario.DIRECT -> {
+            Scenario.DIRECT    -> {
                 require(sentinel.get() == 1L)
                 require(recorder.starts.get() == 0)
             }
 
-            Scenario.DISABLED -> {
+            Scenario.DISABLED  -> {
                 require(sentinel.get() == 1L)
                 require(disabledContextFactoryCalls.get() == 0)
                 require(recorder.starts.get() == 0)
             }
 
-            Scenario.ACTIVE -> {
+            Scenario.ACTIVE    -> {
                 require(sentinel.get() == 1L)
                 require(activeContextFactoryCalls.get() == 1)
                 require(recorder.starts.get() == 1)
@@ -221,7 +221,7 @@ class SqsObservationBenchmark {
                 require(recorder.acknowledgementStarts.get() == COROUTINE_COUNT)
             }
 
-            Scenario.NONE -> error("benchmark scenario was not selected")
+            Scenario.NONE      -> error("benchmark scenario was not selected")
         }
     }
 

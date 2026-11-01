@@ -79,7 +79,7 @@ class AwsModulithEventsPropertiesTest {
                 "maxInFlight" -> AwsModulithEventsProperties.Producer(maxInFlight = value)
                 "maxSerializedPayloadBytes" ->
                     AwsModulithEventsProperties.Producer(maxSerializedPayloadBytes = value)
-                else -> AwsModulithEventsProperties.Producer(maxEnvelopeBytes = value)
+                else          -> AwsModulithEventsProperties.Producer(maxEnvelopeBytes = value)
             }
         } else {
             assertFailsWith<IllegalArgumentException> {
@@ -87,7 +87,7 @@ class AwsModulithEventsPropertiesTest {
                     "maxInFlight" -> AwsModulithEventsProperties.Producer(maxInFlight = value)
                     "maxSerializedPayloadBytes" ->
                         AwsModulithEventsProperties.Producer(maxSerializedPayloadBytes = value)
-                    else -> AwsModulithEventsProperties.Producer(maxEnvelopeBytes = value)
+                    else          -> AwsModulithEventsProperties.Producer(maxEnvelopeBytes = value)
                 }
             }
         }

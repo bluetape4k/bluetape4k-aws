@@ -105,7 +105,7 @@ internal class SqsObservationPrerequisitesCondition: SpringBootCondition(), Conf
         val failureReason = when {
             !ClassUtils.isPresent(CONTEXT_SNAPSHOT_CLASS, context.classLoader) -> "context-propagation-missing"
             beanFactory == null -> "bean-factory-missing"
-            else -> findFailureReason(beanFactory)
+            else                -> findFailureReason(beanFactory)
         }
         val matchReason = if (beanFactory?.hasUserSqsObservationFactory() == true) {
             "user-factory"
@@ -120,10 +120,10 @@ internal class SqsObservationPrerequisitesCondition: SpringBootCondition(), Conf
     private fun findFailureReason(beanFactory: ConfigurableListableBeanFactory): String? {
         val registry = beanFactory.getBeanProvider(ObservationRegistry::class.java).getIfAvailable()
         return when {
-            registry == null -> "registry-missing"
+            registry == null                   -> "registry-missing"
             registry === ObservationRegistry.NOOP -> "registry-noop"
             !hasSupportingHandler(beanFactory) -> "handler-missing"
-            else -> null
+            else                               -> null
         }
     }
 

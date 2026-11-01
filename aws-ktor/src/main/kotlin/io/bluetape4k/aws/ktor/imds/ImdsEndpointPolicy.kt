@@ -2,7 +2,7 @@ package io.bluetape4k.aws.ktor.imds
 
 import aws.sdk.kotlin.runtime.config.imds.EndpointMode
 import java.net.URI
-import java.util.Locale
+import java.util.*
 
 /** Applies the IMDS-specific endpoint allowlist before a client or request is created. */
 internal object ImdsEndpointPolicy {
@@ -57,9 +57,9 @@ internal object ImdsEndpointPolicy {
         val octets = host.split('.')
         return octets.size == 4 && octets.first() == "127" && octets.all { octet ->
             octet.isNotEmpty() &&
-                (octet.length == 1 || octet.first() != '0') &&
-                octet.all(Char::isDigit) &&
-                octet.toIntOrNull()?.let { it in 0..255 } == true
+                    (octet.length == 1 || octet.first() != '0') &&
+                    octet.all(Char::isDigit) &&
+                    octet.toIntOrNull()?.let { it in 0..255 } == true
         }
     }
 

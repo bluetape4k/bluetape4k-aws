@@ -1,12 +1,12 @@
 package io.bluetape4k.aws.ktor.kinesis
 
+import aws.sdk.kotlin.services.kinesis.model.ShardIteratorType
 import io.bluetape4k.javatimes.millis
 import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.support.requireGe
 import io.bluetape4k.support.requireInRange
 import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.requirePositiveNumber
-import aws.sdk.kotlin.services.kinesis.model.ShardIteratorType
 import java.io.ObjectInputStream
 import java.io.Serializable
 import java.time.Duration
@@ -55,11 +55,11 @@ class KinesisPutRecordRequest(
 
     override fun equals(other: Any?): Boolean =
         this === other || (
-            other is KinesisPutRecordRequest &&
-                streamName == other.streamName &&
-                partitionKey == other.partitionKey &&
-                dataBytes.contentEquals(other.dataBytes)
-            )
+                other is KinesisPutRecordRequest &&
+                        streamName == other.streamName &&
+                        partitionKey == other.partitionKey &&
+                        dataBytes.contentEquals(other.dataBytes)
+                )
 
     override fun hashCode(): Int =
         31 * (31 * streamName.hashCode() + partitionKey.hashCode()) + dataBytes.contentHashCode()

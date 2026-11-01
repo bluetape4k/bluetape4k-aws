@@ -1,11 +1,11 @@
 package io.bluetape4k.aws.ktor.sqs
 
-import io.bluetape4k.ToStringBuilder
-import io.bluetape4k.support.requireGe
-import io.bluetape4k.support.requireInRange
 import aws.sdk.kotlin.services.sqs.model.Message
 import aws.sdk.kotlin.services.sqs.model.MessageAttributeValue
 import aws.sdk.kotlin.services.sqs.model.MessageSystemAttributeName
+import io.bluetape4k.ToStringBuilder
+import io.bluetape4k.support.requireGe
+import io.bluetape4k.support.requireInRange
 import java.io.Serializable
 import java.time.Duration
 import kotlin.math.roundToInt

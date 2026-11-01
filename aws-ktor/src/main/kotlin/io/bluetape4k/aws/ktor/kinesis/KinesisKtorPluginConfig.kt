@@ -1,18 +1,18 @@
 package io.bluetape4k.aws.ktor.kinesis
 
+import aws.sdk.kotlin.services.kinesis.KinesisClient
 import aws.sdk.kotlin.services.kinesis.endpoints.DefaultKinesisEndpointProvider
 import aws.sdk.kotlin.services.kinesis.endpoints.KinesisEndpointProvider
-import io.bluetape4k.aws.ktor.AwsKotlinEndpointPolicyInterceptor
-import io.bluetape4k.aws.ktor.checkedAwsKotlinEndpointProvider
-import io.bluetape4k.aws.ktor.requireAwsKotlinEndpointProviderUnset
-import io.bluetape4k.ToStringBuilder
-import aws.sdk.kotlin.services.kinesis.KinesisClient
 import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
 import aws.smithy.kotlin.runtime.http.engine.HttpClientEngine
 import aws.smithy.kotlin.runtime.net.url.Url
+import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.aws.kotlin.kinesis.kinesisClientOf
+import io.bluetape4k.aws.ktor.AwsKotlinEndpointPolicyInterceptor
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.AwsKtorKinesisClientCustomizer
+import io.bluetape4k.aws.ktor.checkedAwsKotlinEndpointProvider
+import io.bluetape4k.aws.ktor.requireAwsKotlinEndpointProviderUnset
 
 /**
  * [KinesisKtorPlugin] 구성입니다.

@@ -1,12 +1,12 @@
 package io.bluetape4k.aws.examples.ktor.sqs
 
-import aws.sdk.kotlin.services.sqs.SqsClient
 import aws.sdk.kotlin.runtime.auth.credentials.StaticCredentialsProvider
+import aws.sdk.kotlin.services.sqs.SqsClient
 import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.assertions.shouldContain
-import io.bluetape4k.aws.kotlin.sqs.sqsClientOf
 import io.bluetape4k.aws.kotlin.sqs.createQueue
 import io.bluetape4k.aws.kotlin.sqs.deleteQueue
+import io.bluetape4k.aws.kotlin.sqs.sqsClientOf
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.junit5.coroutines.SuspendedJobTester
 import io.bluetape4k.junit5.coroutines.runSuspendIO

@@ -1,5 +1,9 @@
 package io.bluetape4k.aws.ktor
 
+import aws.smithy.kotlin.runtime.auth.awscredentials.Credentials
+import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
+import aws.smithy.kotlin.runtime.collections.Attributes
+import aws.smithy.kotlin.runtime.http.engine.HttpClientEngine
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldNotContain
@@ -13,10 +17,6 @@ import io.ktor.server.application.install
 import io.ktor.server.testing.testApplication
 import io.mockk.mockk
 import org.junit.jupiter.api.Test
-import aws.smithy.kotlin.runtime.auth.awscredentials.Credentials
-import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
-import aws.smithy.kotlin.runtime.collections.Attributes
-import aws.smithy.kotlin.runtime.http.engine.HttpClientEngine
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset

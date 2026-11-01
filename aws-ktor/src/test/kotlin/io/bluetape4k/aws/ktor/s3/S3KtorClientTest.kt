@@ -172,7 +172,7 @@ class S3KtorClientTest {
         captured.headers["x-amz-server-side-encryption-aws-kms-key-id"] shouldBeEqualTo "alias/demo"
         captured.headers["x-amz-server-side-encryption-bucket-key-enabled"] shouldBeEqualTo "true"
         captured.headers["x-amz-server-side-encryption-context"].decodeBase64String() shouldBeEqualTo
-            """{"tenant":"demo"}"""
+                """{"tenant":"demo"}"""
 
         s3.close()
     }
@@ -344,7 +344,7 @@ class S3KtorClientTest {
             capture = { captured += it },
             response = { request ->
                 when (request.method) {
-                    HttpMethod.Post if "uploads" in request.url.parameters.names() ->
+                    HttpMethod.Post if "uploads" in request.url.parameters.names()      ->
                         respond(
                             content = """
                                         <InitiateMultipartUploadResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
@@ -355,7 +355,7 @@ class S3KtorClientTest {
                                     """.trimIndent(),
                             headers = headersOf(HttpHeaders.ContentType, "application/xml"),
                         )
-                    HttpMethod.Put ->
+                    HttpMethod.Put                                                      ->
                         respond(
                             content = "",
                             headers = headersOf(HttpHeaders.ETag, "\"part-etag-1\""),
@@ -373,7 +373,10 @@ class S3KtorClientTest {
                             headers = headersOf(HttpHeaders.ContentType, "application/xml"),
                         )
                     HttpMethod.Delete if request.url.parameters["uploadId"] == "upload-1" -> respond("")
-                    else -> respond("unexpected request", HttpStatusCode.BadRequest)
+                    else                                                                -> respond(
+                        "unexpected request",
+                        HttpStatusCode.BadRequest
+                    )
                 }
             },
         )
@@ -432,7 +435,7 @@ class S3KtorClientTest {
         presigned.url.parameters["X-Amz-Expires"] shouldBeEqualTo "900"
         presigned.url.parameters["X-Amz-SignedHeaders"] shouldBeEqualTo "host"
         presigned.url.parameters["X-Amz-Signature"] shouldBeEqualTo
-            "3db75a0ad67e1d88633145f9c3ffca7556f32c68680f5071e6e2933738adfcbd"
+                "3db75a0ad67e1d88633145f9c3ffca7556f32c68680f5071e6e2933738adfcbd"
 
         s3.close()
     }
@@ -682,9 +685,9 @@ class S3KtorClientTest {
                     <Bucket>bucket-canary</Bucket><Key>object-key-canary</Key>
                     <UploadId>upload-id-canary</UploadId>
                 </InitiateMultipartUploadResult>""".trimIndent()
-            request.method == HttpMethod.Post -> "<CompleteMultipartUploadResult/>"
-            request.method == HttpMethod.Get -> "object-body-canary"
-            else -> ""
+            request.method == HttpMethod.Post          -> "<CompleteMultipartUploadResult/>"
+            request.method == HttpMethod.Get           -> "object-body-canary"
+            else                                       -> ""
         }
 
         return respond(content = body, headers = headersOf(HttpHeaders.ETag, "etag-canary"))

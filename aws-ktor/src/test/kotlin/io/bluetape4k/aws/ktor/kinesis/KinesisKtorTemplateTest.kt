@@ -159,7 +159,7 @@ class KinesisKtorTemplateTest {
             clearMocks(client)
             val request = slot<GetShardIteratorRequest>()
             coEvery { client.getShardIterator(capture(request)) } returns
-                GetShardIteratorResponse { shardIterator = "it" }
+                    GetShardIteratorResponse { shardIterator = "it" }
             coEvery { client.getRecords(any<GetRecordsRequest>()) } returns GetRecordsResponse {
                 records = emptyList()
             }
@@ -189,7 +189,7 @@ class KinesisKtorTemplateTest {
             data = "payload-1".encodeToByteArray()
         }
         coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-            GetShardIteratorResponse { shardIterator = "it-1" }
+                GetShardIteratorResponse { shardIterator = "it-1" }
         coEvery { client.getRecords(any<GetRecordsRequest>()) } returns GetRecordsResponse {
             records = listOf(record)
         }
@@ -219,7 +219,7 @@ class KinesisKtorTemplateTest {
     @Test
     fun `recordFlow can be collected twice and refetches iterator`() = runTest {
         coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-            GetShardIteratorResponse { shardIterator = "it" }
+                GetShardIteratorResponse { shardIterator = "it" }
         coEvery { client.getRecords(any<GetRecordsRequest>()) } returns GetRecordsResponse {
             records = emptyList()
         }
@@ -244,7 +244,7 @@ class KinesisKtorTemplateTest {
     fun `recordFlow propagates cancellation to pending Kotlin request`() = runTest {
         var requestCancelled = false
         coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-            GetShardIteratorResponse { shardIterator = "it" }
+                GetShardIteratorResponse { shardIterator = "it" }
         coEvery { client.getRecords(any<GetRecordsRequest>()) } coAnswers {
             try {
                 awaitCancellation()
@@ -331,7 +331,7 @@ class KinesisKtorTemplateTest {
     fun `recordFlow fails initial latest iterator expiry without silently skipping data`() = runTest {
         val expired = ExpiredIteratorException { message = "iterator expired" }
         coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-            GetShardIteratorResponse { shardIterator = "it-1" }
+                GetShardIteratorResponse { shardIterator = "it-1" }
         coEvery { client.getRecords(any<GetRecordsRequest>()) } throws expired
 
         val error = assertFailsWith<ExpiredIteratorException> {
@@ -356,7 +356,7 @@ class KinesisKtorTemplateTest {
         val requestTimes = mutableListOf<Long>()
         val throttled = ProvisionedThroughputExceededException { message = "throttled" }
         coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-            GetShardIteratorResponse { shardIterator = "it-1" }
+                GetShardIteratorResponse { shardIterator = "it-1" }
         coEvery { client.getRecords(any<GetRecordsRequest>()) } coAnswers {
             requestTimes += testScheduler.currentTime
             when (requestTimes.size) {
@@ -393,7 +393,7 @@ class KinesisKtorTemplateTest {
         val requestTimes = mutableListOf<Long>()
         val throttled = ProvisionedThroughputExceededException { message = "throttled" }
         coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-            GetShardIteratorResponse { shardIterator = "it-1" }
+                GetShardIteratorResponse { shardIterator = "it-1" }
         coEvery { client.getRecords(any<GetRecordsRequest>()) } coAnswers {
             requestTimes += testScheduler.currentTime
             throw throttled
@@ -428,7 +428,7 @@ class KinesisKtorTemplateTest {
     fun `recordFlow uses empty backoff and poll interval for the matching responses`() = runTest {
         val emptyResponseTimes = mutableListOf<Long>()
         coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-            GetShardIteratorResponse { shardIterator = "empty-it" }
+                GetShardIteratorResponse { shardIterator = "empty-it" }
         coEvery { client.getRecords(any<GetRecordsRequest>()) } coAnswers {
             emptyResponseTimes += testScheduler.currentTime
             if (emptyResponseTimes.size == 1) {
@@ -462,7 +462,7 @@ class KinesisKtorTemplateTest {
             data = byteArrayOf()
         }
         coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-            GetShardIteratorResponse { shardIterator = "record-it" }
+                GetShardIteratorResponse { shardIterator = "record-it" }
         coEvery { client.getRecords(any<GetRecordsRequest>()) } coAnswers {
             recordResponseTimes += testScheduler.currentTime - recordResponseStartTime
             if (recordResponseTimes.size == 1) {

@@ -2,13 +2,13 @@ package io.bluetape4k.aws.spring.appconfig
 
 import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.aws.spring.applyAwsDefaults
-import io.bluetape4k.aws.spring.support.get
 import io.bluetape4k.aws.spring.config.AwsConfigDataResource
 import io.bluetape4k.aws.spring.config.AwsConfigDataSource
 import io.bluetape4k.aws.spring.config.AwsConfigDataSupport
 import io.bluetape4k.aws.spring.config.applyConfigDataBootstrapCustomizer
 import io.bluetape4k.aws.spring.config.configDataCredentialsProvider
 import io.bluetape4k.aws.spring.resolveClientDefaults
+import io.bluetape4k.aws.spring.support.get
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
 import io.bluetape4k.support.checkNotNull

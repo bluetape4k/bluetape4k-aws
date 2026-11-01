@@ -1,5 +1,9 @@
 package io.bluetape4k.aws.ktor.cloudwatch
 
+import aws.sdk.kotlin.services.cloudwatch.model.Dimension
+import aws.sdk.kotlin.services.cloudwatch.model.MetricDatum
+import aws.sdk.kotlin.services.cloudwatch.model.PutMetricDataResponse
+import aws.sdk.kotlin.services.cloudwatch.model.StandardUnit
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import io.bluetape4k.support.requireNotBlank
@@ -7,10 +11,6 @@ import io.micrometer.core.instrument.Measurement
 import io.micrometer.core.instrument.Meter
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Statistic
-import aws.sdk.kotlin.services.cloudwatch.model.Dimension
-import aws.sdk.kotlin.services.cloudwatch.model.MetricDatum
-import aws.sdk.kotlin.services.cloudwatch.model.PutMetricDataResponse
-import aws.sdk.kotlin.services.cloudwatch.model.StandardUnit
 import java.util.*
 
 /**

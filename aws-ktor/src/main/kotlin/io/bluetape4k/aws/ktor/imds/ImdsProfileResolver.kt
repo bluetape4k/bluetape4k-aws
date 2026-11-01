@@ -75,7 +75,7 @@ internal class ImdsProfileResolver(
     private fun expandHome(value: String): Path = when {
         value == "~" -> userHome
         value.startsWith("~/") -> userHome.resolve(value.substring(2))
-        else -> Path.of(value)
+        else         -> Path.of(value)
     }
 
     private fun readProfile(path: Path, profileName: String, configFile: Boolean): Map<String, String> {

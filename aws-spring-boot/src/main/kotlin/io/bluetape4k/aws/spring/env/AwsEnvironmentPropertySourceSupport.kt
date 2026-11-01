@@ -80,7 +80,7 @@ internal fun opaqueAwsPropertySourceIdentity(name: String): String {
         name.startsWith("bluetape4k.aws.s3.config.") -> "s3"
         name.startsWith("bluetape4k.aws.parameter-store.") -> "parameter-store"
         name.startsWith("bluetape4k.aws.secrets-manager.") -> "secrets-manager"
-        else -> "legacy"
+        else                                         -> "legacy"
     }
     return opaqueAwsDiagnosticIdentity(backend, name)
 }
@@ -118,10 +118,13 @@ private fun ConfigurableEnvironment.addAwsPropertySource(source: PropertySource<
         .lastOrNull { it.startsWith("bluetape4k.aws.") }
 
     when {
-        previousAwsSource != null -> propertySources.addAfter(previousAwsSource, source)
+        previousAwsSource != null -> propertySources.addAfter(
+            previousAwsSource,
+            source
+        )
         propertySources.contains(COMMAND_LINE_PROPERTY_SOURCE_NAME) ->
             propertySources.addAfter(COMMAND_LINE_PROPERTY_SOURCE_NAME, source)
-        else -> propertySources.addFirst(source)
+        else                      -> propertySources.addFirst(source)
     }
 }
 
@@ -238,8 +241,8 @@ private fun flattenValue(
             val childKey = if (key == null) "[$index]" else "$key[$index]"
             flattenValue(entryValue, childKey, target)
         }
-        null -> Unit
-        else -> {
+        null         -> Unit
+        else         -> {
             require(!key.isNullOrBlank()) { "JSON scalar value requires a property key." }
             target[key] = value
         }

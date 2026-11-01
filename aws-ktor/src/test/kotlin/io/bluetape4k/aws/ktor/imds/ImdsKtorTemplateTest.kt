@@ -62,7 +62,7 @@ class ImdsKtorTemplateTest {
         val readStarted = CompletableDeferred<Unit>()
         val cancellationRequested = CompletableDeferred<Unit>()
         val allowReadToFinish = CompletableDeferred<Unit>()
-        val responseChannel = object : SdkByteReadChannel {
+        val responseChannel = object: SdkByteReadChannel {
             override val availableForRead: Int = 0
             override val isClosedForRead: Boolean
                 get() = allowReadToFinish.isCompleted
@@ -79,7 +79,7 @@ class ImdsKtorTemplateTest {
 
             override fun cancel(cause: Throwable?): Boolean = cancellationRequested.complete(Unit)
         }
-        val responseBody = object : HttpBody.ChannelContent() {
+        val responseBody = object: HttpBody.ChannelContent() {
             override fun readFrom(): SdkByteReadChannel = responseChannel
         }
         val activeChild = CoroutineScope(Dispatchers.Unconfined + callJob).launch {
@@ -164,7 +164,7 @@ class ImdsKtorTemplateTest {
 
             server.requests.count { it.method == "PUT" } shouldBeEqualTo 2
             server.requests.filter { it.method == "GET" }.map { it.token } shouldBeEqualTo
-                listOf("token-1", "token-1", "token-2")
+                    listOf("token-1", "token-1", "token-2")
         } finally {
             engine.close()
             server.close()
@@ -371,7 +371,7 @@ class ImdsKtorTemplateTest {
             server.requests.count { it.method == "PUT" } shouldBeEqualTo 1
             server.requests.count { it.method == "GET" } shouldBeEqualTo 2
             server.requests.filter { it.method == "GET" }.map { it.token }.distinct() shouldBeEqualTo
-                listOf("cached-token")
+                    listOf("cached-token")
         } finally {
             runtime.stop()
             server.close()
@@ -572,7 +572,7 @@ class ImdsKtorTemplateTest {
 
 private class TerminalStatusHttpEngine(
     private val status: Int,
-) : CloseableHttpClientEngine {
+): CloseableHttpClientEngine {
     private val engineJob = SupervisorJob()
     override val coroutineContext: CoroutineContext = Dispatchers.Unconfined + engineJob
     override val config = HttpClientEngineConfig.Default
@@ -588,10 +588,10 @@ private class TerminalStatusHttpEngine(
         val response = if (request.method == HttpMethod.PUT) {
             HttpResponse(HttpStatusCode.OK, body = HttpBody.fromBytes("token".encodeToByteArray()))
         } else {
-            HttpResponse(HttpStatusCode(status, "test"), body = object : HttpBody.SourceContent() {
+            HttpResponse(HttpStatusCode(status, "test"), body = object: HttpBody.SourceContent() {
                 override val contentLength: Long = 64
 
-                override fun readFrom(): SdkSource = object : SdkSource {
+                override fun readFrom(): SdkSource = object: SdkSource {
                     override fun read(sink: SdkBuffer, limit: Long): Long {
                         bodyReads.incrementAndGet()
                         throw IOException("synthetic terminal response body failure")
@@ -633,7 +633,7 @@ private data class WireResponse(
 
 private class ImdsWireServer(
     private val respond: (WireRequest) -> WireResponse,
-) : AutoCloseable {
+): AutoCloseable {
 
     val requests = CopyOnWriteArrayList<WireRequest>()
     private val executor = Executors.newCachedThreadPool { runnable ->

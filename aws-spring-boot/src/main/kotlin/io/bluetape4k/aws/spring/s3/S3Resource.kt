@@ -50,8 +50,8 @@ class S3Resource(
         when (this) {
             is NoSuchBucketException -> true
             is NoSuchKeyException -> true
-            is S3Exception -> statusCode() == 404 ||
+            is S3Exception        -> statusCode() == 404 ||
                     awsErrorDetails()?.errorCode() in setOf("NoSuchBucket", "NoSuchKey", "NotFound")
-            else -> false
+            else                  -> false
         }
 }

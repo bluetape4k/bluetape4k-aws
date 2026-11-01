@@ -178,7 +178,7 @@ class SerializableContractTest {
         serialVersionUid.getLong(null) shouldBeEqualTo 1L
     }
 
-    private fun <T : Serializable> roundTrip(value: T): T {
+    private fun <T: Serializable> roundTrip(value: T): T {
         val bytes = ByteArrayOutputStream()
         ObjectOutputStream(bytes).use { output ->
             output.writeObject(value)

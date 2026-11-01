@@ -170,7 +170,7 @@ class SqsConsumerRuntimeFailureTest {
             val message = Message { messageId = "message-1"; receiptHandle = "receipt-1"; body = "slow" }
 
             coEvery { client.receiveMessage(any<ReceiveMessageRequest>()) } returns
-                ReceiveMessageResponse { messages = listOf(message) }
+                    ReceiveMessageResponse { messages = listOf(message) }
             coEvery { client.changeMessageVisibility(any<ChangeMessageVisibilityRequest>()) } coAnswers {
                 visibilityCalls.incrementAndGet()
                 ChangeMessageVisibilityResponse {}
@@ -228,7 +228,7 @@ class SqsConsumerRuntimeFailureTest {
             val message = Message { messageId = "message-1"; receiptHandle = "receipt-1"; body = "stuck" }
 
             coEvery { client.receiveMessage(any<ReceiveMessageRequest>()) } returns
-                ReceiveMessageResponse { messages = listOf(message) }
+                    ReceiveMessageResponse { messages = listOf(message) }
             coEvery { client.changeMessageVisibility(any<ChangeMessageVisibilityRequest>()) } coAnswers {
                 visibilityCalls.incrementAndGet()
                 ChangeMessageVisibilityResponse {}

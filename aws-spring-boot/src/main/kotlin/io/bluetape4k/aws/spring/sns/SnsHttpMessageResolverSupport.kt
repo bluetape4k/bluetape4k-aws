@@ -106,7 +106,7 @@ class SnsHttpMessageResolverSupport(
     fun resolve(parameter: MethodParameter, message: SnsHttpMessage): Any? {
         val parameterType = parameter.parameterType
         return when {
-            parameter.hasParameterAnnotation(NotificationMessage::class.java) -> {
+            parameter.hasParameterAnnotation(NotificationMessage::class.java)  -> {
                 requireNotificationType(message)
                 requireConcretePayloadType(parameter)
                 payloadConverter.convert(
@@ -115,7 +115,7 @@ class SnsHttpMessageResolverSupport(
                     nestedContentType = message.messageAttributes[CONTENT_TYPE_ATTRIBUTE]?.value,
                 )
             }
-            parameter.hasParameterAnnotation(NotificationSubject::class.java) -> {
+            parameter.hasParameterAnnotation(NotificationSubject::class.java)  -> {
                 requireNotificationType(message)
                 check(parameterType == String::class.java) {
                     "@NotificationSubject requires a String parameter."
@@ -135,14 +135,14 @@ class SnsHttpMessageResolverSupport(
                 }
                 message
             }
-            parameterType == NotificationStatus::class.java -> {
+            parameterType == NotificationStatus::class.java                    -> {
                 requireConfirmationType(message)
                 val operations = checkNotNull(operations) {
                     "NotificationStatus requires an SnsOperations bean."
                 }
                 SnsNotificationStatus(message, operations)
             }
-            else -> error("Unsupported SNS HTTP handler parameter: ${parameter.parameterName ?: parameterType.name}.")
+            else                                                               -> error("Unsupported SNS HTTP handler parameter: ${parameter.parameterName ?: parameterType.name}.")
         }
     }
 
@@ -171,11 +171,11 @@ class SnsHttpMessageResolverSupport(
     private fun validateStaticParameter(parameter: MethodParameter) {
         val type = parameter.parameterType
         when {
-            parameter.hasParameterAnnotation(NotificationMessage::class.java) -> {
+            parameter.hasParameterAnnotation(NotificationMessage::class.java)    -> {
                 check(type != Void.TYPE) { "@NotificationMessage requires a concrete parameter type." }
                 requireConcretePayloadType(parameter)
             }
-            parameter.hasParameterAnnotation(NotificationSubject::class.java) ->
+            parameter.hasParameterAnnotation(NotificationSubject::class.java)    ->
                 check(type == String::class.java) { "@NotificationSubject requires a String parameter." }
             parameter.hasParameterAnnotation(NotificationMessageAttributes::class.java) -> {
                 check(Map::class.java.isAssignableFrom(type)) {

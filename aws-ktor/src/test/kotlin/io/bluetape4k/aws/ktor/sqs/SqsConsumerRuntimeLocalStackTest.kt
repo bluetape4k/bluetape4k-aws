@@ -259,6 +259,6 @@ class SqsConsumerRuntimeLocalStackTest {
         when (val emulator = System.getProperty("bluetape4k.aws.emulator", "floci").trim().lowercase()) {
             "floci" -> FlociServer.Launcher.floci
             "localstack" -> LocalStackServer.Launcher.getLocalStack(*services)
-            else -> error("Unsupported AWS emulator: $emulator. Use floci or localstack.")
+            else    -> error("Unsupported AWS emulator: $emulator. Use floci or localstack.")
         }
 }

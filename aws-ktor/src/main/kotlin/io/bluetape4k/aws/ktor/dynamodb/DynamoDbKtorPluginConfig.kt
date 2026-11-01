@@ -11,8 +11,8 @@ import aws.smithy.kotlin.runtime.http.engine.HttpClientEngine
 import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.aws.kotlin.dynamodb.dynamoDbClientOf
-import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.AwsKotlinEndpointPolicyInterceptor
+import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.checkedAwsKotlinEndpointProvider
 import io.bluetape4k.aws.ktor.requireAwsKotlinEndpointProviderUnset
 import io.bluetape4k.support.requireNotBlank
@@ -119,7 +119,7 @@ class DynamoDbKtorPluginConfig {
                     requireAwsKotlinEndpointProviderUnset(endpointProvider)
                     require(endpointDiscoverer == null) {
                         "DynamoDB endpoint discovery is not supported by Ktor service clients; " +
-                            "configure endpointUrl instead."
+                                "configure endpointUrl instead."
                     }
                     this.endpointProvider = checkedAwsKotlinEndpointProvider(
                         provider = this.endpointProvider ?: DefaultDynamoDbEndpointProvider(),
@@ -128,12 +128,12 @@ class DynamoDbKtorPluginConfig {
                         create = { resolver -> DynamoDbEndpointProvider { parameters -> resolver(parameters) } },
                     )
                     interceptors.add(
-                    AwsKotlinEndpointPolicyInterceptor(
-                        configuredEndpoint = this.endpointUrl?.toString(),
-                        region = this.region,
-                        allowInsecureLocalHttpEndpoint = defaults.allowInsecureLocalHttpEndpoint,
-                    ),
-                )
+                        AwsKotlinEndpointPolicyInterceptor(
+                            configuredEndpoint = this.endpointUrl?.toString(),
+                            region = this.region,
+                            allowInsecureLocalHttpEndpoint = defaults.allowInsecureLocalHttpEndpoint,
+                        ),
+                    )
                 },
             )
         }

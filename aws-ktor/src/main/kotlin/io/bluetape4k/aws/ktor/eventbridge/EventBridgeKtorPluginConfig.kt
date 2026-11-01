@@ -1,18 +1,18 @@
 package io.bluetape4k.aws.ktor.eventbridge
 
+import aws.sdk.kotlin.services.eventbridge.EventBridgeClient
 import aws.sdk.kotlin.services.eventbridge.endpoints.DefaultEventBridgeEndpointProvider
 import aws.sdk.kotlin.services.eventbridge.endpoints.EventBridgeEndpointProvider
-import io.bluetape4k.aws.ktor.AwsKotlinEndpointPolicyInterceptor
-import io.bluetape4k.aws.ktor.checkedAwsKotlinEndpointProvider
-import io.bluetape4k.aws.ktor.requireAwsKotlinEndpointProviderUnset
-import aws.sdk.kotlin.services.eventbridge.EventBridgeClient
 import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
 import aws.smithy.kotlin.runtime.http.engine.HttpClientEngine
 import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.aws.kotlin.eventbridge.eventBridgeClientOf
+import io.bluetape4k.aws.ktor.AwsKotlinEndpointPolicyInterceptor
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.AwsKtorEventBridgeClientCustomizer
+import io.bluetape4k.aws.ktor.checkedAwsKotlinEndpointProvider
+import io.bluetape4k.aws.ktor.requireAwsKotlinEndpointProviderUnset
 import io.bluetape4k.support.requireNotBlank
 
 /**

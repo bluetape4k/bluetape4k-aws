@@ -574,7 +574,7 @@ class SqsExtendedClient(
                         SqsExtendedClientMetrics.PayloadReadFailureKind.POINTER_FORMAT
                     SqsExtendedFailureKind.CONFIGURATION ->
                         SqsExtendedClientMetrics.PayloadReadFailureKind.CONFIGURATION
-                    else -> SqsExtendedClientMetrics.PayloadReadFailureKind.S3_READ
+                    else                                 -> SqsExtendedClientMetrics.PayloadReadFailureKind.S3_READ
                 },
             )
             throw failure

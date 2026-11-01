@@ -140,7 +140,7 @@ class ImdsKtorPluginTest {
     fun `remote insecure endpoint is rejected unless it is AWS default endpoint`() {
         val error = assertFailsWith<IllegalArgumentException> {
             ImdsEndpointPolicy.resolve(
-                endpoint = URI("http://metadata.example/") ,
+                endpoint = URI("http://metadata.example/"),
                 endpointMode = EndpointMode.IPv4,
                 allowInsecureLocalHttpEndpoint = false,
             )
@@ -148,9 +148,9 @@ class ImdsKtorPluginTest {
 
         error.message shouldContain "HTTPS"
         ImdsEndpointPolicy.resolve(null, EndpointMode.IPv4, false).toString() shouldBeEqualTo
-            "http://169.254.169.254"
+                "http://169.254.169.254"
         ImdsEndpointPolicy.resolve(null, EndpointMode.IPv6, false).toString() shouldBeEqualTo
-            "http://[fd00:ec2::254]"
+                "http://[fd00:ec2::254]"
     }
 
     @Test
@@ -201,7 +201,7 @@ class ImdsKtorPluginTest {
     @Test
     fun `full jitter uses capped exponential bounds and never returns zero`() {
         (0..8).map(ImdsRetryPolicy::backoffCapMillis) shouldBeEqualTo
-            listOf(200L, 400L, 800L, 1_600L, 3_200L, 6_400L, 12_800L, 20_000L, 20_000L)
+                listOf(200L, 400L, 800L, 1_600L, 3_200L, 6_400L, 12_800L, 20_000L, 20_000L)
 
         ImdsRetryPolicy.fullJitterMillis(0) { lower, _ -> lower } shouldBeEqualTo 1L
         ImdsRetryPolicy.fullJitterMillis(0) { _, exclusiveUpper -> exclusiveUpper - 1 } shouldBeEqualTo 200L

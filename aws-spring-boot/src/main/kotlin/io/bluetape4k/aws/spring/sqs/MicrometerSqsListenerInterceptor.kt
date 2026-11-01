@@ -46,8 +46,8 @@ class MicrometerSqsListenerInterceptor(
         private const val SMALL_BATCH_MAX_SIZE: Int = 5
 
         private fun batchSizeBucket(size: Int): String = when (size) {
-            0 -> "0"
-            1 -> "1"
+            0    -> "0"
+            1    -> "1"
             in SMALL_BATCH_MIN_SIZE..SMALL_BATCH_MAX_SIZE -> "2-5"
             else -> "6-10"
         }

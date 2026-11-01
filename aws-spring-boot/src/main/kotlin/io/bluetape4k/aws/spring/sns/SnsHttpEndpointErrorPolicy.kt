@@ -16,16 +16,16 @@ internal object SnsHttpEndpointErrorPolicy: KLogging() {
         cause.causesContain<DataBufferLimitException>() || cause.causesContain<SnsHttpBodyLimitException>() ->
             Decision(HttpStatus.BAD_REQUEST.value(), "body-limit")
 
-        cause is ResponseStatusException ->
+        cause is ResponseStatusException  ->
             Decision(cause.statusCode.value(), "configured-policy")
 
         cause is IllegalArgumentException ->
             Decision(HttpStatus.BAD_REQUEST.value(), "invalid-input")
 
-        cause is SdkClientException ->
+        cause is SdkClientException       ->
             Decision(HttpStatus.SERVICE_UNAVAILABLE.value(), "verification-dependency")
 
-        else ->
+        else                              ->
             Decision(HttpStatus.INTERNAL_SERVER_ERROR.value(), "internal-error")
     }
 

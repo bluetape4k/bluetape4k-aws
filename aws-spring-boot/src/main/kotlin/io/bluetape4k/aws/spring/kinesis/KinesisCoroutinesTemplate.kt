@@ -198,8 +198,8 @@ class KinesisCoroutinesTemplate(
         position: KinesisStartingPosition,
     ): GetShardIteratorRequest.Builder = apply {
         when (position) {
-            KinesisStartingPosition.TrimHorizon -> shardIteratorType(ShardIteratorType.TRIM_HORIZON)
-            KinesisStartingPosition.Latest -> shardIteratorType(ShardIteratorType.LATEST)
+            KinesisStartingPosition.TrimHorizon         -> shardIteratorType(ShardIteratorType.TRIM_HORIZON)
+            KinesisStartingPosition.Latest              -> shardIteratorType(ShardIteratorType.LATEST)
             is KinesisStartingPosition.AtSequenceNumber -> {
                 shardIteratorType(ShardIteratorType.AT_SEQUENCE_NUMBER)
                 startingSequenceNumber(position.sequenceNumber)
@@ -208,7 +208,7 @@ class KinesisCoroutinesTemplate(
                 shardIteratorType(ShardIteratorType.AFTER_SEQUENCE_NUMBER)
                 startingSequenceNumber(position.sequenceNumber)
             }
-            is KinesisStartingPosition.AtTimestamp -> {
+            is KinesisStartingPosition.AtTimestamp      -> {
                 shardIteratorType(ShardIteratorType.AT_TIMESTAMP)
                 timestamp(position.timestamp)
             }

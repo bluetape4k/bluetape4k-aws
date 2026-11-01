@@ -168,7 +168,7 @@ internal class AwsModulithResolvedRegistration internal constructor(
         when (error) {
             is CancellationException -> throw error
             is Error -> throw error
-            else -> throw AwsModulithEventRegistrationMismatchException()
+            else     -> throw AwsModulithEventRegistrationMismatchException()
         }
     }
 }

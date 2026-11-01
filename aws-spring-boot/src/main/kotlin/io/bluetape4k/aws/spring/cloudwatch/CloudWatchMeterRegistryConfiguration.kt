@@ -81,11 +81,11 @@ internal object CloudWatchMeterRegistryConfiguration: KLogging() {
 
         override fun get(key: String): String? = when (key) {
             "namespace" -> namespaceValue
-            "step" -> properties.step.toString()
+            "step"      -> properties.step.toString()
             "batchSize" -> properties.batchSize.toString()
             "readTimeout" -> properties.readTimeout.toString()
-            "enabled" -> enabledGate.value.toString()
-            else -> null
+            "enabled"   -> enabledGate.value.toString()
+            else        -> null
         }
 
         override fun namespace(): String = namespaceValue

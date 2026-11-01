@@ -19,24 +19,32 @@ class ImdsProfileResolverTest {
 
     @Test
     fun `system properties select profile and profile paths before environment values`() {
-        val propertyConfig = write("property-config", """
+        val propertyConfig = write(
+            "property-config", """
             [profile application]
             ec2_metadata_service_endpoint = https://profile.example
             ec2_metadata_service_endpoint_mode = ipv6
             metadata_service_timeout = 1.25
-        """.trimIndent())
-        val environmentConfig = write("environment-config", """
+        """.trimIndent()
+        )
+        val environmentConfig = write(
+            "environment-config", """
             [profile staging]
             ec2_metadata_service_endpoint = https://wrong-profile.example
-        """.trimIndent())
-        val propertyCredentials = write("property-credentials", """
+        """.trimIndent()
+        )
+        val propertyCredentials = write(
+            "property-credentials", """
             [application]
             ec2_metadata_service_endpoint = https://credentials.example
-        """.trimIndent())
-        val environmentCredentials = write("environment-credentials", """
+        """.trimIndent()
+        )
+        val environmentCredentials = write(
+            "environment-credentials", """
             [staging]
             ec2_metadata_service_endpoint = https://wrong-credentials.example
-        """.trimIndent())
+        """.trimIndent()
+        )
 
         val resolved = ImdsProfileResolver(
             systemProperties = mapOf(
@@ -60,7 +68,8 @@ class ImdsProfileResolverTest {
 
     @Test
     fun `profile default section and last duplicate key follow Java profile precedence`() {
-        val config = write("config", """
+        val config = write(
+            "config", """
             [default]
             ec2_metadata_service_endpoint = https://old-default.example
             metadata_service_timeout = 1
@@ -69,7 +78,8 @@ class ImdsProfileResolverTest {
             ec2_metadata_service_endpoint = https://profile-default.example
             ec2_metadata_service_endpoint = https://last-profile-default.example
             metadata_service_timeout = 1.2345
-        """.trimIndent())
+        """.trimIndent()
+        )
 
         val resolved = ImdsProfileResolver(
             systemProperties = mapOf("aws.configFile" to config.toString()),
@@ -84,11 +94,13 @@ class ImdsProfileResolverTest {
 
     @Test
     fun `profile sections and values allow trailing comments`() {
-        val config = write("config-with-comments", """
+        val config = write(
+            "config-with-comments", """
             [profile app] # selected profile
             ec2_metadata_service_endpoint = https://metadata.example ; endpoint note
             metadata_service_timeout = 1.25 # seconds
-        """.trimIndent())
+        """.trimIndent()
+        )
 
         val resolved = ImdsProfileResolver(
             systemProperties = mapOf("aws.profile" to "app", "aws.configFile" to config.toString()),
@@ -102,12 +114,14 @@ class ImdsProfileResolverTest {
 
     @Test
     fun `system properties then environment then profile control scalar settings`() {
-        val config = write("config", """
+        val config = write(
+            "config", """
             [profile app]
             ec2_metadata_service_endpoint = https://profile.example
             ec2_metadata_service_endpoint_mode = ipv4
             metadata_service_timeout = 4
-        """.trimIndent())
+        """.trimIndent()
+        )
 
         val resolved = ImdsProfileResolver(
             systemProperties = mapOf(
@@ -132,10 +146,12 @@ class ImdsProfileResolverTest {
 
     @Test
     fun `profile endpoint mode resolves when no endpoint is selected`() {
-        val config = write("mode-only-config", """
+        val config = write(
+            "mode-only-config", """
             [profile app]
             ec2_metadata_service_endpoint_mode = ipv6
-        """.trimIndent())
+        """.trimIndent()
+        )
 
         val resolved = ImdsProfileResolver(
             systemProperties = mapOf("aws.profile" to "app", "aws.configFile" to config.toString()),
@@ -149,11 +165,13 @@ class ImdsProfileResolverTest {
 
     @Test
     fun `selected endpoint shadows invalid lower priority endpoint mode`() {
-        val config = write("config", """
+        val config = write(
+            "config", """
             [profile app]
             ec2_metadata_service_endpoint = https://profile.example
             ec2_metadata_service_endpoint_mode = invalid
-        """.trimIndent())
+        """.trimIndent()
+        )
 
         val resolved = ImdsProfileResolver(
             systemProperties = mapOf(
@@ -173,22 +191,28 @@ class ImdsProfileResolverTest {
     fun `environment profile paths and scalar values override home defaults`() {
         val homeConfig = tempDir.resolve("home/.aws/config")
         Files.createDirectories(homeConfig.parent)
-        Files.writeString(homeConfig, """
+        Files.writeString(
+            homeConfig, """
             [profile env-app]
             ec2_metadata_service_endpoint = https://home.example
             ec2_metadata_service_endpoint_mode = ipv6
             metadata_service_timeout = 1
-        """.trimIndent())
-        val environmentConfig = write("environment-config", """
+        """.trimIndent()
+        )
+        val environmentConfig = write(
+            "environment-config", """
             [profile env-app]
             ec2_metadata_service_endpoint = https://environment-profile.example
             ec2_metadata_service_endpoint_mode = ipv4
             metadata_service_timeout = 2
-        """.trimIndent())
-        val environmentCredentials = write("environment-credentials", """
+        """.trimIndent()
+        )
+        val environmentCredentials = write(
+            "environment-credentials", """
             [env-app]
             ec2_metadata_service_endpoint = https://environment-credentials.example
-        """.trimIndent())
+        """.trimIndent()
+        )
 
         val resolved = ImdsProfileResolver(
             systemProperties = emptyMap(),
@@ -228,10 +252,12 @@ class ImdsProfileResolverTest {
     fun `tilde paths expand against injected user home`() {
         val config = tempDir.resolve("aws/config")
         Files.createDirectories(config.parent)
-        Files.writeString(config, """
+        Files.writeString(
+            config, """
             [profile app]
             metadata_service_timeout = 7
-        """.trimIndent())
+        """.trimIndent()
+        )
 
         val resolved = ImdsProfileResolver(
             systemProperties = mapOf("aws.profile" to "app", "aws.configFile" to "~/aws/config"),
@@ -244,10 +270,12 @@ class ImdsProfileResolverTest {
 
     @Test
     fun `nonnumeric timeout fails with profile key context`() {
-        val config = write("config", """
+        val config = write(
+            "config", """
             [profile app]
             metadata_service_timeout = fast
-        """.trimIndent())
+        """.trimIndent()
+        )
 
         val error = assertFailsWith<IllegalStateException> {
             ImdsProfileResolver(

@@ -86,15 +86,15 @@ private class DefaultSqsObservationConvention(
 }
 
 private fun SqsAcknowledgementAction?.toTagValue(): String = when (this) {
-    null -> "none"
-    SqsAcknowledgementAction.ACK -> "ack"
+    null                          -> "none"
+    SqsAcknowledgementAction.ACK  -> "ack"
     SqsAcknowledgementAction.NACK -> "nack"
     SqsAcknowledgementAction.CHANGE_VISIBILITY -> "change_visibility"
 }
 
 private fun Int.toBatchSizeBucket(): String = when (this) {
-    0 -> "0"
-    1 -> "1"
+    0    -> "0"
+    1    -> "1"
     in MIN_GROUPED_BATCH_SIZE..MAX_SMALL_BATCH_SIZE -> "2-5"
     else -> "6-10"
 }

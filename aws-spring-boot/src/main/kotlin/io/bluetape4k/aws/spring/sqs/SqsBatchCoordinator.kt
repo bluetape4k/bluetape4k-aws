@@ -109,7 +109,7 @@ internal class SqsBatchCoordinator(
     fun finishClose(outcome: SqsBatchCloseOutcome) {
         val complete = lifecycleLock.withLock {
             when (state) {
-                CoordinatorState.OPEN -> throw IllegalStateException("SQS batch close has not started.")
+                CoordinatorState.OPEN   -> throw IllegalStateException("SQS batch close has not started.")
                 CoordinatorState.CLOSING -> {
                     state = CoordinatorState.CLOSED
                     true
@@ -349,7 +349,7 @@ internal class SqsBatchCoordinator(
     private fun entryIdOf(entry: Any?): String = when (entry) {
         is SqsBatchSendEntry -> entry.entryId
         is SqsBatchDeleteEntry -> entry.entryId
-        else -> error("Unsupported SQS batch entry type.")
+        else                 -> error("Unsupported SQS batch entry type.")
     }
 
     private inner class AcceptedEntry(

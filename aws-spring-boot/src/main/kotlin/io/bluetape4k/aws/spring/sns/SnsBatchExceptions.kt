@@ -63,8 +63,8 @@ class SnsBatchTransportException private constructor(
                     cause is TimeoutException ->
                 SnsBatchFailureType.TIMEOUT
             cause is SdkServiceException -> SnsBatchFailureType.SDK_SERVICE
-            cause is SdkClientException -> SnsBatchFailureType.CLIENT
-            else -> SnsBatchFailureType.UNKNOWN
+            cause is SdkClientException  -> SnsBatchFailureType.CLIENT
+            else                         -> SnsBatchFailureType.UNKNOWN
         }
 
         private fun fingerprint(ids: List<String>): String {

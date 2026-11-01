@@ -1,19 +1,19 @@
 package io.bluetape4k.aws.ktor.ses
 
+import aws.sdk.kotlin.services.sesv2.SesV2Client
 import aws.sdk.kotlin.services.sesv2.endpoints.DefaultSesV2EndpointProvider
 import aws.sdk.kotlin.services.sesv2.endpoints.SesV2EndpointProvider
-import io.bluetape4k.aws.ktor.AwsKotlinEndpointPolicyInterceptor
-import io.bluetape4k.aws.ktor.checkedAwsKotlinEndpointProvider
-import io.bluetape4k.aws.ktor.requireAwsKotlinEndpointProviderUnset
-import io.bluetape4k.ToStringBuilder
-import io.bluetape4k.aws.ktor.AwsKtorDefaults
-import io.bluetape4k.aws.ktor.AwsKtorSesV2ClientCustomizer
-import io.bluetape4k.aws.kotlin.sesv2.sesV2ClientOf
-import io.bluetape4k.support.requireNotBlank
-import aws.sdk.kotlin.services.sesv2.SesV2Client
 import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
 import aws.smithy.kotlin.runtime.http.engine.HttpClientEngine
 import aws.smithy.kotlin.runtime.net.url.Url
+import io.bluetape4k.ToStringBuilder
+import io.bluetape4k.aws.kotlin.sesv2.sesV2ClientOf
+import io.bluetape4k.aws.ktor.AwsKotlinEndpointPolicyInterceptor
+import io.bluetape4k.aws.ktor.AwsKtorDefaults
+import io.bluetape4k.aws.ktor.AwsKtorSesV2ClientCustomizer
+import io.bluetape4k.aws.ktor.checkedAwsKotlinEndpointProvider
+import io.bluetape4k.aws.ktor.requireAwsKotlinEndpointProviderUnset
+import io.bluetape4k.support.requireNotBlank
 
 /**
  * [SesKtorPlugin] 구성입니다.

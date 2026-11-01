@@ -79,7 +79,7 @@ data class SnsNotification<T: Any> private constructor(
         messageAttributes: Map<String, SnsMessageAttribute>,
         sqs: SqsReceivedMessage,
         rawEnvelope: String?,
-    ) : this(
+    ): this(
         type = type,
         messageId = messageId,
         topicArn = topicArn,

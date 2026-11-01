@@ -117,7 +117,13 @@ internal class SqsPreparedObservation internal constructor(
     ): T = when {
         runtime == null || context == null -> SqsObservationExecution(null, Observation.NOOP).block()
         observation === Observation.NOOP -> SqsObservationExecution(context, observation).block()
-        else -> runtime.observePrepared(context, observation, onSetupFailure, onCleanupFailure, block)
+        else                             -> runtime.observePrepared(
+            context,
+            observation,
+            onSetupFailure,
+            onCleanupFailure,
+            block
+        )
     }
 }
 

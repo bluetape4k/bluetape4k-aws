@@ -922,7 +922,7 @@ class SqsMessageListenerContainer internal constructor(
                     handleBatchFailure(queueUrl, acknowledgement)
                     true
                 }
-                else -> {
+                else                                  -> {
                     interceptors.forEach {
                         it.onBatchRetry(context, correlation, pending.size, attempt + 1, null)
                     }
@@ -1145,7 +1145,9 @@ class SqsMessageListenerContainer internal constructor(
 
         val queueUrl = when {
             endpoint.queue.startsWith("http://") || endpoint.queue.startsWith("https://") -> endpoint.queue
-            else -> operations.getQueueUrl(endpoint.queue)
+            else -> operations.getQueueUrl(
+                endpoint.queue
+            )
         }
         if (endpoint.queueAttributeNames.isNotEmpty()) {
             queueAttributesResolver.resolve(queueUrl, endpoint.queueAttributeNames)

@@ -28,7 +28,7 @@ class SnsMessageAttribute(
                 when {
                     binaryValueValue == null -> other.binaryValueValue == null
                     other.binaryValueValue == null -> false
-                    else -> binaryValueValue.contentEquals(other.binaryValueValue)
+                    else                     -> binaryValueValue.contentEquals(other.binaryValueValue)
                 })
 
     override fun hashCode(): Int = 31 * (31 * dataType.hashCode() + (stringValue?.hashCode() ?: 0)) +

@@ -21,10 +21,10 @@ import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.CancellationException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import kotlinx.coroutines.CancellationException
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CloudWatchLogsKtorTemplateTest {

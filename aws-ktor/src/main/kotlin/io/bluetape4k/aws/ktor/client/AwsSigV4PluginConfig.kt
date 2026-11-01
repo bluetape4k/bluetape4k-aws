@@ -1,9 +1,9 @@
 package io.bluetape4k.aws.ktor.client
 
-import aws.smithy.kotlin.runtime.auth.awssigning.AwsSigner
-import aws.smithy.kotlin.runtime.auth.awssigning.AwsSignedBodyHeader
-import aws.smithy.kotlin.runtime.auth.awssigning.DefaultAwsSigner
 import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
+import aws.smithy.kotlin.runtime.auth.awssigning.AwsSignedBodyHeader
+import aws.smithy.kotlin.runtime.auth.awssigning.AwsSigner
+import aws.smithy.kotlin.runtime.auth.awssigning.DefaultAwsSigner
 import java.time.Clock
 
 /**

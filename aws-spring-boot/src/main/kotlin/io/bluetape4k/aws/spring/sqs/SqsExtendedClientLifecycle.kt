@@ -110,9 +110,9 @@ class SqsExtendedLifecycleBudgetCondition: SpringBootCondition() {
         return when {
             raw.startsWith("PT") -> JavaDuration.parse(raw).seconds
             raw.endsWith("ms") -> raw.removeSuffix("ms").toDouble().div(MILLIS_PER_SECOND).toLong()
-            raw.endsWith("s") -> raw.removeSuffix("s").toDouble().toLong()
-            raw.endsWith("m") -> raw.removeSuffix("m").toDouble().times(SECONDS_PER_MINUTE).toLong()
-            else -> raw.toLongOrNull()?.div(MILLIS_PER_SECOND.toLong()) ?: DEFAULT_PHASE_SECONDS
+            raw.endsWith("s")  -> raw.removeSuffix("s").toDouble().toLong()
+            raw.endsWith("m")  -> raw.removeSuffix("m").toDouble().times(SECONDS_PER_MINUTE).toLong()
+            else               -> raw.toLongOrNull()?.div(MILLIS_PER_SECOND.toLong()) ?: DEFAULT_PHASE_SECONDS
         }
     }
 

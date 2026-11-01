@@ -1,18 +1,18 @@
 package io.bluetape4k.aws.ktor.sts
 
+import aws.sdk.kotlin.services.sts.StsClient
 import aws.sdk.kotlin.services.sts.endpoints.DefaultStsEndpointProvider
 import aws.sdk.kotlin.services.sts.endpoints.StsEndpointProvider
-import io.bluetape4k.aws.ktor.AwsKotlinEndpointPolicyInterceptor
-import io.bluetape4k.aws.ktor.checkedAwsKotlinEndpointProvider
-import io.bluetape4k.aws.ktor.requireAwsKotlinEndpointProviderUnset
-import aws.sdk.kotlin.services.sts.StsClient
 import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
 import aws.smithy.kotlin.runtime.http.engine.HttpClientEngine
 import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.ToStringBuilder
+import io.bluetape4k.aws.kotlin.sts.stsClientOf
+import io.bluetape4k.aws.ktor.AwsKotlinEndpointPolicyInterceptor
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.AwsKtorStsClientCustomizer
-import io.bluetape4k.aws.kotlin.sts.stsClientOf
+import io.bluetape4k.aws.ktor.checkedAwsKotlinEndpointProvider
+import io.bluetape4k.aws.ktor.requireAwsKotlinEndpointProviderUnset
 
 /**
  * [StsKtorPlugin] 구성입니다.

@@ -171,10 +171,11 @@ class KinesisKtorTemplate(
                 when (position) {
                     is KinesisStartingPosition.AtSequenceNumber -> startingSequenceNumber = position.sequenceNumber
                     is KinesisStartingPosition.AfterSequenceNumber -> startingSequenceNumber = position.sequenceNumber
-                    is KinesisStartingPosition.AtTimestamp -> timestamp =
+                    is KinesisStartingPosition.AtTimestamp      -> timestamp =
                         SmithyInstant.fromEpochSeconds(position.timestamp.epochSecond, position.timestamp.nano)
                     KinesisStartingPosition.TrimHorizon,
-                    KinesisStartingPosition.Latest -> Unit
+                    KinesisStartingPosition.Latest,
+                                                                -> Unit
                 }
             },
         )
@@ -184,17 +185,17 @@ class KinesisKtorTemplate(
 
     private fun KinesisStartingPosition.shardIteratorType(): ShardIteratorType =
         when (this) {
-            KinesisStartingPosition.TrimHorizon -> ShardIteratorType.TrimHorizon
-            KinesisStartingPosition.Latest -> ShardIteratorType.Latest
+            KinesisStartingPosition.TrimHorizon         -> ShardIteratorType.TrimHorizon
+            KinesisStartingPosition.Latest              -> ShardIteratorType.Latest
             is KinesisStartingPosition.AtSequenceNumber -> ShardIteratorType.AtSequenceNumber
             is KinesisStartingPosition.AfterSequenceNumber -> ShardIteratorType.AfterSequenceNumber
-            is KinesisStartingPosition.AtTimestamp -> ShardIteratorType.AtTimestamp
+            is KinesisStartingPosition.AtTimestamp      -> ShardIteratorType.AtTimestamp
         }
 
     private fun KinesisException.isKinesisThrottlingException(): Boolean =
         this is ProvisionedThroughputExceededException ||
-            (sdkErrorMetadata.protocolResponse as? HttpResponse)?.status?.value == 429 ||
-            sdkErrorMetadata.errorCode in KINESIS_THROTTLING_ERROR_CODES
+                (sdkErrorMetadata.protocolResponse as? HttpResponse)?.status?.value == 429 ||
+                sdkErrorMetadata.errorCode in KINESIS_THROTTLING_ERROR_CODES
 
     private fun jitteredBackoff(attempt: Int, options: KinesisRecordFlowOptions): Duration {
         val maxMs = options.maxThrottleBackoff.toMillis()

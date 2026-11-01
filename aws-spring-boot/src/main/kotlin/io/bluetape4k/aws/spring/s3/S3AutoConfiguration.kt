@@ -208,7 +208,7 @@ class S3AutoConfiguration {
             aesProvider = aesProvider.getIfUnique()
                 ?: error(
                     "S3AesProvider is required exactly once when " +
-                        "bluetape4k.aws.s3.client-side-encryption.provider=AES."
+                            "bluetape4k.aws.s3.client-side-encryption.provider=AES."
                 ),
         )
 
@@ -231,7 +231,7 @@ class S3AutoConfiguration {
             rsaProvider = rsaProvider.getIfUnique()
                 ?: error(
                     "S3RsaProvider is required exactly once when " +
-                        "bluetape4k.aws.s3.client-side-encryption.provider=RSA."
+                            "bluetape4k.aws.s3.client-side-encryption.provider=RSA."
                 ),
         )
 

@@ -358,7 +358,7 @@ class SqsConsumerRuntime(
     fun start() {
         lifecycleLock.withLock {
             when (lifecycleState.get()) {
-                LifecycleState.NEW -> {
+                LifecycleState.NEW     -> {
                     lifecycleState.set(LifecycleState.RUNNING)
                     val dispatcher = config.dispatcher ?: Dispatchers.IO.limitedParallelism(config.coroutines)
                     val currentScope = CoroutineScope(SupervisorJob() + dispatcher + CoroutineName("sqs-consumer"))
@@ -395,7 +395,7 @@ class SqsConsumerRuntime(
 
                 LifecycleState.STOPPING,
                 LifecycleState.STOPPED,
-                    -> null
+                                   -> null
             }
         }
 

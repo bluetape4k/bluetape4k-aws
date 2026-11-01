@@ -12,7 +12,7 @@ import kotlin.time.toKotlinDuration
 internal class ImdsKtorTemplate(
     private val adapter: ImdsSmithyAdapter,
     private val requestTimeout: Duration = 1.seconds(),
-) : ImdsKtorOperations {
+): ImdsKtorOperations {
 
     init {
         requestTimeout.requireGt(Duration.ZERO, "requestTimeout")

@@ -21,8 +21,8 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.serialization.jackson.jackson
-import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.application.install
+import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -106,6 +106,6 @@ class DynamoDbExampleRoutesLocalStackTest {
         when (val emulator = System.getProperty("bluetape4k.aws.emulator", "floci").trim().lowercase()) {
             "floci" -> FlociServer.Launcher.floci
             "localstack" -> LocalStackServer.Launcher.getLocalStack(*services)
-            else -> error("Unsupported AWS emulator: $emulator. Use floci or localstack.")
+            else    -> error("Unsupported AWS emulator: $emulator. Use floci or localstack.")
         }
 }

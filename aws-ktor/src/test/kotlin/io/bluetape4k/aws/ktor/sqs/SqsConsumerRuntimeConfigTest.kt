@@ -188,7 +188,7 @@ class SqsConsumerRuntimeConfigTest {
             body = "body"
             attributes = mapOf(
                 aws.sdk.kotlin.services.sqs.model.MessageSystemAttributeName.ApproximateReceiveCount to
-                    Int.MAX_VALUE.toString(),
+                        Int.MAX_VALUE.toString(),
             )
         }
         val context = SqsConsumerFailureContext(

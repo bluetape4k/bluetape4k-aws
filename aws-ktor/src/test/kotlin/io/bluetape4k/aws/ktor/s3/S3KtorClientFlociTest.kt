@@ -2,18 +2,17 @@ package io.bluetape4k.aws.ktor.s3
 
 import aws.sdk.kotlin.runtime.auth.credentials.StaticCredentialsProvider
 import aws.sdk.kotlin.services.s3.model.CreateBucketRequest
-import aws.smithy.kotlin.runtime.net.url.Url as SmithyUrl
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.aws.kotlin.s3.s3ClientOf
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.javatimes.minutes
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
-import io.bluetape4k.logging.debug
-import io.bluetape4k.aws.kotlin.s3.s3ClientOf
 import io.bluetape4k.testcontainers.aws.FlociServer
 import io.ktor.http.Url
 import org.junit.jupiter.api.Test
+import aws.smithy.kotlin.runtime.net.url.Url as SmithyUrl
 
 class S3KtorClientFlociTest {
 

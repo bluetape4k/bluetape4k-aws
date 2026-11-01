@@ -78,15 +78,15 @@ class AwsServiceConnectionAutoConfigurationTest {
                 .run { context ->
                     context.startupFailure.shouldBeNull()
                     when (serviceName) {
-                        "sqs" -> context.getBean<SqsAsyncClient>()
+                        "sqs"     -> context.getBean<SqsAsyncClient>()
                             .serviceClientConfiguration().endpointOverride().orElse(null)
-                        "sns" -> context.getBean<SnsAsyncClient>()
+                        "sns"     -> context.getBean<SnsAsyncClient>()
                             .serviceClientConfiguration().endpointOverride().orElse(null)
                         "dynamodb" -> context.getBean<DynamoDbAsyncClient>()
                             .serviceClientConfiguration().endpointOverride().orElse(null)
                         "kinesis" -> context.getBean<KinesisAsyncClient>()
                             .serviceClientConfiguration().endpointOverride().orElse(null)
-                        else -> error("Unexpected service $serviceName")
+                        else      -> error("Unexpected service $serviceName")
                     } shouldBeEqualTo URI.create("http://properties:4566")
                 }
         }

@@ -237,7 +237,7 @@ private class AwsModulithEnvelopeParser(
             when (val token = reader.next() ?: throw AwsModulithInboundEnvelopeException()) {
                 JsonToken.PROPERTY_NAME -> readField(reader, fields, values)
                 JsonToken.END_OBJECT -> break
-                else -> throw AwsModulithInboundEnvelopeException()
+                else                 -> throw AwsModulithInboundEnvelopeException()
             }
         }
         if (reader.next() != null || fields != ENVELOPE_FIELDS) {
@@ -257,8 +257,8 @@ private class AwsModulithEnvelopeParser(
         }
         when (name) {
             FIELD_SPEC_VERSION -> values.specVersion = reader.requiredInteger()
-            FIELD_ID -> values.id = reader.requiredString()
-            FIELD_TYPE -> values.type = reader.requiredString()
+            FIELD_ID      -> values.id = reader.requiredString()
+            FIELD_TYPE    -> values.type = reader.requiredString()
             FIELD_VERSION -> values.version = reader.requiredInteger()
             FIELD_PAYLOAD -> values.payload = reader.requiredPayload(maxSerializedPayloadBytes)
             FIELD_HEADERS -> values.headers = reader.requiredHeaders()
@@ -422,7 +422,7 @@ private class StrictJsonReader(
                 }
             }
 
-            else -> Unit
+            else                                      -> Unit
         }
         return token
     }
@@ -492,7 +492,7 @@ private class StrictJsonReader(
                 }
 
                 JsonToken.END_OBJECT -> return headers.toMap()
-                else -> throw AwsModulithInboundEnvelopeException()
+                else                 -> throw AwsModulithInboundEnvelopeException()
             }
         }
     }
@@ -522,9 +522,9 @@ private class StrictJsonReader(
                 require(name !in FORBIDDEN_TYPE_IDS)
             }
 
-            JsonToken.VALUE_STRING -> validateText(text())
+            JsonToken.VALUE_STRING  -> validateText(text())
             JsonToken.VALUE_NUMBER_INT, JsonToken.VALUE_NUMBER_FLOAT -> validateNumber(text())
-            else -> Unit
+            else                    -> Unit
         }
     }
 }
@@ -556,9 +556,9 @@ private object CodecFailureSanitizer {
     private fun rethrowOrOutbound(error: Throwable): Nothing {
         when (error) {
             is CancellationException -> throw error
-            is Error -> throw error
+            is Error                 -> throw error
             is AwsModulithEventException -> throw error
-            else -> throw AwsModulithOutboundEnvelopeException()
+            else                     -> throw AwsModulithOutboundEnvelopeException()
         }
     }
 
@@ -566,9 +566,9 @@ private object CodecFailureSanitizer {
     private fun rethrowOrInbound(error: Throwable): Nothing {
         when (error) {
             is CancellationException -> throw error
-            is Error -> throw error
+            is Error                 -> throw error
             is AwsModulithEventException -> throw error
-            else -> throw AwsModulithInboundEnvelopeException()
+            else                     -> throw AwsModulithInboundEnvelopeException()
         }
     }
 }

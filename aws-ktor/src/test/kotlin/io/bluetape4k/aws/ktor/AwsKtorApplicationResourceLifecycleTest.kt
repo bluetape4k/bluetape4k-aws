@@ -1,5 +1,14 @@
 package io.bluetape4k.aws.ktor
 
+import aws.sdk.kotlin.services.cloudwatch.CloudWatchClient
+import aws.sdk.kotlin.services.eventbridge.EventBridgeClient
+import aws.sdk.kotlin.services.kinesis.KinesisClient
+import aws.sdk.kotlin.services.s3control.S3ControlClient
+import aws.sdk.kotlin.services.s3vectors.S3VectorsClient
+import aws.sdk.kotlin.services.sesv2.SesV2Client
+import aws.sdk.kotlin.services.sns.SnsClient
+import aws.sdk.kotlin.services.sts.StsClient
+import aws.smithy.kotlin.runtime.http.engine.CloseableHttpClientEngine
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.aws.ktor.cloudwatch.CloudWatchKtorPluginConfig
 import io.bluetape4k.aws.ktor.cloudwatch.CloudWatchKtorRuntime
@@ -23,20 +32,10 @@ import io.bluetape4k.ktor.core.ApplicationResourceRegistry
 import io.bluetape4k.ktor.core.installApplicationResourceLifecycle
 import io.bluetape4k.logging.KLogging
 import io.ktor.server.application.ApplicationStopping
-import io.ktor.server.application.install
 import io.ktor.server.testing.testApplication
-import io.mockk.mockk
 import io.mockk.every
+import io.mockk.mockk
 import io.mockk.verify
-import aws.sdk.kotlin.services.kinesis.KinesisClient
-import aws.sdk.kotlin.services.cloudwatch.CloudWatchClient
-import aws.sdk.kotlin.services.eventbridge.EventBridgeClient
-import aws.sdk.kotlin.services.s3control.S3ControlClient
-import aws.sdk.kotlin.services.s3vectors.S3VectorsClient
-import aws.sdk.kotlin.services.sesv2.SesV2Client
-import aws.sdk.kotlin.services.sns.SnsClient
-import aws.sdk.kotlin.services.sts.StsClient
-import aws.smithy.kotlin.runtime.http.engine.CloseableHttpClientEngine
 import org.junit.jupiter.api.Test
 import java.util.concurrent.atomic.AtomicInteger
 

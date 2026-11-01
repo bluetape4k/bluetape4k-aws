@@ -61,7 +61,7 @@ internal class AwsConfigDataLocationParser {
         options: Map<String, String>,
         separator: String,
     ): AwsConfigDataSource = when (backend) {
-        AwsConfigDataBackend.S3 -> parseS3(source, options)
+        AwsConfigDataBackend.S3         -> parseS3(source, options)
         AwsConfigDataBackend.PARAMETER_STORE -> parseParameterStore(source, options)
         AwsConfigDataBackend.SECRETS_MANAGER -> parseSecretsManager(source, options)
         AwsConfigDataBackend.APP_CONFIG -> parseAppConfig(source, options, separator)
@@ -171,7 +171,7 @@ internal class AwsConfigDataLocationParser {
 
     private fun validateFormat(backend: AwsConfigDataBackend, value: String) {
         when (backend) {
-            AwsConfigDataBackend.S3 -> parseS3Format(value)
+            AwsConfigDataBackend.S3         -> parseS3Format(value)
             AwsConfigDataBackend.SECRETS_MANAGER -> parseSecretFormat(value)
             AwsConfigDataBackend.APP_CONFIG -> parseAppConfigFormat(value)
             AwsConfigDataBackend.PARAMETER_STORE -> error("format is not supported by this backend")
@@ -183,7 +183,7 @@ internal class AwsConfigDataLocationParser {
         "properties" -> S3ConfigFormat.PROPERTIES
         "yaml" -> S3ConfigFormat.YAML
         "json" -> S3ConfigFormat.JSON
-        else -> throw IllegalArgumentException("Unsupported S3 ConfigData format.")
+        else   -> throw IllegalArgumentException("Unsupported S3 ConfigData format.")
     }
 
     private fun parseSecretFormat(value: String): SecretFormat = when (value.lowercase()) {
@@ -193,17 +193,17 @@ internal class AwsConfigDataLocationParser {
     }
 
     private fun parseAppConfigFormat(value: String): AppConfigFormat = when (value.lowercase()) {
-        "auto" -> AppConfigFormat.AUTO
+        "auto"       -> AppConfigFormat.AUTO
         "properties" -> AppConfigFormat.PROPERTIES
         "yaml", "yml" -> AppConfigFormat.YAML
-        "json" -> AppConfigFormat.JSON
-        else -> throw IllegalArgumentException("Unsupported AppConfig ConfigData format.")
+        "json"       -> AppConfigFormat.JSON
+        else         -> throw IllegalArgumentException("Unsupported AppConfig ConfigData format.")
     }
 
     private fun parseBoolean(value: String): Boolean = when (value.lowercase()) {
         "true" -> true
         "false" -> false
-        else -> throw IllegalArgumentException("AWS ConfigData boolean option must be true or false.")
+        else   -> throw IllegalArgumentException("AWS ConfigData boolean option must be true or false.")
     }
 
     private fun decodeComponent(value: String, label: String): String {

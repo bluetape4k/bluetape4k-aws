@@ -117,8 +117,8 @@ internal object AppConfigDataDecoder: KLogging() {
                 )
             }
 
-            null -> Unit
-            else -> {
+            null         -> Unit
+            else         -> {
                 key.requireNotBlank { "AWS AppConfig scalar payload requires a property key." }
                 target[key!!] = value
                 target.size.requireLe(maxPropertyCount) { "AWS AppConfig payload exceeds the property-count budget." }
@@ -128,18 +128,22 @@ internal object AppConfigDataDecoder: KLogging() {
 
     private fun AppConfigFormat.resolve(contentType: String?): AppConfigFormat = when (this) {
         AppConfigFormat.AUTO -> when {
-            contentType.isNullOrBlank() -> AppConfigFormat.PROPERTIES
-            contentType.lowercase(Locale.ROOT).contains("json") -> AppConfigFormat.JSON
+            contentType.isNullOrBlank()         -> AppConfigFormat.PROPERTIES
+            contentType.lowercase(Locale.ROOT)
+                .contains("json")               -> AppConfigFormat.JSON
             contentType.lowercase(Locale.ROOT).contains("yaml") || contentType.lowercase(Locale.ROOT).contains("yml") ->
                 AppConfigFormat.YAML
 
             contentType.lowercase(Locale.ROOT).contains("text") ||
-                    contentType.lowercase(Locale.ROOT).contains("properties") -> AppConfigFormat.PROPERTIES
+                    contentType.lowercase(Locale.ROOT)
+                        .contains("properties") -> AppConfigFormat.PROPERTIES
 
-            else -> throw IllegalArgumentException("Unsupported AWS AppConfig content type.")
+            else                                -> throw IllegalArgumentException(
+                "Unsupported AWS AppConfig content type."
+            )
         }
 
-        else -> this
+        else                 -> this
     }
 
     private fun PropertySource<*>.entries(): List<Pair<String, Any>> =

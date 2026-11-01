@@ -51,7 +51,7 @@ class InMemoryAwsModulithEventIdempotencyStore internal constructor(
             when (val entry = entries[key]) {
                 is StoreEntry.InProgress -> claimInProgress(entry, leaseDuration, now)
                 is StoreEntry.Completed -> AwsModulithClaimResult.Completed
-                null -> acquireNew(key, leaseDuration, now)
+                null                    -> acquireNew(key, leaseDuration, now)
             }
         }
     }
@@ -90,7 +90,7 @@ class InMemoryAwsModulithEventIdempotencyStore internal constructor(
                     AwsModulithStoreMutation.STALE
                 }
 
-                null -> AwsModulithStoreMutation.NOT_FOUND
+                null                    -> AwsModulithStoreMutation.NOT_FOUND
             }
         }
     }
@@ -104,7 +104,7 @@ class InMemoryAwsModulithEventIdempotencyStore internal constructor(
             when (val entry = entries[token.key]) {
                 is StoreEntry.InProgress -> releaseInProgress(entry, token, now)
                 is StoreEntry.Completed -> AwsModulithStoreMutation.STALE
-                null -> AwsModulithStoreMutation.NOT_FOUND
+                null                    -> AwsModulithStoreMutation.NOT_FOUND
             }
         }
     }

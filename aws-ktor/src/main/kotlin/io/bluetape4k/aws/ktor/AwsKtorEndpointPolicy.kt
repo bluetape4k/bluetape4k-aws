@@ -7,7 +7,7 @@ import aws.smithy.kotlin.runtime.client.endpoints.EndpointProvider
 import aws.smithy.kotlin.runtime.http.interceptors.HttpInterceptor
 import aws.smithy.kotlin.runtime.http.request.HttpRequest
 import java.net.URI
-import java.util.Locale
+import java.util.*
 
 /** AWS 서비스 요청에 사용할 최종 endpoint URL을 검사합니다. */
 internal fun validateAwsKotlinServiceEndpoint(
@@ -23,7 +23,7 @@ internal fun validateAwsKotlinServiceEndpoint(
     validateAwsKotlinEndpointScheme(uri, allowInsecureLocalHttpEndpoint)
 }
 
-internal fun <P, T : EndpointProvider<P>> checkedAwsKotlinEndpointProvider(
+internal fun <P, T: EndpointProvider<P>> checkedAwsKotlinEndpointProvider(
     provider: T,
     region: (P) -> String?,
     allowInsecureLocalHttpEndpoint: Boolean,
@@ -81,7 +81,7 @@ internal class AwsKotlinEndpointPolicyInterceptor(
     private val configuredEndpoint: String?,
     private val region: String?,
     private val allowInsecureLocalHttpEndpoint: Boolean,
-) : HttpInterceptor {
+): HttpInterceptor {
 
     override fun readBeforeExecution(context: RequestInterceptorContext<Any>) {
         validateAwsKotlinServiceEndpoint(
@@ -112,8 +112,8 @@ private fun isLoopbackLiteral(host: String): Boolean {
 
     return octets.all { octet ->
         octet.isNotEmpty() &&
-            (octet.length == 1 || octet.first() != '0') &&
-            octet.all { it in '0'..'9' } &&
-            octet.toIntOrNull()?.let { it <= 255 } == true
+                (octet.length == 1 || octet.first() != '0') &&
+                octet.all { it in '0'..'9' } &&
+                octet.toIntOrNull()?.let { it <= 255 } == true
     }
 }

@@ -191,10 +191,10 @@ internal class SqsListenerMethodInvoker(
                 }
 
             private fun rawClass(type: Type): Class<*> = when (type) {
-                is Class<*> -> type
+                is Class<*>         -> type
                 is ParameterizedType -> rawClass(type.rawType)
                 is GenericArrayType -> Array<Any>::class.java
-                else -> Any::class.java
+                else                -> Any::class.java
             }
 
             private const val serialVersionUID: Long = 1L
@@ -234,7 +234,7 @@ internal class SqsListenerMethodInvoker(
                 val resolved = when {
                     kType != null -> resolveKType(kType)
                     genericType != null -> resolveJavaType(genericType)
-                    else -> unsupported("raw List payload is not supported")
+                    else          -> unsupported("raw List payload is not supported")
                 }
                 elementType = resolved
                 return resolved
@@ -248,7 +248,7 @@ internal class SqsListenerMethodInvoker(
                 return when (val targetType = resolveElementType()) {
                     SqsReceivedMessage::class.java -> messages
                     Message::class.java -> messages.map { it.message }
-                    else -> messages.mapIndexed { index, message ->
+                    else                -> messages.mapIndexed { index, message ->
                         try {
                             converter.convert(message, targetType)
                         } catch (e: CancellationException) {
@@ -329,13 +329,13 @@ internal class SqsListenerMethodInvoker(
             converter: SqsMessageConverter,
         ): Any =
             when (this) {
-                Body -> message.body
-                AwsMessage -> message.message
+                Body            -> message.body
+                AwsMessage      -> message.message
                 ReceivedMessage -> message
                 Acknowledgement -> acknowledgement
                 BatchAcknowledgement -> throw IllegalArgumentException("SqsBatchAcknowledgement requires batch=true")
-                is ListPayload -> throw IllegalArgumentException("batch=false does not accept List payload")
-                is Converted -> converter.convert(message, targetType, genericType)
+                is ListPayload  -> throw IllegalArgumentException("batch=false does not accept List payload")
+                is Converted    -> converter.convert(message, targetType, genericType)
             }
 
         fun batchArgument(
@@ -348,17 +348,17 @@ internal class SqsListenerMethodInvoker(
                 BatchAcknowledgement -> requireNotNull(acknowledgement) {
                     "MANUAL requires SqsBatchAcknowledgement"
                 }
-                else -> throw IllegalArgumentException("batch=true requires a List payload")
+                else           -> throw IllegalArgumentException("batch=true requires a List payload")
             }
 
         companion object {
             fun from(spec: ParameterSpec): Parameter = when (spec.rawType) {
-                String::class.java -> Body
-                Message::class.java -> AwsMessage
+                String::class.java             -> Body
+                Message::class.java            -> AwsMessage
                 SqsReceivedMessage::class.java -> ReceivedMessage
                 SqsAcknowledgement::class.java -> Acknowledgement
                 SqsBatchAcknowledgement::class.java -> BatchAcknowledgement
-                else -> if (List::class.java.isAssignableFrom(spec.rawType)) {
+                else                           -> if (List::class.java.isAssignableFrom(spec.rawType)) {
                     ListPayload(spec.name, spec.kType, spec.genericType)
                 } else {
                     Converted(spec.rawType, spec.genericType)

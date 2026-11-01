@@ -51,7 +51,7 @@ internal class SpringEnvironmentAwsDatabaseSettingsResolver(
             }
             error(
                 "No Spring Environment properties found for ${source.type} source '${source.sourceId}' " +
-                    "under prefix '$prefix'."
+                        "under prefix '$prefix'."
             )
         }
 

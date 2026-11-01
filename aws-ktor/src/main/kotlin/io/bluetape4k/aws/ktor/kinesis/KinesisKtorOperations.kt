@@ -1,6 +1,5 @@
 package io.bluetape4k.aws.ktor.kinesis
 
-import kotlinx.coroutines.flow.Flow
 import aws.sdk.kotlin.services.kinesis.model.CreateStreamResponse
 import aws.sdk.kotlin.services.kinesis.model.DeleteStreamResponse
 import aws.sdk.kotlin.services.kinesis.model.DescribeStreamResponse
@@ -10,6 +9,7 @@ import aws.sdk.kotlin.services.kinesis.model.PutRecordResponse
 import aws.sdk.kotlin.services.kinesis.model.PutRecordsRequestEntry
 import aws.sdk.kotlin.services.kinesis.model.PutRecordsResponse
 import aws.sdk.kotlin.services.kinesis.model.Record
+import kotlinx.coroutines.flow.Flow
 
 /**
  * Ktor 애플리케이션을 위한 코루틴 중심 Kinesis 작업입니다.

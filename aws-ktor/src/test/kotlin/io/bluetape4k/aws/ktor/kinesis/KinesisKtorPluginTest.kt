@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.ktor.kinesis
 
+import aws.sdk.kotlin.services.kinesis.KinesisClient
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
@@ -20,7 +21,6 @@ import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import aws.sdk.kotlin.services.kinesis.KinesisClient
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class KinesisKtorPluginTest {
@@ -102,14 +102,14 @@ class KinesisKtorPluginTest {
         val runtime = KinesisKtorPluginConfig()
             .apply { kinesisClient { order += "service" } }
             .toRuntime(
-            AwsKtorDefaults(
-                region = "ap-northeast-2",
-                endpointOverride = Url("http://localhost:4566"),
-                kinesisClientCustomizers = listOf(
-                    AwsKtorKinesisClientCustomizer { order += "shared" }
-                ),
+                AwsKtorDefaults(
+                    region = "ap-northeast-2",
+                    endpointOverride = Url("http://localhost:4566"),
+                    kinesisClientCustomizers = listOf(
+                        AwsKtorKinesisClientCustomizer { order += "shared" }
+                    ),
+                )
             )
-        )
         runtime.shouldNotBeNull()
         order shouldBeEqualTo listOf("shared", "service")
 

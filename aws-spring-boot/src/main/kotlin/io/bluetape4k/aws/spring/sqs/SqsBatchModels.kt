@@ -155,7 +155,7 @@ data class SqsBatchSendEntry private constructor(
         validateAutomaticBatchEntryId(entryId)
     }
 
-    constructor(entryId: String, request: SqsSendRequest) : this(
+    constructor(entryId: String, request: SqsSendRequest): this(
         entryId = entryId,
         request = request.copy(messageAttributes = request.messageAttributes.toMap()),
         snapshotMarker = true,
@@ -181,7 +181,7 @@ data class SqsBatchDeleteEntry private constructor(
         validateAutomaticBatchEntryId(entryId)
     }
 
-    constructor(entryId: String, queueUrl: String, receiptHandle: String) : this(
+    constructor(entryId: String, queueUrl: String, receiptHandle: String): this(
         entryId = entryId,
         queueUrl = queueUrl.requireNotBlank("queueUrl"),
         receiptHandle = receiptHandle.requireNotBlank("receiptHandle"),
@@ -211,7 +211,7 @@ data class SqsBatchEntryFailure private constructor(
         }
     }
 
-    constructor(entryId: String, kind: SqsBatchFailureKind, code: String?) : this(
+    constructor(entryId: String, kind: SqsBatchFailureKind, code: String?): this(
         entryId = entryId,
         kind = kind,
         code = if (kind == SqsBatchFailureKind.TRANSPORT) null else normalizeAutomaticBatchErrorCode(code),
@@ -270,7 +270,7 @@ data class SqsSendManyResult private constructor(
     constructor(
         successful: List<SqsBatchSendSuccess>,
         failed: List<SqsBatchEntryFailure>,
-    ) : this(successful.toList(), failed.toList(), true)
+    ): this(successful.toList(), failed.toList(), true)
 
     override fun toString(): String =
         "SqsSendManyResult(status=$status, successful=${successful.size}, failed=${failed.size})"
@@ -298,7 +298,7 @@ data class SqsDeleteManyResult private constructor(
     constructor(
         successfulEntryIds: List<String>,
         failed: List<SqsBatchEntryFailure>,
-    ) : this(successfulEntryIds.toList(), failed.toList(), true)
+    ): this(successfulEntryIds.toList(), failed.toList(), true)
 
     override fun toString(): String =
         "SqsDeleteManyResult(status=$status, successful=${successfulEntryIds.size}, failed=${failed.size})"
@@ -351,7 +351,7 @@ internal object BatchResultNormalizer {
                     }
                     successful += SqsBatchSendSuccess(entryId, messageId, sequenceNumber)
                 }
-                is SqsBatchOutcome.Failure -> failed += outcome.failure
+                is SqsBatchOutcome.Failure     -> failed += outcome.failure
                 is SqsBatchOutcome.DeleteSuccess ->
                     throw SqsBatchProtocolException.from(expected, snapshot.map(SqsBatchOutcome::entryId))
             }
@@ -373,7 +373,7 @@ internal object BatchResultNormalizer {
         expected.forEach { entryId ->
             when (val outcome = byId.getValue(entryId)) {
                 is SqsBatchOutcome.DeleteSuccess -> successful += entryId
-                is SqsBatchOutcome.Failure -> failed += outcome.failure
+                is SqsBatchOutcome.Failure     -> failed += outcome.failure
                 is SqsBatchOutcome.SendSuccess ->
                     throw SqsBatchProtocolException.from(expected, snapshot.map(SqsBatchOutcome::entryId))
             }
@@ -403,7 +403,7 @@ private fun validateAutomaticBatchResultIds(successfulIds: Collection<String>, f
 private fun automaticBatchResultStatus(successfulCount: Int, failedCount: Int): SqsBatchResultStatus = when {
     failedCount == 0 -> SqsBatchResultStatus.SUCCESS
     successfulCount == 0 -> SqsBatchResultStatus.FAILURE
-    else -> SqsBatchResultStatus.PARTIAL_FAILURE
+    else             -> SqsBatchResultStatus.PARTIAL_FAILURE
 }
 
 private fun validateExpectedAutomaticBatchIds(entryIds: Collection<String>): List<String> =

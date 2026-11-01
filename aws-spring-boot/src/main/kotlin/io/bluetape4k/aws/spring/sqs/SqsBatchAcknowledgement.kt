@@ -465,7 +465,7 @@ internal class DefaultSqsBatchAcknowledgement(
         val runnable = mutableListOf<Item>()
         requested.forEach { item ->
             when (item.state) {
-                ItemState.PENDING -> {
+                ItemState.PENDING   -> {
                     val predecessor = fifoPredecessor(item)
                     if (operation == SqsBatchAcknowledgementOperation.ACKNOWLEDGE && predecessor != null) {
                         preFailures += failure(item, "fifo_predecessor_pending")
@@ -528,7 +528,7 @@ internal class DefaultSqsBatchAcknowledgement(
             }
             SqsBatchAcknowledgementOperation.NACK,
             SqsBatchAcknowledgementOperation.CHANGE_VISIBILITY,
-                -> {
+                                                         -> {
                 val timeout = requireNotNull(timeoutSeconds)
                 val requests = runnable.map {
                     SqsChangeVisibilityRequest(it.message.messageId, it.message.receiptHandle, timeout)
@@ -542,7 +542,7 @@ internal class DefaultSqsBatchAcknowledgement(
                         item.message.messageId in successIds -> item to Outcome(true)
                         item.message.messageId in failureById ->
                             item to Outcome(false, failure(item, failureById.getValue(item.message.messageId)))
-                        else -> error("validated visibility response did not contain ${item.message.messageId}")
+                        else                                 -> error("validated visibility response did not contain ${item.message.messageId}")
                     }
                 }
             }
@@ -554,7 +554,7 @@ internal class DefaultSqsBatchAcknowledgement(
             when {
                 item.message.messageId in preSuccess -> item.message.messageId
                 externalById[item.message.messageId]?.second?.success == true -> item.message.messageId
-                else -> null
+                else                                 -> null
             }
         }
         val failures = requested.mapNotNull { item ->
@@ -577,7 +577,7 @@ internal class DefaultSqsBatchAcknowledgement(
                     if (item.message.messageId in successIds) {
                         item.state = when (operation) {
                             SqsBatchAcknowledgementOperation.ACKNOWLEDGE -> ItemState.ACKED
-                            SqsBatchAcknowledgementOperation.NACK -> ItemState.DEFERRED
+                            SqsBatchAcknowledgementOperation.NACK        -> ItemState.DEFERRED
                             SqsBatchAcknowledgementOperation.CHANGE_VISIBILITY -> ItemState.PENDING
                         }
                         if (operation != SqsBatchAcknowledgementOperation.CHANGE_VISIBILITY) {
@@ -650,7 +650,7 @@ internal class DefaultSqsBatchAcknowledgement(
         val status = when {
             failures.isEmpty() -> SqsBatchAcknowledgementStatus.SUCCESS
             successfulIds.isEmpty() -> SqsBatchAcknowledgementStatus.FAILURE
-            else -> SqsBatchAcknowledgementStatus.PARTIAL_FAILURE
+            else               -> SqsBatchAcknowledgementStatus.PARTIAL_FAILURE
         }
         return SqsBatchAcknowledgementResult(operation, status, successfulIds.toList(), failures.toList())
     }
@@ -666,7 +666,7 @@ internal class DefaultSqsBatchAcknowledgement(
 
     private fun SqsBatchAcknowledgementOperation.toAcknowledgementAction(): SqsAcknowledgementAction = when (this) {
         SqsBatchAcknowledgementOperation.ACKNOWLEDGE -> SqsAcknowledgementAction.ACK
-        SqsBatchAcknowledgementOperation.NACK -> SqsAcknowledgementAction.NACK
+        SqsBatchAcknowledgementOperation.NACK        -> SqsAcknowledgementAction.NACK
         SqsBatchAcknowledgementOperation.CHANGE_VISIBILITY -> SqsAcknowledgementAction.CHANGE_VISIBILITY
     }
 

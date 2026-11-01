@@ -164,7 +164,7 @@ private fun String.escapeJson(): String =
         this@escapeJson.forEach { ch ->
             when (ch) {
                 '\\' -> append("\\\\")
-                '"' -> append("\\\"")
+                '"'  -> append("\\\"")
                 '\b' -> append("\\b")
                 '\u000C' -> append("\\f")
                 '\n' -> append("\\n")

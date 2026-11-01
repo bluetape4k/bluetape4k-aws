@@ -1,9 +1,9 @@
+import org.gradle.api.GradleException
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 import org.gradle.api.attributes.Bundling
 import org.gradle.api.attributes.Category
 import org.gradle.api.attributes.LibraryElements
 import org.gradle.api.attributes.Usage
-import org.gradle.api.GradleException
 import org.gradle.api.attributes.java.TargetJvmVersion
 
 plugins {
@@ -37,7 +37,9 @@ dependencies {
     add("awsKtorConsumerClasspath", platform(providers.gradleProperty("awsKtorCentralBom").get()))
     add(
         "awsKtorConsumerClasspath",
-        "${providers.gradleProperty("awsKtorGroup").get()}:bluetape4k-aws-ktor:${providers.gradleProperty("awsKtorVersion").get()}",
+        "${
+            providers.gradleProperty("awsKtorGroup").get()
+        }:bluetape4k-aws-ktor:${providers.gradleProperty("awsKtorVersion").get()}",
     )
 }
 
@@ -50,7 +52,7 @@ tasks.register("resolveAwsKtorPublishedApi") {
             .mapNotNull { it.id as? ModuleComponentIdentifier }
         val leakedJavaDependencies = modules.filter { id ->
             (id.group == "software.amazon.awssdk" && id.module != "bom") ||
-                (id.group == "io.github.bluetape4k" && id.module == "bluetape4k-aws-java")
+                    (id.group == "io.github.bluetape4k" && id.module == "bluetape4k-aws-java")
         }
         if (leakedJavaDependencies.isNotEmpty()) {
             throw GradleException(
@@ -78,7 +80,7 @@ tasks.register("resolveAwsKtorPublishedApi") {
         if (missing.isNotEmpty() || wrongVersions.isNotEmpty()) {
             throw GradleException(
                 "Published aws-ktor consumer resolved missing AWS Kotlin services $missing " +
-                    "or versions other than $expectedVersion: $wrongVersions",
+                        "or versions other than $expectedVersion: $wrongVersions",
             )
         }
         println("PUBLISHED_AWS_KTOR_CONSUMER_RESOLVED ${awsKotlinModules.size} AWS Kotlin modules at $expectedVersion")
