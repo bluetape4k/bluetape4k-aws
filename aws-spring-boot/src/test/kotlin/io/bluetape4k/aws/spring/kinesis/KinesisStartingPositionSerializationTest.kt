@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.spring.kinesis
 
 import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -8,6 +9,8 @@ import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 
 class KinesisStartingPositionSerializationTest {
+
+    companion object: KLogging()
 
     @Test
     fun `AtSequenceNumber Java 역직렬화도 빈 시퀀스 번호를 거부한다`() {

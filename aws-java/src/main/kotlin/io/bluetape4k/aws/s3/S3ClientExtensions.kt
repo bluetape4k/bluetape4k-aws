@@ -436,14 +436,9 @@ fun S3Client.moveObject(
             runCatching {
                 deleteObject { it.bucket(srcBucketName).key(srcKey) }
             }.onFailure { error ->
-                S3ClientLogger.log.warn(
-                    "Failed to delete source object after copy. Source: {}/{}, Dest: {}/{}",
-                    srcBucketName,
-                    srcKey,
-                    destBucketName,
-                    destKey,
-                    error,
-                )
+                S3ClientLogger.log.warn {
+                    "Failed to delete source object after copy. Source: $srcBucketName/$srcKey, Dest: $destBucketName/$destKey"
+                }
             }.getOrNull()
         } else {
             null

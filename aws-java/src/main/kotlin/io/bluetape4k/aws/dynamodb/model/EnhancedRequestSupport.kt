@@ -58,8 +58,10 @@ inline fun <reified T: Any> ReadBatch(
     builder: ReadBatch.Builder<T>.() -> Unit,
 ): ReadBatch {
     return ReadBatch.builder(T::class.java)
-        .apply { mappedTableResource(table) }
-        .apply(builder)
+        .apply {
+            mappedTableResource(table)
+            builder()
+        }
         .build()
 }
 

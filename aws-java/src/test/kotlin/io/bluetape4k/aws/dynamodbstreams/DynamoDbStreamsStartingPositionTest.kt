@@ -12,6 +12,7 @@ class DynamoDbStreamsStartingPositionTest {
 
     companion object: KLogging()
 
+    @Suppress("DEPRECATION")
     private fun roundtrip(value: DynamoDbStreamsStartingPosition): DynamoDbStreamsStartingPosition {
         val bytes = BinarySerializers.JdkUnfiltered.serialize(value)
         return BinarySerializers.JdkUnfiltered.deserialize<DynamoDbStreamsStartingPosition>(bytes).shouldNotBeNull()

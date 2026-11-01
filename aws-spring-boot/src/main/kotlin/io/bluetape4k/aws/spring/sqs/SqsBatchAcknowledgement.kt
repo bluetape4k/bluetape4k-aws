@@ -8,6 +8,8 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import okio.withLock
+import java.util.concurrent.locks.ReentrantLock
 
 /**
  * 하나의 ReceiveMessage 응답에 대한 전체·부분 acknowledgement API입니다.
@@ -93,7 +95,7 @@ internal class DefaultSqsBatchAcknowledgement(
     }
 
     private val mutex = Mutex()
-    private val snapshotLock = Any()
+    private val snapshotLock = ReentrantLock()
     private val items: List<Item>
     private val byReceiptHandle: Map<String, Item>
 
@@ -116,14 +118,14 @@ internal class DefaultSqsBatchAcknowledgement(
     }
 
     override val pending: List<SqsReceivedMessage>
-        get() = synchronized(snapshotLock) {
+        get() = snapshotLock.withLock {
             items.filter { it.state != ItemState.ACKED && it.state != ItemState.DEFERRED }
                 .map { it.message }
                 .toList()
         }
 
     override val completed: Boolean
-        get() = synchronized(snapshotLock) {
+        get() = snapshotLock.withLock {
             items.all { it.state == ItemState.ACKED || it.state == ItemState.DEFERRED }
         }
 
@@ -491,7 +493,7 @@ internal class DefaultSqsBatchAcknowledgement(
         }
 
         val deferred = CompletableDeferred<Unit>()
-        synchronized(snapshotLock) {
+        snapshotLock.withLock {
             runnable.forEach {
                 it.state = ItemState.IN_FLIGHT
                 it.inFlight = deferred
@@ -572,7 +574,7 @@ internal class DefaultSqsBatchAcknowledgement(
     ) {
         val successIds = result.successfulMessageIds.toSet()
         mutex.withLock {
-            synchronized(snapshotLock) {
+            snapshotLock.withLock {
                 runnable.forEach { item ->
                     if (item.message.messageId in successIds) {
                         item.state = when (operation) {
@@ -600,7 +602,7 @@ internal class DefaultSqsBatchAcknowledgement(
 
     private suspend fun rollbackState(runnable: List<Item>) {
         mutex.withLock {
-            synchronized(snapshotLock) {
+            snapshotLock.withLock {
                 runnable.forEach {
                     it.state = ItemState.PENDING
                     it.inFlight = null

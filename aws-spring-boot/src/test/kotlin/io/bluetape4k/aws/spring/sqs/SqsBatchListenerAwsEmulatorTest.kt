@@ -2,6 +2,7 @@ package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeGreaterOrEqualTo
+import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.junit5.awaitility.untilSuspending
 import io.bluetape4k.junit5.coroutines.runSuspendIO
@@ -16,9 +17,10 @@ import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.testcontainers.utility.Base58
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import java.util.*
-import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration.Companion.seconds
 
@@ -36,21 +38,24 @@ class SqsBatchListenerAwsEmulatorTest: AbstractSqsTest() {
             val operations = bootstrapContext.getBean<SqsOperations>()
             lateinit var queueUrl: String
             runSuspendIO {
-                queueUrl = operations.createQueue("batch-${UUID.randomUUID()}")
+                queueUrl = operations.createQueue("batch-${Base58.randomString(8)}")
             }
 
             contextRunner(queueUrl, BatchListenerConfig::class.java).run { context ->
                 val listener = context.getBean<BatchListener>()
                 runSuspendIO {
-                    repeat(10) { index -> operations.send(queueUrl, "batch-$index") }
+                    repeat(10) { index ->
+                        operations.send(queueUrl, "batch-$index")
+                    }
                 }
 
                 await atMost 20.seconds untilAsserted {
                     listener.messageIds.size shouldBeGreaterOrEqualTo 10
                 }
                 listener.invocations.get() shouldBeGreaterOrEqualTo 1
-                listener.batchSizes.all { it in 1..10 } shouldBeEqualTo true
+                listener.batchSizes.all { it in 1..10 }.shouldBeTrue()
                 listener.messageIds.distinct().size shouldBeEqualTo 10
+
                 runSuspendIO {
                     await atMost 10.seconds untilSuspending {
                         operations.receive(queueUrl, maxMessages = 10, waitTimeSeconds = 1).isEmpty()
@@ -96,8 +101,8 @@ class SqsBatchListenerAwsEmulatorTest: AbstractSqsTest() {
 
     internal class BatchListener {
         val invocations = AtomicInteger()
-        val messageIds: MutableList<String> = CopyOnWriteArrayList()
-        val batchSizes: MutableList<Int> = CopyOnWriteArrayList()
+        val messageIds: Queue<String> = ConcurrentLinkedQueue()
+        val batchSizes: Queue<Int> = ConcurrentLinkedQueue()
 
         @SqsListener(queue = "\${test.queue-url}", batch = true, maxMessages = 10)
         fun handle(messages: List<SqsReceivedMessage>) {

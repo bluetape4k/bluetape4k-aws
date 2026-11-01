@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.spring.sns
 
+import io.bluetape4k.aws.sns.model.messageAttributeValueOf
+import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.services.sns.model.MessageAttributeValue
 import java.io.Serializable
 
@@ -24,8 +26,8 @@ data class SnsSmsRequest(
 ): Serializable {
 
     init {
-        require(phoneNumber.isNotBlank()) { "phoneNumber must not be blank." }
-        require(message.isNotBlank()) { "message must not be blank." }
+        phoneNumber.requireNotBlank("phoneNumber")
+        message.requireNotBlank("message")
         senderId?.let { require(it.isNotBlank()) { "senderId must not be blank." } }
         maxPrice?.let { require(it.isNotBlank()) { "maxPrice must not be blank." } }
         originationNumber?.let { require(it.isNotBlank()) { "originationNumber must not be blank." } }
@@ -55,9 +57,6 @@ data class SnsSmsRequest(
         const val TEMPLATE_ID_ATTRIBUTE: String = "AWS.MM.SMS.TemplateId"
 
         private fun stringAttribute(value: String): MessageAttributeValue =
-            MessageAttributeValue.builder()
-                .dataType("String")
-                .stringValue(value)
-                .build()
+            messageAttributeValueOf(value, "String")
     }
 }

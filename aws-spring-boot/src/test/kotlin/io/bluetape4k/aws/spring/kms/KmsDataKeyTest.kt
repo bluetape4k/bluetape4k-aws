@@ -3,6 +3,7 @@ package io.bluetape4k.aws.spring.kms
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldContentEqual
+import io.bluetape4k.concurrent.awaitTermination
 import io.bluetape4k.concurrent.get
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.warn
@@ -86,6 +87,7 @@ class KmsDataKeyTest {
         } finally {
             key.close()
             executor.shutdownNow()
+            executor.awaitTermination(3.seconds)
         }
     }
 }

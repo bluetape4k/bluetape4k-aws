@@ -52,8 +52,7 @@ class SqsCoroutinesTemplateAwsEmulatorTest: AbstractSqsTest() {
                 log.debug { "sent=$sent" }
                 sent.messageId().shouldNotBeBlank()
 
-                val received = operations
-                    .receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1)
+                val received = operations.receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1)
                     .onEach { log.debug { "received=$it" } }
                 received shouldHaveSize 1
                 received.single().body shouldBeEqualTo "hello sqs"
@@ -78,8 +77,7 @@ class SqsCoroutinesTemplateAwsEmulatorTest: AbstractSqsTest() {
 
                 operations.changeVisibility(queueUrl, received.receiptHandle, 0)
 
-                val receivedAgain = operations
-                    .receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1)
+                val receivedAgain = operations.receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1)
                     .onEach { log.debug { "received=$it" } }
 
                 receivedAgain.map { it.body } shouldContain "flow sqs"
@@ -115,8 +113,7 @@ class SqsCoroutinesTemplateAwsEmulatorTest: AbstractSqsTest() {
                     )
                 )
 
-                val received = operations
-                    .receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1)
+                val received = operations.receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1)
                     .onEach { log.debug { "received=$it" } }
                 received shouldHaveSize 1
 

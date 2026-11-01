@@ -18,6 +18,8 @@ import java.lang.management.ManagementFactory
 import java.util.concurrent.Executors
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -140,11 +142,12 @@ internal class SqsBatchPerformanceRuntimeAdapter(
     private class RecordingThreadFactory(
         private val workerIds: MutableList<Long>,
     ): ThreadFactory {
+        private val lock = ReentrantLock()
         private val sequence = AtomicInteger()
 
         override fun newThread(runnable: Runnable): Thread = Thread(runnable).also { thread ->
             thread.name = "sqs-batch-performance-${sequence.incrementAndGet()}"
-            synchronized(workerIds) { workerIds += thread.threadId() }
+            lock.withLock { workerIds += thread.threadId() }
         }
     }
 

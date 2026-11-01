@@ -1,10 +1,13 @@
 package io.bluetape4k.aws.spring.s3
 
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
 import java.nio.file.Files
 
 class S3ObjectContentTypeResolverTest {
+
+    companion object: KLogging()
 
     private val resolver = DefaultS3ObjectContentTypeResolver()
 

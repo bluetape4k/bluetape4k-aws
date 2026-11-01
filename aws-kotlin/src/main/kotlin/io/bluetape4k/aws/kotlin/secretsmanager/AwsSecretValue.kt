@@ -1,8 +1,8 @@
 package io.bluetape4k.aws.kotlin.secretsmanager
 
 import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.toUtf8Bytes
 import java.io.Serializable
-import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 
 /**
@@ -32,8 +32,8 @@ class AwsSecretValue private constructor(private val value: String): Serializabl
 
     override fun equals(other: Any?): Boolean =
         this === other || other is AwsSecretValue && MessageDigest.isEqual(
-            value.toByteArray(StandardCharsets.UTF_8),
-            other.value.toByteArray(StandardCharsets.UTF_8),
+            value.toUtf8Bytes(),
+            other.value.toUtf8Bytes(),
         )
 
     override fun hashCode(): Int = REDACTED.hashCode()

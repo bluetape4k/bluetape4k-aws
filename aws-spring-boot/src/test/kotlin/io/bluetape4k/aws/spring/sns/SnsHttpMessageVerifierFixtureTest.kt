@@ -30,7 +30,6 @@ import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.URI
-import java.nio.charset.StandardCharsets
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
@@ -179,7 +178,7 @@ class SnsHttpMessageVerifierFixtureTest {
 
     @Test
     fun `corrupt certificate is rejected with observable sdk failure`() {
-        val client = StubHttpClient { successResponse("not a certificate".toByteArray(StandardCharsets.UTF_8)) }
+        val client = StubHttpClient { successResponse("not a certificate".toUtf8Bytes()) }
 
         withVerifier(client) { verifier ->
             val failure = assertFailsWith<SdkClientException> {

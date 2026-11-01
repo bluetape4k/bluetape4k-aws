@@ -32,6 +32,8 @@ class AwsModulithSqsTargetPublisherTest {
         const val HOSTILE_MARKER = "secret-value:event-id:header-value:arn:request-response"
 
         val sha256Digest: MessageDigest = MessageDigest.getInstance("SHA-256")
+
+        @Suppress("SameParameterValue")
         private fun sha256(value: String): String = sha256Digest
             .digest(value.toByteArray())
             .encodeHexString()

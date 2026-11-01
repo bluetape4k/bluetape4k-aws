@@ -53,10 +53,8 @@ class DynamoDbDaxAutoConfiguration {
         val dax = properties.dax
         dax.validateEnabled()
 
-        val defaults = resolveDynamoDbAwsProperties(awsProperties).resolveClientDefaults(
-            properties.region,
-            properties.endpointOverride,
-        )
+        val defaults = resolveDynamoDbAwsProperties(awsProperties)
+            .resolveClientDefaults(properties.region, properties.endpointOverride)
         val region = dax.region?.let { Region.of(it) } ?: defaults.region
         region.requireNotNull("$DYNAMODB_DAX_PROPERTIES_PREFIX.region")
 

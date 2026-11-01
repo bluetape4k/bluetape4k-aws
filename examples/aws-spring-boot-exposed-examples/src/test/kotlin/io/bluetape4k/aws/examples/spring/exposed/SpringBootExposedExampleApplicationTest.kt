@@ -7,6 +7,7 @@ import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.aws.exposed.AwsExposedDatabaseRegistry
+import io.bluetape4k.logging.KLogging
 import io.bluetape4k.testcontainers.database.PostgreSQLServer
 import io.bluetape4k.testcontainers.spring.registerDynamicProperties
 import org.jetbrains.exposed.v1.core.SqlLogger
@@ -39,6 +40,20 @@ import javax.sql.DataSource
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SpringBootExposedExampleApplicationTest {
+
+    companion object: KLogging() {
+        private val postgres by lazy { PostgreSQLServer.Launcher.postgres }
+
+        @JvmStatic
+        @DynamicPropertySource
+        fun databaseProperties(registry: DynamicPropertyRegistry) {
+            val runningBeforeRegistration = postgres.isRunning
+            postgres.registerDynamicProperties(registry)
+            postgres.isRunning shouldBeEqualTo runningBeforeRegistration
+            registry.add("bluetape4k.aws.exposed.default-database.pool.maximum-pool-size") { "2" }
+            registry.add("bluetape4k.aws.exposed.default-database.pool.minimum-idle") { "0" }
+        }
+    }
 
     @LocalServerPort
     private var port: Int = 0
@@ -289,19 +304,6 @@ class SpringBootExposedExampleApplicationTest {
     private fun uri(path: String): URI =
         URI.create("http://localhost:$port$path")
 
-    companion object {
-        private val postgres = PostgreSQLServer.Launcher.postgres
-
-        @JvmStatic
-        @DynamicPropertySource
-        fun databaseProperties(registry: DynamicPropertyRegistry) {
-            val runningBeforeRegistration = postgres.isRunning
-            postgres.registerDynamicProperties(registry)
-            postgres.isRunning shouldBeEqualTo runningBeforeRegistration
-            registry.add("bluetape4k.aws.exposed.default-database.pool.maximum-pool-size") { "2" }
-            registry.add("bluetape4k.aws.exposed.default-database.pool.minimum-idle") { "0" }
-        }
-    }
 }
 
 private data class OrderPagePayload(

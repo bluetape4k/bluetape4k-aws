@@ -9,7 +9,7 @@ import io.bluetape4k.concurrent.completableFutureOf
 import io.bluetape4k.concurrent.failedCompletableFutureOf
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
-import io.mockk.clearAllMocks
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
@@ -32,7 +32,7 @@ class DynamoDbTemplateTest {
 
     companion object: KLogging()
 
-    private val client = mockk<DynamoDbEnhancedAsyncClient>()
+    private val client = mockk<DynamoDbEnhancedAsyncClient>(relaxed = true)
     private val table = mockk<DynamoDbAsyncTable<Item>>(relaxed = true)
     private val tableSchema = TableSchema.fromBean(Item::class.java)
     private val extension = object: DynamoDbEnhancedClientExtension {}
@@ -41,7 +41,7 @@ class DynamoDbTemplateTest {
 
     @BeforeEach
     fun setUp() {
-        clearAllMocks()
+        clearMocks(client, table)
 
         every { client.table("test-items", any<TableSchema<Item>>()) } returns table
         every { table.tableName() } returns "test-items"

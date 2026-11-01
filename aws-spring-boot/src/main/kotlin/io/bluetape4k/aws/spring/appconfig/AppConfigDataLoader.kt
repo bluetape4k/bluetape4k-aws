@@ -17,7 +17,6 @@ import org.springframework.boot.logging.DeferredLogFactory
 /** `aws-app-config:` 초기 응답을 dynamic property source로 노출합니다. */
 @Suppress("TooGenericExceptionCaught", "ReturnCount")
 class AppConfigDataLoader(
-    @Suppress("UNUSED_PARAMETER")
     private val deferredLogFactory: DeferredLogFactory,
     private val bootstrapContext: ConfigurableBootstrapContext,
 ): ConfigDataLoader<AwsConfigDataResource> {
@@ -31,8 +30,7 @@ class AppConfigDataLoader(
         resource.backendKey == AwsConfigDataBackend.APP_CONFIG.key
 
     override fun load(context: ConfigDataLoaderContext, resource: AwsConfigDataResource): ConfigData? {
-        val configuration = resource.boundProperties
-                as? AwsConfigDataSupport.ResolverConfiguration
+        val configuration = resource.boundProperties as? AwsConfigDataSupport.ResolverConfiguration
             ?: error("AWS AppConfig ConfigData properties are missing.")
 
         val properties = configuration.backend as AppConfigProperties

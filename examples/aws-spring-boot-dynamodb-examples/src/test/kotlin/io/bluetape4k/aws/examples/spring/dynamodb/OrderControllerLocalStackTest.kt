@@ -12,7 +12,7 @@ import io.bluetape4k.aws.spring.dynamodb.DynamoDbTableNameResolver
 import io.bluetape4k.junit5.awaitility.untilSuspending
 import io.bluetape4k.junit5.coroutines.SuspendedJobTester
 import io.bluetape4k.junit5.coroutines.runSuspendIO
-import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import io.bluetape4k.testcontainers.aws.AwsEmulatorServer
 import io.bluetape4k.testcontainers.aws.FlociServer
@@ -49,17 +49,18 @@ import kotlin.time.Duration.Companion.seconds
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class OrderControllerLocalStackTest {
 
-    companion object: KLogging() {
+    companion object: KLoggingChannel() {
         private val TABLE_ACTIVE_TIMEOUT = 30.seconds
         private val TABLE_ACTIVE_POLL_INTERVAL = 100.milliseconds
 
         val awsEmulator: AwsEmulatorServer by lazy { awsEmulator("dynamodb") }
 
+        @Suppress("SameParameterValue")
         private fun awsEmulator(vararg services: String): AwsEmulatorServer =
             when (val emulator = System.getProperty("bluetape4k.aws.emulator", "floci").trim().lowercase()) {
                 "floci" -> FlociServer.Launcher.floci
                 "localstack" -> LocalStackServer.Launcher.getLocalStack(*services)
-                else -> error("Unsupported AWS emulator: $emulator. Use floci or localstack.")
+                else    -> error("Unsupported AWS emulator: $emulator. Use floci or localstack.")
             }
     }
 

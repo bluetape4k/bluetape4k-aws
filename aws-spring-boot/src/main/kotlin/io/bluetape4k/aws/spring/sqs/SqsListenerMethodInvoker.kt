@@ -1,6 +1,8 @@
 package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.support.requireNotEmpty
+import io.bluetape4k.support.requireNotNull
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -149,7 +151,7 @@ internal class SqsListenerMethodInvoker(
         companion object {
             fun from(method: Method, kotlinFunction: KFunction<*>?): ParameterPlan {
                 val specs = parameterSpecs(method, kotlinFunction)
-                require(specs.isNotEmpty()) {
+                specs.requireNotEmpty {
                     "@SqsListener method must have at least one parameter: ${method.toGenericString()}"
                 }
                 require(specs.size <= 2) {
@@ -344,11 +346,11 @@ internal class SqsListenerMethodInvoker(
             converter: SqsMessageConverter,
         ): Any =
             when (this) {
-                is ListPayload -> elementArguments(messages, converter)
-                BatchAcknowledgement -> requireNotNull(acknowledgement) {
+                is ListPayload       -> elementArguments(messages, converter)
+                BatchAcknowledgement -> acknowledgement.requireNotNull {
                     "MANUAL requires SqsBatchAcknowledgement"
                 }
-                else           -> throw IllegalArgumentException("batch=true requires a List payload")
+                else                 -> throw IllegalArgumentException("batch=true requires a List payload")
             }
 
         companion object {

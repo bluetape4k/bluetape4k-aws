@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.spring.sns
 
 import io.bluetape4k.aws.spring.sqs.SnsMessageAttribute
+import io.bluetape4k.support.requireNotNull
 import java.io.Serializable
 import java.net.URI
 
@@ -69,7 +70,7 @@ data class SnsHttpMessage(
         require(canConfirmSubscription) {
             "SNS HTTP message type ${type.value} cannot confirm a subscription."
         }
-        return requireNotNull(token) {
+        return token.requireNotNull {
             "SNS HTTP confirmation message token must not be null."
         }
     }

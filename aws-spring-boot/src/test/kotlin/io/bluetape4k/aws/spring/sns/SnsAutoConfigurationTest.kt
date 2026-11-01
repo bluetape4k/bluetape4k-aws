@@ -13,6 +13,7 @@ import io.bluetape4k.aws.spring.AwsClientCustomizer
 import io.bluetape4k.aws.spring.connection.SnsConnectionDetails
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.Test
@@ -91,15 +92,15 @@ class SnsAutoConfigurationTest: AbstractSnsTest() {
         contextRunner
             .withPropertyValues(
                 "bluetape4k.aws.sns.region=us-east-1",
-                "bluetape4k.aws.sns.endpoint-override=http://properties:4566",
+                "bluetape4k.aws.sns.endpoint-override=https://properties:4566",
                 "bluetape4k.aws.sns.account-id=123456789012",
             )
             .withBean(SnsConnectionDetails::class.java, {
-                TestSnsDetails(URI.create("http://details:4566"), "eu-west-1", "access", "secret")
+                TestSnsDetails(URI.create("https://details:4566"), "eu-west-1", "access", "secret")
             })
             .run { context ->
                 val resolver = context.getBean<SnsTopicArnResolver>()
-                resolver.scope.endpointOverride shouldBeEqualTo URI.create("http://details:4566")
+                resolver.scope.endpointOverride shouldBeEqualTo URI.create("https://details:4566")
                 resolver.scope.region shouldBeEqualTo "eu-west-1"
                 resolver.scope.accountId shouldBeEqualTo "123456789012"
             }
@@ -270,12 +271,12 @@ class SnsAutoConfigurationTest: AbstractSnsTest() {
             )
             .withPropertyValues(
                 "bluetape4k.aws.region=ap-northeast-2",
-                "bluetape4k.aws.endpoint-override=http://global:4566",
+                "bluetape4k.aws.endpoint-override=https://global:4566",
                 "bluetape4k.aws.sns.account-id=123456789012",
             )
             .run { context ->
                 val resolver = context.getBean<SnsTopicArnResolver>()
-                resolver.scope.endpointOverride shouldBeEqualTo URI.create("http://global:4566")
+                resolver.scope.endpointOverride shouldBeEqualTo URI.create("https://global:4566")
                 resolver.scope.region shouldBeEqualTo "ap-northeast-2"
             }
     }
@@ -303,7 +304,7 @@ class SnsAutoConfigurationTest: AbstractSnsTest() {
                 AwsClientCustomizer::class.java,
                 {
                     AwsClientCustomizer<SnsAsyncClientBuilder> { builder ->
-                        builder.endpointOverride(URI.create("http://customizer:4566"))
+                        builder.endpointOverride(URI.create("https://customizer:4566"))
                     }
                 },
             )
@@ -312,6 +313,7 @@ class SnsAutoConfigurationTest: AbstractSnsTest() {
                     .mapNotNull { it.message }
                     .joinToString("\n")
                 context.startupFailure.shouldNotBeNull()
+                log.debug { "messages=$messages" }
                 messages shouldContain "must not change explicitly configured endpoint or region"
             }
     }

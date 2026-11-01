@@ -1,9 +1,9 @@
 package io.bluetape4k.aws.examples.ktor.sqs
 
-import aws.sdk.kotlin.runtime.auth.credentials.StaticCredentialsProvider
 import aws.sdk.kotlin.services.sqs.SqsClient
 import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.aws.kotlin.auth.staticCredentialsProviderOf
 import io.bluetape4k.aws.kotlin.sqs.createQueue
 import io.bluetape4k.aws.kotlin.sqs.deleteQueue
 import io.bluetape4k.aws.kotlin.sqs.sqsClientOf
@@ -43,10 +43,7 @@ class SqsExampleRoutesFlociTest {
             sqsClientOf(
                 endpointUrl = Url.parse(floci.awsEndpoint.toString()),
                 region = floci.regionName,
-                credentialsProvider = StaticCredentialsProvider {
-                    accessKeyId = floci.awsAccessKey
-                    secretAccessKey = floci.awsSecretKey
-                },
+                credentialsProvider = staticCredentialsProviderOf(floci.awsAccessKey, floci.awsSecretKey)
             )
         }
     }

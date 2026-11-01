@@ -1,9 +1,12 @@
 package io.bluetape4k.aws.spring.sqs
 
+import io.bluetape4k.support.requireZeroOrPositiveNumber
 import io.micrometer.observation.Observation
+import okio.withLock
 import java.io.Serializable
 import java.net.URI
 import java.net.URISyntaxException
+import java.util.concurrent.locks.ReentrantLock
 
 /**
  * SQS 관찰 수명 주기의 처리 단계를 나타냅니다.
@@ -68,7 +71,7 @@ class SqsObservationMetadata internal constructor(
     val messageDeduplicationId: String? = messageDeduplicationId.takeUnless { batch }
 
     init {
-        require(batchSize >= 0) { "batchSize must not be negative." }
+        batchSize.requireZeroOrPositiveNumber("batchSize")
         when (stage) {
             SqsObservationStage.RECEIVE ->
                 require(initialAttempt == null || initialAttempt >= 1) {
@@ -77,9 +80,10 @@ class SqsObservationMetadata internal constructor(
 
             SqsObservationStage.PROCESS,
             SqsObservationStage.ACKNOWLEDGEMENT,
-                -> require(initialAttempt != null && initialAttempt >= 1) {
-                "initialAttempt must be greater than or equal to 1 for $stage."
-            }
+                ->
+                require(initialAttempt != null && initialAttempt >= 1) {
+                    "initialAttempt must be greater than or equal to 1 for $stage."
+                }
         }
     }
 
@@ -169,9 +173,11 @@ internal class SqsObservationQueueNameCache(
     @Volatile
     private var cached: Entry? = null
 
+    private val lock = ReentrantLock()
+
     fun resolve(queueUrl: String): String {
         cached?.takeIf { it.queueUrl == queueUrl }?.let { return it.queueName }
-        return synchronized(this) {
+        return lock.withLock {
             cached?.takeIf { it.queueUrl == queueUrl }?.queueName
                 ?: sanitizer(queueUrl).also { queueName ->
                     cached = Entry(queueUrl, queueName)

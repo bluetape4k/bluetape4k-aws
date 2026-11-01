@@ -6,13 +6,13 @@ import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.aws.cloudwatch.model.cloudwatchlogs.inputLogEventOf
 import io.bluetape4k.aws.cloudwatch.model.metricDatumOf
 import io.bluetape4k.concurrent.completableFutureOf
-import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient
@@ -37,7 +37,7 @@ class CloudWatchCoroutinesTemplateTest {
     }
 
     @Test
-    fun `publish metric data with configured namespace and batching`() = runSuspendIO {
+    fun `publish metric data with configured namespace and batching`() = runTest {
         every {
             cloudWatchClient.putMetricData(any<Consumer<PutMetricDataRequest.Builder>>())
         } returns completableFutureOf(PutMetricDataResponse.builder().build())
@@ -62,23 +62,21 @@ class CloudWatchCoroutinesTemplateTest {
     }
 
     @Test
-    fun `default metric namespace is required`() {
+    fun `default metric namespace is required`() = runTest {
         val template = CloudWatchCoroutinesTemplate(
             cloudWatchClient,
             CloudWatchProperties(),
         )
 
         val error = assertFailsWith<IllegalArgumentException> {
-            runSuspendIO {
-                template.putMetricData(listOf(metricDatumOf("orders", 1.0)))
-            }
+            template.putMetricData(listOf(metricDatumOf("orders", 1.0)))
         }
         log.debug { "error=${error.message}" }
         error.message shouldContain "namespace is required"
     }
 
     @Test
-    fun `publish log events with configured group stream and batching`() = runSuspendIO {
+    fun `publish log events with configured group stream and batching`() = runTest {
         every {
             cloudWatchLogsClient.putLogEvents(any<Consumer<PutLogEventsRequest.Builder>>())
         } returns completableFutureOf(PutLogEventsResponse.builder().build())
@@ -107,32 +105,28 @@ class CloudWatchCoroutinesTemplateTest {
     }
 
     @Test
-    fun `default log group is required`() {
+    fun `default log group is required`() = runTest {
         val template = CloudWatchLogsCoroutinesTemplate(
             cloudWatchLogsClient,
             CloudWatchLogsProperties(logStreamName = "default"),
         )
 
         val error = assertFailsWith<IllegalArgumentException> {
-            runSuspendIO {
-                template.putLogEvents(listOf(inputLogEventOf(1L, "one")))
-            }
+            template.putLogEvents(listOf(inputLogEventOf(1L, "one")))
         }
         log.debug { "error=${error.message}" }
         error.message shouldContain "log-group-name is required"
     }
 
     @Test
-    fun `explicit log group is required`() {
+    fun `explicit log group is required`() = runTest {
         val template = CloudWatchLogsCoroutinesTemplate(
             cloudWatchLogsClient,
             CloudWatchLogsProperties(),
         )
 
         val error = assertFailsWith<IllegalArgumentException> {
-            runSuspendIO {
-                template.createLogGroup(" ")
-            }
+            template.createLogGroup(" ")
         }
         log.debug { "error=${error.message}" }
         error.message shouldContain "logGroupName"

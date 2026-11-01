@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.sqs
 
+import io.bluetape4k.concurrent.completableFutureOf
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicReference
@@ -65,7 +66,7 @@ internal fun <T: Any> submitBatchOutcome(
     try {
         submit().mapBatchOutcome(entryId, success)
     } catch (cause: Exception) {
-        CompletableFuture.completedFuture(SqsBatchOutcome.Failure(normalizeBatchFailure(entryId, cause)))
+        completableFutureOf(SqsBatchOutcome.Failure(normalizeBatchFailure(entryId, cause)))
     }
 
 @Suppress("TooGenericExceptionCaught")

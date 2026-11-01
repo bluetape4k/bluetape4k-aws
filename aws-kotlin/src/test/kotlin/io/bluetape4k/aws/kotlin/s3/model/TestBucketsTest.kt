@@ -64,7 +64,7 @@ class TestBucketsTest {
             withTestBuckets(buckets, create = {}, delete = {
                 deleted.add(it)
                 throw failure
-            }) { Unit }
+            }) { }
         }
         actual shouldBeEqualTo failure
         deleted shouldBeEqualTo buckets.asReversed()
@@ -77,7 +77,7 @@ class TestBucketsTest {
         val actual = assertFailsWith<IllegalStateException> {
             withTestBuckets(buckets, create = {}, delete = {
                 if (it == "destination") throw first else throw second
-            }) { Unit }
+            }) { }
         }
         actual shouldBeEqualTo first
         actual.suppressed.toList() shouldBeEqualTo listOf(second)

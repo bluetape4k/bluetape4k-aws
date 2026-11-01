@@ -13,19 +13,20 @@ internal object SnsHttpEndpointErrorPolicy: KLogging() {
     private const val SERVER_ERROR_THRESHOLD = 500
 
     fun classify(cause: Throwable): Decision = when {
-        cause.causesContain<DataBufferLimitException>() || cause.causesContain<SnsHttpBodyLimitException>() ->
+        cause.causesContain<DataBufferLimitException>() ||
+                cause.causesContain<SnsHttpBodyLimitException>() ->
             Decision(HttpStatus.BAD_REQUEST.value(), "body-limit")
 
-        cause is ResponseStatusException  ->
+        cause is ResponseStatusException                         ->
             Decision(cause.statusCode.value(), "configured-policy")
 
-        cause is IllegalArgumentException ->
+        cause is IllegalArgumentException                        ->
             Decision(HttpStatus.BAD_REQUEST.value(), "invalid-input")
 
-        cause is SdkClientException       ->
+        cause is SdkClientException                              ->
             Decision(HttpStatus.SERVICE_UNAVAILABLE.value(), "verification-dependency")
 
-        else                              ->
+        else                                                     ->
             Decision(HttpStatus.INTERNAL_SERVER_ERROR.value(), "internal-error")
     }
 
@@ -49,7 +50,10 @@ internal object SnsHttpEndpointErrorPolicy: KLogging() {
 
     private fun safeMessageType(messageType: String): String =
         when (messageType) {
-            "Notification", "SubscriptionConfirmation", "UnsubscribeConfirmation" -> messageType
+            "Notification",
+            "SubscriptionConfirmation",
+            "UnsubscribeConfirmation",
+                -> messageType
             else -> "unknown"
         }
 }

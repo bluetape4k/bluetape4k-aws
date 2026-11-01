@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.examples.spring.s3
 
+import io.bluetape4k.logging.KLogging
 import io.bluetape4k.testcontainers.aws.FlociServer
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -17,7 +18,7 @@ class S3ServiceConnectionAotTest {
     @Test
     fun declarationIsAotVisible() = Unit
 
-    companion object {
+    companion object: KLogging() {
         @JvmField
         @Container
         @ServiceConnection(name = "s3")
@@ -33,7 +34,7 @@ class AllAwsServicesConnectionAotTest {
     @Test
     fun declarationIsAotVisible() = Unit
 
-    companion object {
+    companion object: KLogging() {
         @JvmField
         @Container
         @ServiceConnection

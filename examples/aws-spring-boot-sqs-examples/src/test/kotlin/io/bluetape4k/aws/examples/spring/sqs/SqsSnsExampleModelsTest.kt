@@ -48,7 +48,9 @@ class SqsSnsExampleModelsTest {
             DlqSetupRequest::class.java,
             DlqSetupResponse::class.java,
         ).forEach { type ->
-            type.getDeclaredField("serialVersionUID").apply { isAccessible = true }.getLong(null) shouldBeEqualTo 1L
+            type.getDeclaredField("serialVersionUID")
+                .apply { isAccessible = true }
+                .getLong(null) shouldBeEqualTo 1L
         }
     }
 

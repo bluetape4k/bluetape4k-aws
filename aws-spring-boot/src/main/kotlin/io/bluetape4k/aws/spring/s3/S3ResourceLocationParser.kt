@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.s3
 
+import io.bluetape4k.apache.startsWithIgnoreCase
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.requirePositiveNumber
@@ -65,7 +66,7 @@ internal class S3ResourceLocationParser {
         location: String,
         allowPatternQuestion: Boolean,
     ): S3Pattern {
-        require(location.startsWith(S3_SCHEME, ignoreCase = true)) {
+        require(location.startsWithIgnoreCase(S3_SCHEME)) {
             "S3 location must start with s3://."
         }
 

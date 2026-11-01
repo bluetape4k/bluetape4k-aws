@@ -8,6 +8,7 @@ import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.coroutines.support.log
 import io.bluetape4k.javatimes.millis
 import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.logging.KLogging
@@ -69,7 +70,8 @@ class SqsBatchCoordinatorRaceTest {
             assertFailsWith<IllegalStateException> {
                 coordinator.sendMany(listOf(sendEntry("permit-close")))
             }
-        }
+        }.log("SendMany")
+
         permitReached.await()
 
         val owner = coordinator.beginClose().shouldBeOwner()
@@ -97,12 +99,17 @@ class SqsBatchCoordinatorRaceTest {
         }
         val transport = CoordinatorTestTransport()
         val coordinator = coordinator(transport, maxInFlight = 1, hooks = hooks)
-        val operation = async { coordinator.sendMany(listOf(sendEntry("placeholder-cancel"))) }
+        val operation = async {
+            coordinator.sendMany(listOf(sendEntry("placeholder-cancel")))
+        }.log("SendMany")
+
         placeholderReached.await()
         val cancellation = CancellationException("caller-${Base58.randomString(16)}")
 
         operation.cancel(cancellation)
-        val observed = assertFailsWith<CancellationException> { operation.await() }
+        val observed = assertFailsWith<CancellationException> {
+            operation.await()
+        }
 
         observed.rootCancellation() shouldBeSameInstanceAs cancellation
         transport.sendEntries shouldHaveSize 0
@@ -130,7 +137,9 @@ class SqsBatchCoordinatorRaceTest {
         val transport = CoordinatorTestTransport().apply { enqueueSend(future) }
         val coordinator = coordinator(transport, maxInFlight = 1, hooks = hooks)
         val entry = sendEntry("handoff-close")
-        val operation = async { coordinator.sendMany(listOf(entry)) }
+        val operation = async {
+            coordinator.sendMany(listOf(entry))
+        }.log("SendMany")
         submitted.await()
 
         val owner = coordinator.beginClose().shouldBeOwner()
@@ -153,7 +162,9 @@ class SqsBatchCoordinatorRaceTest {
         val transport = CoordinatorTestTransport().apply { enqueueSend(future) }
         val coordinator = coordinator(transport, maxInFlight = 1)
         val entry = sendEntry("sdk-cancel")
-        val operation = async { coordinator.sendMany(listOf(entry)) }
+        val operation = async {
+            coordinator.sendMany(listOf(entry))
+        }.log("SendMany")
         runCurrent()
         transport.sendEntries shouldHaveSize 1
 
@@ -180,7 +191,9 @@ class SqsBatchCoordinatorRaceTest {
         val transport = CoordinatorTestTransport().apply { enqueueSend(future) }
         val coordinator = coordinator(transport, maxInFlight = 1, hooks = hooks)
         val entry = sendEntry("response-cancel")
-        val operation = async { coordinator.sendMany(listOf(entry)) }
+        val operation = async {
+            coordinator.sendMany(listOf(entry))
+        }.log("SendMany")
         runCurrent()
         transport.sendEntries shouldHaveSize 1
         future.complete(sendSuccess(entry)).shouldBeTrue()
@@ -211,7 +224,7 @@ class SqsBatchCoordinatorRaceTest {
             assertFailsWith<IllegalStateException> {
                 coordinator.sendMany(listOf(sendEntry("waiter-second")))
             }
-        }
+        }.log("SendMany")
         runCurrent()
         coordinator.metrics().residentChildCount shouldBeEqualTo 2
 
@@ -246,7 +259,7 @@ class SqsBatchCoordinatorRaceTest {
         val coordinator = coordinator(transport, maxInFlight = 1, hooks = hooks)
         val operation = async {
             coordinator.sendMany(listOf(sendEntry("timeout-cancel")))
-        }
+        }.log("SendMany")
         attached.await()
 
         val owner = coordinator.beginClose().shouldBeOwner()
@@ -260,17 +273,19 @@ class SqsBatchCoordinatorRaceTest {
                 if (readyCount.incrementAndGet() == 2) bothReady.complete(Unit)
                 startRace.await()
                 owner.accepted.single().cancelIfIncomplete()
-            },
+            }.log("Racer-1"),
             async(Dispatchers.Default) {
                 if (readyCount.incrementAndGet() == 2) bothReady.complete(Unit)
                 startRace.await()
                 operation.cancel(cancellation)
-            },
+            }.log("Racer-2"),
         )
         bothReady.await()
         startRace.complete(Unit)
         racers.awaitAll()
-        val observed = assertFailsWith<CancellationException> { operation.await() }
+        val observed = assertFailsWith<CancellationException> {
+            operation.await()
+        }
 
         observed.rootCancellation() shouldBeSameInstanceAs cancellation
         future.cancelCount.get() shouldBeEqualTo 1
@@ -291,7 +306,9 @@ class SqsBatchCoordinatorRaceTest {
 
         operation.cancel(cancellation)
         gate.complete(Unit)
-        val observed = assertFailsWith<CancellationException> { operation.await() }
+        val observed = assertFailsWith<CancellationException> {
+            operation.await()
+        }
 
         observed.rootCancellation() shouldBeSameInstanceAs cancellation
         coordinator.finishClose(SqsBatchCloseOutcome.Success)

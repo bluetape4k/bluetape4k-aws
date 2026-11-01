@@ -10,8 +10,10 @@ import io.bluetape4k.aws.spring.s3.S3ConfigDataSdkAdapter
 import io.bluetape4k.aws.spring.s3.S3ConfigProperties
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.boot.bootstrap.ConfigurableBootstrapContext
 import software.amazon.awssdk.services.s3.S3Client
@@ -20,6 +22,13 @@ import java.io.Serializable
 class AwsConfigDataBootstrapCustomizerTest {
 
     companion object: KLogging()
+
+    private val bootstrapContext = mockk<ConfigurableBootstrapContext>()
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(bootstrapContext)
+    }
 
     @Test
     fun `resolver configuration does not claim Java serialization support`() {
@@ -30,7 +39,6 @@ class AwsConfigDataBootstrapCustomizerTest {
 
     @Test
     fun `only an explicitly registered bootstrap customizer changes ConfigData clients`() {
-        val bootstrapContext = mockk<ConfigurableBootstrapContext>()
         val services = mutableListOf<String>()
         val customizer = AwsSyncClientCustomizer { context: AwsClientCustomizationContext, _ ->
             services += context.serviceName

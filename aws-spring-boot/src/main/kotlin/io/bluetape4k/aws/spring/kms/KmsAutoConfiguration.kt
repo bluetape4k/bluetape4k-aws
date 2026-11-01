@@ -57,8 +57,8 @@ class KmsAutoConfiguration {
             )
             .apply {
                 httpClient.getIfAvailable()?.let { httpClient(it) }
+                applyGlobalCustomizers("kms", globalCustomizers)
             }
-            .also { it.applyGlobalCustomizers("kms", globalCustomizers) }
             .applyServiceCustomizers(serviceCustomizers)
             .build()
 

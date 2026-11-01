@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.spring.sns
 
 import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.support.toUtf8String
 import org.springframework.core.io.buffer.DataBuffer
 import org.springframework.core.io.buffer.DataBufferUtils
 import org.springframework.http.HttpHeaders
@@ -35,7 +36,7 @@ class SnsHttpMessageWebFilter(
                         DataBufferUtils.release(joined)
                     }
                     Mono.fromCallable {
-                        support.prepare(bytes.toString(Charsets.UTF_8), header) to bytes
+                        support.prepare(bytes.toUtf8String(), header) to bytes
                     }.subscribeOn(Schedulers.boundedElastic())
                 }
                 .onErrorResume { cause ->
@@ -49,24 +50,22 @@ class SnsHttpMessageWebFilter(
                     }
                 }
 
-        return prepared
-            .flatMap { (message, bytes) ->
-                val cached = Mono.just(message).cache()
-                exchange.attributes[SnsHttpMessageResolverSupport.WEBFLUX_MESSAGE_ATTRIBUTE] = cached
-                val decoratedRequest = object: ServerHttpRequestDecorator(exchange.request) {
-                    override fun getBody(): Flux<DataBuffer> =
-                        Flux.defer {
-                            Flux.just(exchange.response.bufferFactory().wrap(bytes.copyOf()))
-                        }
+        return prepared.flatMap { (message, bytes) ->
+            val cached = Mono.just(message).cache()
+            exchange.attributes[SnsHttpMessageResolverSupport.WEBFLUX_MESSAGE_ATTRIBUTE] = cached
+            val decoratedRequest = object: ServerHttpRequestDecorator(exchange.request) {
+                override fun getBody(): Flux<DataBuffer> =
+                    Flux.defer {
+                        Flux.just(exchange.response.bufferFactory().wrap(bytes.copyOf()))
+                    }
 
-                    override fun getHeaders(): HttpHeaders =
-                        HttpHeaders().also { headers ->
-                            headers.putAll(super.getHeaders())
-                            headers.contentLength = bytes.size.toLong()
-                        }
-                }
-                chain.filter(exchange.mutate().request(decoratedRequest).build())
+                override fun getHeaders(): HttpHeaders =
+                    HttpHeaders().also { headers ->
+                        headers.putAll(super.getHeaders())
+                        headers.contentLength = bytes.size.toLong()
+                    }
             }
-            .doOnDiscard(DataBuffer::class.java, DataBufferUtils.releaseConsumer())
+            chain.filter(exchange.mutate().request(decoratedRequest).build())
+        }.doOnDiscard(DataBuffer::class.java, DataBufferUtils.releaseConsumer())
     }
 }

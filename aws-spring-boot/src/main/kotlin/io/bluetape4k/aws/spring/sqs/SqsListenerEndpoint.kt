@@ -1,6 +1,8 @@
 package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.javatimes.minutes
+import io.bluetape4k.javatimes.requireZeroOrPositiveDuration
+import io.bluetape4k.support.requirePositiveNumber
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import java.io.Serializable
 import java.time.Duration
@@ -31,8 +33,8 @@ internal data class SqsListenerEndpoint(
 ): Serializable {
     init {
         requireVisibilityHeartbeat(messageVisibilityHeartbeatIntervalSeconds, messageVisibilityHeartbeatSeconds)
-        require(maxInFlight >= 1) { "maxInFlight must be greater than or equal to 1." }
-        require(!queueAttributeCacheTtl.isNegative) { "queueAttributeCacheTtl must not be negative." }
+        maxInFlight.requirePositiveNumber("maxInFlight")
+        queueAttributeCacheTtl.requireZeroOrPositiveDuration("queueAttributeCacheTtl")
     }
 
     companion object {

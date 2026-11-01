@@ -5,6 +5,8 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.coroutines.support.awaitUntilOrNull
+import io.bluetape4k.coroutines.support.log
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
@@ -23,6 +25,7 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import okio.withLock
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.sqs.model.ChangeMessageVisibilityResponse
 import software.amazon.awssdk.services.sqs.model.DeleteMessageResponse
@@ -30,6 +33,7 @@ import software.amazon.awssdk.services.sqs.model.Message
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.locks.ReentrantLock
 import kotlin.time.Duration.Companion.milliseconds
 
 class SqsAcknowledgementTest {
@@ -64,13 +68,12 @@ class SqsAcknowledgementTest {
         val releaseDelete = CompletableDeferred<Unit>()
         val heartbeatPrepared = CompletableDeferred<Unit>()
 
-        val operations = RecordingSqsOperations()
-            .apply {
-                beforeDelete = {
-                    deleteStarted.complete(Unit)
-                    releaseDelete.await()
-                }
+        val operations = RecordingSqsOperations().apply {
+            beforeDelete = {
+                deleteStarted.complete(Unit)
+                releaseDelete.await()
             }
+        }
         val recorder = AcknowledgementObservationRecorder()
         val registry = ObservationRegistry.create()
         registry.observationConfig().observationHandler(recorder)
@@ -90,14 +93,18 @@ class SqsAcknowledgementTest {
             ),
         )
 
-        val terminal = async(Dispatchers.Default) { acknowledgement.acknowledge() }
+        val terminal = async(Dispatchers.Default) {
+            acknowledgement.acknowledge()
+        }.log("Acknowledge")
+
         deleteStarted.await()
-        val heartbeat = async(Dispatchers.Default) { acknowledgement.heartbeat(30) {} }
+
+        val heartbeat = async(Dispatchers.Default) {
+            acknowledgement.heartbeat(30) {}
+        }.log("Heartbeat")
 
         withContext(Dispatchers.Default) {
-            withTimeoutOrNull(250.milliseconds) {
-                heartbeatPrepared.await()
-            }
+            heartbeatPrepared.awaitUntilOrNull(250.milliseconds)
         }.shouldBeNull()
 
         releaseDelete.complete(Unit)
@@ -530,6 +537,8 @@ class SqsAcknowledgementTest {
         var changeVisibilityFailure: Throwable? = null
         var beforeDelete: suspend () -> Unit = {}
 
+        private val lock = ReentrantLock()
+
         override suspend fun getQueueUrl(queueName: String): String = "queue-url"
 
         override suspend fun createQueue(
@@ -558,7 +567,7 @@ class SqsAcknowledgementTest {
             receiptHandle: String,
         ): DeleteMessageResponse {
             beforeDelete()
-            synchronized(this) {
+            lock.withLock {
                 deleteCalls++
             }
             deleteFailure?.let { throw it }

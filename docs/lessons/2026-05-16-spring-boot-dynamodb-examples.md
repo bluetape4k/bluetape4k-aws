@@ -5,12 +5,11 @@ metadata:
   type: project
 ---
 
-# Spring Boot DynamoDB 예제 모듈(Issue #14)
+# Spring Boot DynamoDB 예제 모듈 (Issue #14)
 
 ## 요약
 
-`AbstractCoroutinesDynamoDbRepository`를 통해 DynamoDB CRUD를 보여 주는 Spring Boot 4
-애플리케이션 `examples/aws-spring-boot-dynamodb-examples`를 추가했다. LocalStack 기반
+`AbstractCoroutinesDynamoDbRepository`를 통해 DynamoDB CRUD를 보여 주는 Spring Boot 4 애플리케이션 `examples/aws-spring-boot-dynamodb-examples`를 추가했다. LocalStack 기반
 `ApplicationContextRunner` 통합 테스트로 save, findById, scan, delete를 다룬다.
 
 ## 근본 원인 / 배경
@@ -23,8 +22,7 @@ metadata:
 ### 저장소 기반 클래스
 
 `OrderRepository`는 `AbstractCoroutinesDynamoDbRepository<Order, String>`을 확장한다.
-`tableName`, `keyFromId`, `keyFromItem`을 override한다. Entity에는 `@DynamoDbBean`,
-partition key getter에는 `@get:DynamoDbPartitionKey`를 적용한다.
+`tableName`, `keyFromId`, `keyFromItem`을 override한다. Entity에는 `@DynamoDbBean`, partition key getter에는 `@get:DynamoDbPartitionKey`를 적용한다.
 
 ### ApplicationContextRunner 연결
 
@@ -54,8 +52,7 @@ ApplicationContextRunner()
 
 ### Table 관리
 
-각 테스트는 idempotent한 `createOrdersTable(asyncClient, tableName)`을 호출할 수 있다.
-이 함수는 `ResourceNotFoundException`을 검사하고 table이 이미 있으면 생성을 건너뛴다.
+각 테스트는 idempotent한 `createOrdersTable(asyncClient, tableName)`을 호출할 수 있다. 이 함수는 `ResourceNotFoundException`을 검사하고 table이 이미 있으면 생성을 건너뛴다.
 `TableStatus.ACTIVE`를 최대 30초 기다린다.
 
 ## 피한 함정
@@ -66,11 +63,10 @@ ApplicationContextRunner()
 
 ## 검증
 
-- CRUD 테스트: save → findById → scan → deleteById → findById(null)
+- CRUD 테스트: save → findById → scan → deleteById → findById (null)
 - 동시성 테스트: worker 4개가 3회씩 서로 다른 order를 저장하고 findById로 확인
 
 ## 향후 지침
 
 - Spring Boot DynamoDB 예제를 확장할 때 같은 `ApplicationContextRunner` pattern을 따른다.
-- `LocalStackServer.Launcher.getLocalStack("dynamodb")` + `getCredentialProvider()` pattern을
-  Spring Boot 테스트용 표준 LocalStack 연결 방식으로 사용한다.
+- `LocalStackServer.Launcher.getLocalStack("dynamodb")` + `getCredentialProvider()` pattern을 Spring Boot 테스트용 표준 LocalStack 연결 방식으로 사용한다.

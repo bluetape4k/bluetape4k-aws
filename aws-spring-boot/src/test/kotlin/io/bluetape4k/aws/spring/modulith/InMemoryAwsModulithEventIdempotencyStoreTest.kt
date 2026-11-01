@@ -8,7 +8,8 @@ import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.javatimes.hours
 import io.bluetape4k.javatimes.minutes
 import io.bluetape4k.javatimes.nanos
-import kotlinx.coroutines.test.runTest
+import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import org.junit.jupiter.api.Test
 import java.time.Clock
 import java.time.Duration
@@ -19,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 class InMemoryAwsModulithEventIdempotencyStoreTest: AwsModulithEventIdempotencyStoreContract() {
 
-    private companion object {
+    private companion object: KLoggingChannel() {
         val LEASE_DURATION: Duration = 2.minutes()
 
         fun key(eventId: String): AwsModulithEventKey = AwsModulithEventKey("order.placed", eventId)
@@ -28,7 +29,7 @@ class InMemoryAwsModulithEventIdempotencyStoreTest: AwsModulithEventIdempotencyS
     override fun createStore(): AwsModulithEventIdempotencyStore = InMemoryAwsModulithEventIdempotencyStore()
 
     @Test
-    fun `expired lease is taken over with a higher fencing generation`() = runTest {
+    fun `expired lease is taken over with a higher fencing generation`() = runSuspendIO {
         val clock = MutableClock()
         store(clock = clock).use { store ->
             val first = store.claim(key("evt-1"), LEASE_DURATION).acquiredToken()
@@ -43,7 +44,7 @@ class InMemoryAwsModulithEventIdempotencyStoreTest: AwsModulithEventIdempotencyS
     }
 
     @Test
-    fun `entry and in progress capacity never evict active claims`() = runTest {
+    fun `entry and in progress capacity never evict active claims`() = runSuspendIO {
         store(maxEntries = 2, maxInProgress = 2).use { store ->
             store.claim(key("evt-1"), LEASE_DURATION)
             store.claim(key("evt-2"), LEASE_DURATION)
@@ -65,7 +66,7 @@ class InMemoryAwsModulithEventIdempotencyStoreTest: AwsModulithEventIdempotencyS
     }
 
     @Test
-    fun `recovered claims release entry and key byte capacity`() = runTest {
+    fun `recovered claims release entry and key byte capacity`() = runSuspendIO {
         store(maxEntries = 1, maxInProgress = 1, maxKeyBytes = 17).use { store ->
             val recovered = store.claim(key("evt-1"), LEASE_DURATION).acquiredToken()
 
@@ -77,7 +78,7 @@ class InMemoryAwsModulithEventIdempotencyStoreTest: AwsModulithEventIdempotencyS
     }
 
     @Test
-    fun `total UTF8 key bytes are bounded independently`() = runTest {
+    fun `total UTF8 key bytes are bounded independently`() = runSuspendIO {
         store(maxEntries = 10, maxInProgress = 10, maxKeyBytes = 4).use { store ->
             store.claim(AwsModulithEventKey("a", "123"), LEASE_DURATION)
 
@@ -88,7 +89,7 @@ class InMemoryAwsModulithEventIdempotencyStoreTest: AwsModulithEventIdempotencyS
     }
 
     @Test
-    fun `completed entries expire by retention and are evicted by LRU`() = runTest {
+    fun `completed entries expire by retention and are evicted by LRU`() = runSuspendIO {
         val clock = MutableClock()
         store(maxEntries = 2, maxInProgress = 2, retention = 1.minutes(), clock = clock).use { store ->
             complete(store, "evt-1")
@@ -109,7 +110,7 @@ class InMemoryAwsModulithEventIdempotencyStoreTest: AwsModulithEventIdempotencyS
     }
 
     @Test
-    fun `close clears owned state and rejects new claims`() = runTest {
+    fun `close clears owned state and rejects new claims`() = runSuspendIO {
         val store = store()
         store.claim(key("evt-1"), LEASE_DURATION)
 
@@ -122,7 +123,7 @@ class InMemoryAwsModulithEventIdempotencyStoreTest: AwsModulithEventIdempotencyS
     }
 
     @Test
-    fun `mutable properties are snapshotted at construction`() = runTest {
+    fun `mutable properties are snapshotted at construction`() = runSuspendIO {
         val properties = AwsModulithEventsProperties.Idempotency(maxEntries = 3, maxInProgress = 1)
         val store = InMemoryAwsModulithEventIdempotencyStore(properties)
         properties.maxInProgress = 2

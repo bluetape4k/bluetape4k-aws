@@ -3,9 +3,9 @@
 package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.support.toUtf8Bytes
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
-import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.util.*
 
@@ -44,7 +44,7 @@ internal object SqsExtendedPolicyFingerprint: KLogging() {
     }
 
     private fun ByteArrayOutputStream.string(value: String?) {
-        val bytes = value.orEmpty().toByteArray(StandardCharsets.UTF_8)
+        val bytes = value.orEmpty().toUtf8Bytes()
         write('S'.code)
         write(ByteBuffer.allocate(4).putInt(bytes.size).array())
         write(bytes)
@@ -82,10 +82,10 @@ internal object SqsExtendedPolicyFingerprint: KLogging() {
         if (context.requiresVersion2Fingerprint()) {
             buildString {
                 context.toSortedMap().forEach { (key, value) ->
-                    append(key.toByteArray(StandardCharsets.UTF_8).size)
+                    append(key.toUtf8Bytes().size)
                     append(':')
                     append(key)
-                    append(value.toByteArray(StandardCharsets.UTF_8).size)
+                    append(value.toUtf8Bytes().size)
                     append(':')
                     append(value)
                 }

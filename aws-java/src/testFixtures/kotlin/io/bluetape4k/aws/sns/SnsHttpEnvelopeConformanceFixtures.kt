@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.sns
 
+import io.bluetape4k.support.toUtf8Bytes
+
 /** SNS HTTP adapter가 함께 소비하는 유효 envelope 사례입니다. */
 data class SnsHttpEnvelopeValidCase(
     val name: String,
@@ -220,7 +222,7 @@ object SnsHttpEnvelopeConformanceFixtures {
 
     private fun exactLimitJson(): String {
         val emptyMessage = notificationJson("Message" to quoted(""))
-        val paddingBytes = SnsHttpEnvelopePolicy.MAX_MESSAGE_BYTES - emptyMessage.toByteArray(Charsets.UTF_8).size
+        val paddingBytes = SnsHttpEnvelopePolicy.MAX_MESSAGE_BYTES - emptyMessage.toUtf8Bytes().size
         check(paddingBytes >= 0)
         return notificationJson("Message" to quoted("x".repeat(paddingBytes)))
     }

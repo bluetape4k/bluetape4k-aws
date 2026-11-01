@@ -6,7 +6,6 @@ import ch.qos.logback.core.read.ListAppender
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
-import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotContain
@@ -348,8 +347,9 @@ class SnsTopicArnResolverTest: AbstractSnsTest() {
             assertFailsWith<IllegalStateException> { resolver.resolve("orders") }
             val event = appender.list.single()
             val message = event.formattedMessage
+
             log.debug { "message=$message" }
-            message.startsWith("SNS topic ARN lookup failed (scopeHash=").shouldBeTrue()
+            message shouldContain "SNS topic ARN lookup failed (scopeHash="
             message shouldContain ", topicNameHash="
             message shouldContain ", exceptionType=IllegalStateException)"
             message shouldNotContain "orders"

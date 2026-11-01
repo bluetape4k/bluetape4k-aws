@@ -9,6 +9,7 @@ import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -62,6 +63,7 @@ class AwsModulithExceptionsTest {
     fun `cleanup exception stays internal and bounded`() {
         val exception = AwsModulithCleanupException()
 
+        log.debug { "exception=$exception" }
         exception.code shouldBeEqualTo AwsModulithDiagnosticCode.DISPATCH_ACK
         exception.phase shouldBeEqualTo AwsModulithFailurePhase.CLEANUP
         exception.message shouldBeEqualTo "BT4K-MOD-204:CLEANUP"

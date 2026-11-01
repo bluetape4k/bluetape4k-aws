@@ -183,7 +183,7 @@ class CloudWatchLogsKtorRuntime(
                 return emptyList()
             }
             buffer
-                .sortedBy { it.timestamp ?: 0L }
+                .sortedBy { it.timestamp }
                 .also { buffer.clear() }
         }
 

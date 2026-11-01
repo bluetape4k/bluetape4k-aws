@@ -30,12 +30,14 @@ internal fun resolveSqsObservationConventions(
     userConventions: List<SqsObservationConvention>,
 ): Map<SqsObservationStage, SqsObservationConvention> {
     val conventions = defaultSqsObservationConventions().toMutableMap()
-    userConventions.groupBy(SqsObservationConvention::stage).forEach { (stage, candidates) ->
-        check(candidates.size == 1) {
-            "Only one SqsObservationConvention may be registered for stage $stage."
+    userConventions
+        .groupBy(SqsObservationConvention::stage)
+        .forEach { (stage, candidates) ->
+            check(candidates.size == 1) {
+                "Only one SqsObservationConvention may be registered for stage $stage."
+            }
+            conventions[stage] = candidates.single()
         }
-        conventions[stage] = candidates.single()
-    }
     return conventions.toMap()
 }
 

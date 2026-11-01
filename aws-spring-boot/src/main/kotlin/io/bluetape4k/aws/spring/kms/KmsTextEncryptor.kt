@@ -1,10 +1,10 @@
 package io.bluetape4k.aws.spring.kms
 
+import io.bluetape4k.support.toUtf8Bytes
 import io.bluetape4k.support.toUtf8String
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.springframework.security.crypto.encrypt.TextEncryptor
-import java.nio.charset.StandardCharsets
 import java.util.*
 
 /**
@@ -32,7 +32,7 @@ class KmsTextEncryptor(
     override fun encrypt(text: String): String {
         val encrypted = runBlocking(Dispatchers.IO) {
             kmsOperations.encrypt(
-                plaintext = text.toByteArray(StandardCharsets.UTF_8),
+                plaintext = text.toUtf8Bytes(),
                 keyId = keyId,
                 encryptionContext = encryptionContext,
             )

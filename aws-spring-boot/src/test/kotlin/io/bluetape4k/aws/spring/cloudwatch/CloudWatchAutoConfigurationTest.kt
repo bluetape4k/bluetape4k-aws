@@ -30,9 +30,6 @@ class CloudWatchAutoConfigurationTest {
 
     companion object: KLogging()
 
-    private val customCloudWatchClient = mockk<CloudWatchAsyncClient>(relaxed = true)
-    private val customCloudWatchLogsClient = mockk<CloudWatchLogsAsyncClient>(relaxed = true)
-
     private val contextRunner = ApplicationContextRunner()
         .withConfiguration(
             AutoConfigurations.of(
@@ -48,6 +45,10 @@ class CloudWatchAutoConfigurationTest {
             "bluetape4k.aws.cloudwatch-logs.log-group-name=/app/test",
             "bluetape4k.aws.cloudwatch-logs.log-stream-name=default",
         )
+
+
+    private val customCloudWatchClient = mockk<CloudWatchAsyncClient>(relaxed = true)
+    private val customCloudWatchLogsClient = mockk<CloudWatchLogsAsyncClient>(relaxed = true)
 
     @BeforeEach
     fun resetMocks() {

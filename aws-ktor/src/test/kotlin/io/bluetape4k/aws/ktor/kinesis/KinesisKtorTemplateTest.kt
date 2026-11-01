@@ -211,7 +211,7 @@ class KinesisKtorTemplateTest {
         records.size shouldBeEqualTo 1
         records.single().sequenceNumber shouldBeEqualTo "seq-1"
         records.single().partitionKey shouldBeEqualTo "order-1"
-        records.single().data?.decodeToString() shouldBeEqualTo "payload-1"
+        records.single().data.decodeToString() shouldBeEqualTo "payload-1"
         coVerify(exactly = 1) { client.getShardIterator(any<GetShardIteratorRequest>()) }
         coVerify(exactly = 1) { client.getRecords(any<GetRecordsRequest>()) }
     }

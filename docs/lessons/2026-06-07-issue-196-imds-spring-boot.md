@@ -1,13 +1,10 @@
 # Issue #196 IMDS Spring Boot 통합
 
-날짜: 2026-06-07
-이슈: #196
+날짜: 2026-06-07 이슈: #196
 
 ## 배경
 
-`aws-spring-boot`에는 S3, SQS, SNS, SES, KMS, DynamoDB, CloudWatch 서비스
-자동 구성이 있었지만 EC2 Instance Metadata Service 조회를 위한 Spring Boot
-퍼사드는 없었다.
+`aws-spring-boot`에는 S3, SQS, SNS, SES, KMS, DynamoDB, CloudWatch 서비스 자동 구성이 있었지만 EC2 Instance Metadata Service 조회를 위한 Spring Boot 퍼사드는 없었다.
 
 ## 결정
 
@@ -21,8 +18,7 @@
 ## 결과
 
 이제 IMDS SDK 의존성이 있고 `bluetape4k.aws.imds.enabled`가 true이면 모듈이
-`Ec2MetadataAsyncClient`와 `ImdsOperations`를 등록한다. 비활성 상태, 누락된 SDK 클래스,
-사용자 정의 클라이언트 빈, 사용자 정의 연산 빈이 있으면 물러난다.
+`Ec2MetadataAsyncClient`와 `ImdsOperations`를 등록한다. 비활성 상태, 누락된 SDK 클래스, 사용자 정의 클라이언트 빈, 사용자 정의 연산 빈이 있으면 물러난다.
 
 ## 검증
 
@@ -35,6 +31,4 @@
 
 ## 향후 보호 장치
 
-EC2 존재를 입증하기 위한 IMDS 시작 탐색을 추가하지 않는다. EC2가 아닌 애플리케이션에는
-시작 시 네트워크 비용이 없어야 한다. 자격 증명 조회는 AWS SDK 자격 증명 제공자 체인
-또는 명시적 STS 웹 아이덴티티 지원에 유지한다.
+EC2 존재를 입증하기 위한 IMDS 시작 탐색을 추가하지 않는다. EC2가 아닌 애플리케이션에는 시작 시 네트워크 비용이 없어야 한다. 자격 증명 조회는 AWS SDK 자격 증명 제공자 체인 또는 명시적 STS 웹 아이덴티티 지원에 유지한다.

@@ -29,9 +29,11 @@ class CloudWatchCoroutinesTemplate(
             return emptyList()
         }
 
-        return metricData.chunked(properties.batchSize).map { batch ->
-            cloudWatchAsyncClient.putMetricData(namespace, batch)
-        }
+        return metricData
+            .chunked(properties.batchSize)
+            .map { batch ->
+                cloudWatchAsyncClient.putMetricData(namespace, batch)
+            }
     }
 
     override suspend fun putMetricDatum(metricDatum: MetricDatum): PutMetricDataResponse =

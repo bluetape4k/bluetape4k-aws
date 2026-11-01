@@ -17,12 +17,9 @@ bluetape4k 저장소의 Nightly build가 GitHub runner에서 관리형 dependenc
 
 ## 검증
 
-- `.github/workflows/nightly-tests.yml` 검사 결과 setup-gradle block과 cache-disabled
-  block 수가 일치했습니다.
+- `.github/workflows/nightly-tests.yml` 검사 결과 setup-gradle block과 cache-disabled block 수가 일치했습니다.
 - 예정된 검증: `actionlint`, `git diff --check`.
 
 ## 향후 지침
 
-Nightly workflow가 snapshot 또는 BOM으로 관리하는 bluetape4k dependency를 사용할 때는
-cache restore가 오래된 metadata를 재사용하지 않는다는 최신 CI 근거가 나오기 전까지
-Gradle action cache를 비활성화한 상태로 유지합니다.
+Nightly workflow가 snapshot 또는 BOM으로 관리하는 bluetape4k dependency를 사용할 때는 cache restore가 오래된 metadata를 재사용하지 않는다는 최신 CI 근거가 나오기 전까지 Gradle action cache를 비활성화한 상태로 유지합니다.

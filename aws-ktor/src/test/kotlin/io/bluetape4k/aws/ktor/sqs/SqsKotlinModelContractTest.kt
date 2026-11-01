@@ -4,6 +4,7 @@ import aws.sdk.kotlin.services.sqs.model.Message
 import aws.sdk.kotlin.services.sqs.model.MessageSystemAttributeName
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.support.toUtf8Bytes
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Test
 
@@ -26,7 +27,7 @@ class SqsKotlinModelContractTest {
         StringOrByteArraySqsMessageConverter.convert(message, String::class) shouldBeEqualTo body
         StringOrByteArraySqsMessageConverter
             .convert(message, ByteArray::class)
-            .contentEquals(body.toByteArray(Charsets.UTF_8))
+            .contentEquals(body.toUtf8Bytes())
             .shouldBeTrue()
         assertSame(message, StringOrByteArraySqsMessageConverter.convert(message, Message::class))
         SqsConsumerFailureContext(

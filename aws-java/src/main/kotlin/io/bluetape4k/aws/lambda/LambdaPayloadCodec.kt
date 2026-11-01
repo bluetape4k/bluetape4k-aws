@@ -1,6 +1,8 @@
 package io.bluetape4k.aws.lambda
 
 import io.bluetape4k.jackson3.Jackson
+import io.bluetape4k.support.toUtf8Bytes
+import io.bluetape4k.support.toUtf8String
 import tools.jackson.databind.json.JsonMapper
 
 /**
@@ -30,9 +32,9 @@ object LambdaPayloadCodecs {
 
     /** UTF-8 문자열 payload를 처리하는 codec입니다. */
     val utf8: LambdaPayloadCodec<String> = object: LambdaPayloadCodec<String> {
-        override fun encode(value: String): ByteArray = value.toByteArray(Charsets.UTF_8)
+        override fun encode(value: String): ByteArray = value.toUtf8Bytes()
 
-        override fun decode(payload: ByteArray): String = payload.toString(Charsets.UTF_8)
+        override fun decode(payload: ByteArray): String = payload.toUtf8String()
     }
 
     /** 호출자가 제공한 Jackson 3 mapper와 구체적인 대상 타입을 연결합니다. */

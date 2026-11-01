@@ -1,11 +1,11 @@
 package io.bluetape4k.aws.spring.sns
 
+import io.bluetape4k.support.toUtf8Bytes
 import kotlinx.coroutines.CancellationException
 import software.amazon.awssdk.core.exception.ApiCallAttemptTimeoutException
 import software.amazon.awssdk.core.exception.ApiCallTimeoutException
 import software.amazon.awssdk.core.exception.SdkClientException
 import software.amazon.awssdk.core.exception.SdkServiceException
-import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.util.concurrent.TimeoutException
 
@@ -57,19 +57,20 @@ class SnsBatchTransportException private constructor(
             )
         }
 
-        private fun classify(cause: Throwable): SnsBatchFailureType = when {
-            cause is ApiCallTimeoutException ||
-                    cause is ApiCallAttemptTimeoutException ||
-                    cause is TimeoutException ->
-                SnsBatchFailureType.TIMEOUT
-            cause is SdkServiceException -> SnsBatchFailureType.SDK_SERVICE
-            cause is SdkClientException  -> SnsBatchFailureType.CLIENT
-            else                         -> SnsBatchFailureType.UNKNOWN
+        private fun classify(cause: Throwable): SnsBatchFailureType = when (cause) {
+            is ApiCallTimeoutException,
+            is ApiCallAttemptTimeoutException,
+            is TimeoutException,
+                                   -> SnsBatchFailureType.TIMEOUT
+
+            is SdkServiceException -> SnsBatchFailureType.SDK_SERVICE
+            is SdkClientException  -> SnsBatchFailureType.CLIENT
+            else                   -> SnsBatchFailureType.UNKNOWN
         }
 
         private fun fingerprint(ids: List<String>): String {
             val digest = MessageDigest.getInstance("SHA-256")
-            val bytes = digest.digest(ids.joinToString("\u0000").toByteArray(StandardCharsets.UTF_8))
+            val bytes = digest.digest(ids.joinToString("\u0000").toUtf8Bytes())
             return bytes.take(FINGERPRINT_BYTE_COUNT)
                 .joinToString(separator = "") { byte -> "%02x".format(byte) }
         }

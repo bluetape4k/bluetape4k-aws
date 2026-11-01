@@ -290,7 +290,7 @@ internal class AwsModulithSqsConsumerConfiguration {
     @ConditionalOnMissingBean(AwsModulithEventIdempotencyStore::class)
     fun awsModulithEventIdempotencyStore(
         properties: AwsModulithEventsProperties,
-    ): AwsModulithEventIdempotencyStore =
+    ): InMemoryAwsModulithEventIdempotencyStore =
         InMemoryAwsModulithEventIdempotencyStore(properties.consumer.idempotency)
 
     @Bean

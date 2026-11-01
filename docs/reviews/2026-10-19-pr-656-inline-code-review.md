@@ -10,12 +10,12 @@
 
 ## P1 발견 및 처리
 
-| 위치 | 문제와 영향 | 처리 및 증거 |
-|---|---|---|
-| `aws-ktor/build.gradle.kts` | 문서와 1.0.0이 약속한 AWS SDK 공개 의존성을 `compileOnly`로 바꿔 외부 consumer의 SQS 등 공개 타입 컴파일을 깨뜨렸다. | 문서화된 SDK/API 의존성을 `api`로 복구하고, 내부 구현용 S3 SDK만 `compileOnly`로 유지했다. SQS consumer fixture를 강제 재컴파일했고 전체 `compatibilityCheck`도 통과했다. |
-| `aws-kotlin/.../LambdaInvocationResult.kt` | `statusCode: Int?`를 `Int`로 바꿔 JVM getter 반환형을 `java.lang.Integer`에서 primitive `int`로 변경했다. 기존 consumer 바이너리의 getter descriptor와 호환되지 않는다. | nullable 타입을 복원하고 reflection 회귀 테스트에서 getter 반환형을 검증했다. `LambdaPayloadCodecTest` 18개가 통과했다. |
-| `aws-ktor/.../DynamoDbKtorRuntime.kt`, `DynamoDbKtorPluginConfig.kt` | SDK client와 builder lambda를 보유한 runtime 설정이 새로 `Serializable`을 선언해 실제로 지킬 수 없는 직렬화 계약을 노출했다. | 두 타입의 `Serializable`과 불필요한 `serialVersionUID`를 제거하고 marker 부재 회귀 테스트를 추가했다. `DynamoDbKtorRuntimeConfigTest` 10개가 통과했다. |
-| `aws-spring-boot/.../SesJavaMailSender.kt` | `whenComplete`에서 일반 `LinkedHashMap`에 병렬 기록하고, 실패한 future를 `allAsList(...).join()`에 넘겨 Spring의 기존 `MailSendException` 실패 집계를 건너뛸 수 있었다. | 각 future가 `(message, mapped exception)` 결과를 반환하도록 바꾸고 완료 순서대로 모았다. Simple/MIME 두 경로의 다중 실패 회귀 테스트를 추가했으며 `SesJavaMailSenderTest` 5개가 통과했다. |
+| 위치                                                                 | 문제와 영향                                                                                                                                                             | 처리 및 증거                                                                                                                                                                              |
+|----------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `aws-ktor/build.gradle.kts`                                          | 문서와 1.0.0이 약속한 AWS SDK 공개 의존성을 `compileOnly`로 바꿔 외부 consumer의 SQS 등 공개 타입 컴파일을 깨뜨렸다.                                                    | 문서화된 SDK/API 의존성을 `api`로 복구하고, 내부 구현용 S3 SDK만 `compileOnly`로 유지했다. SQS consumer fixture를 강제 재컴파일했고 전체 `compatibilityCheck`도 통과했다.                 |
+| `aws-kotlin/.../LambdaInvocationResult.kt`                           | `statusCode: Int?`를 `Int`로 바꿔 JVM getter 반환형을 `java.lang.Integer`에서 primitive `int`로 변경했다. 기존 consumer 바이너리의 getter descriptor와 호환되지 않는다. | nullable 타입을 복원하고 reflection 회귀 테스트에서 getter 반환형을 검증했다. `LambdaPayloadCodecTest` 18개가 통과했다.                                                                   |
+| `aws-ktor/.../DynamoDbKtorRuntime.kt`, `DynamoDbKtorPluginConfig.kt` | SDK client와 builder lambda를 보유한 runtime 설정이 새로 `Serializable`을 선언해 실제로 지킬 수 없는 직렬화 계약을 노출했다.                                            | 두 타입의 `Serializable`과 불필요한 `serialVersionUID`를 제거하고 marker 부재 회귀 테스트를 추가했다. `DynamoDbKtorRuntimeConfigTest` 10개가 통과했다.                                    |
+| `aws-spring-boot/.../SesJavaMailSender.kt`                           | `whenComplete`에서 일반 `LinkedHashMap`에 병렬 기록하고, 실패한 future를 `allAsList(...).join()`에 넘겨 Spring의 기존 `MailSendException` 실패 집계를 건너뛸 수 있었다. | 각 future가 `(message, mapped exception)` 결과를 반환하도록 바꾸고 완료 순서대로 모았다. Simple/MIME 두 경로의 다중 실패 회귀 테스트를 추가했으며 `SesJavaMailSenderTest` 5개가 통과했다. |
 
 ## 추가 검토 사항
 
@@ -39,17 +39,18 @@
 
 기존 `Inline verdict: PASS; P0=0, P1=0`은 독립 검토 attestation이 아니며 최종 판정으로 사용하지 않는다. 뒤이은 독립 리뷰가 이전 후보 `b79c5b8`에서 P1 회귀를 발견했다. 다음 항목을 수정하고 현재 후보 `227e492ed42f7c5e51047a53fa33ddc7f962fada`에서 다시 검토했다.
 
-| 영역 | 발견 사항 | 수정 및 회귀 증거 |
-|---|---|---|
-| 공개 JVM ABI | 리팩터링 과정에서 `AwsExposedDatabaseFactory`, `AwsSdkRdsIamAuthTokenGenerator`, `SnsNotification`, SQS batch 모델의 공개 생성자 descriptor가 사라질 수 있었다. | 공개 secondary constructor를 복구했다. Exposed 및 SQS 모델의 reflection ABI 검증이 각각 통과했다. |
-| Ktor 엔진 소유권 | DynamoDB plugin이 전역 공유 기본 엔진을 plugin 소유 client에 전달해 plugin 종료와 전역 엔진 종료 책임이 충돌할 수 있었다. | plugin 설정의 명시적 엔진만 전달하고 둘 다 설정되지 않으면 SDK 관리 엔진을 사용한다. runtime 종료 테스트와 설정 테스트를 통과했다. 공유 엔진을 상속할 때 호출자가 서비스 client를 먼저 닫고 엔진을 마지막에 닫도록 KDoc를 명시했다. |
-| 진단 문자열 | 설정 객체와 SQS context의 `toString()`이 endpoint, credential, 메시지 본문 등 외부 입력을 노출할 수 있었다. | 값 대신 설정 여부와 안전한 키 정보만 출력하며 sentinel 기반 redaction 테스트가 통과했다. |
-| CI 도구 설정 | `.github/workflows/ci.yml`에서 `actions/setup-java` 버전이 `v6.0.0`으로 낮아져 있었다. | 13개 사용 위치를 `v6.0.1`로 복구했고, workflow 검증 CI를 통과했다. |
+| 영역             | 발견 사항                                                                                                                                                       | 수정 및 회귀 증거                                                                                                                                                                                                                   |
+|------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 공개 JVM ABI     | 리팩터링 과정에서 `AwsExposedDatabaseFactory`, `AwsSdkRdsIamAuthTokenGenerator`, `SnsNotification`, SQS batch 모델의 공개 생성자 descriptor가 사라질 수 있었다. | 공개 secondary constructor를 복구했다. Exposed 및 SQS 모델의 reflection ABI 검증이 각각 통과했다.                                                                                                                                   |
+| Ktor 엔진 소유권 | DynamoDB plugin이 전역 공유 기본 엔진을 plugin 소유 client에 전달해 plugin 종료와 전역 엔진 종료 책임이 충돌할 수 있었다.                                       | plugin 설정의 명시적 엔진만 전달하고 둘 다 설정되지 않으면 SDK 관리 엔진을 사용한다. runtime 종료 테스트와 설정 테스트를 통과했다. 공유 엔진을 상속할 때 호출자가 서비스 client를 먼저 닫고 엔진을 마지막에 닫도록 KDoc를 명시했다. |
+| 진단 문자열      | 설정 객체와 SQS context의 `toString()`이 endpoint, credential, 메시지 본문 등 외부 입력을 노출할 수 있었다.                                                     | 값 대신 설정 여부와 안전한 키 정보만 출력하며 sentinel 기반 redaction 테스트가 통과했다.                                                                                                                                            |
+| CI 도구 설정     | `.github/workflows/ci.yml`에서 `actions/setup-java` 버전이 `v6.0.0`으로 낮아져 있었다.                                                                          | 13개 사용 위치를 `v6.0.1`로 복구했고, workflow 검증 CI를 통과했다.                                                                                                                                                                  |
 
 ## 현재 후보 판정과 검증 경계
 
 - 독립 code-review lane은 `227e492e`를 **APPROVE**, P0/P1/P2 각각 0으로 판정했다.
-- 독립 architecture/lifecycle lane은 공유 엔진 KDoc를 재검토하고 **CLEAR**, P0/P1/P2 각각 0으로 판정했다. `DynamoDbKtorRuntimeConfigTest` 10개와 `git diff --check`가 통과했다.
+- 독립 architecture/lifecycle lane은 공유 엔진 KDoc를 재검토하고
+  **CLEAR**, P0/P1/P2 각각 0으로 판정했다. `DynamoDbKtorRuntimeConfigTest` 10개와 `git diff --check`가 통과했다.
 - 추가 로컬 증거: Exposed constructor ABI 1개, SQS constructor ABI 1개, Ktor redaction/config/default-engine 테스트 5개, Floci DynamoDB runtime 테스트 3개가 통과했다.
 - `detekt` 전체 실행은 기준 브랜치에 이미 있던 9개 지적 때문에 실패한다. 실패 위치는 Kinesis Floci, Spring Config/DynamoDB/S3/SQS의 변경되지 않은 코드이며, PR 회귀로 분류하지 않았다.
 - 이전 CI run `39165049180`은 17개 검사가 성공했으나 `Test / aws-ktor emulator examples`가 30분 후 취소되고 `CI Status`가 실패했다. 따라서 이 run은 녹색 CI가 아니다.
@@ -59,16 +60,17 @@
 
 ## 2026-10-19 추가 독립 리뷰와 수정 계획
 
-후속 architecture review가 exact HEAD `947fad86fd5f9aee3a1183f14bf9705fd18d14a4`에서 P1 네 묶음과 P2 equality 결함을 발견했다. 이 판정은 앞의 후보 판정을 대체하며, 수정 전 현재 상태는 **BLOCK**이다.
+후속 architecture review가 exact HEAD `947fad86fd5f9aee3a1183f14bf9705fd18d14a4`에서 P1 네 묶음과 P2 equality 결함을 발견했다. 이 판정은 앞의 후보 판정을 대체하며, 수정 전 현재 상태는
+**BLOCK**이다.
 
-| 우선순위 | 발견 | 수정 계획 | 먼저 고정할 회귀 계약 |
-|---|---|---|---|
-| P1 | AssumeRole 검증이 session token의 129,600초 상한을 사용한다. | AssumeRole 전용 900..43,200 상수를 다시 사용한다. | 43,200 허용, 43,201 거부; session token은 129,600 허용 |
-| P1 | AWS Kotlin Bedrock builder가 명시 설정 뒤에 실행되어 endpoint, region, credentials, engine을 덮어쓴다. | builder를 먼저 적용하고 명시 인자를 나중에 적용한다. | 서로 충돌하는 네 설정에서 명시 인자가 유지됨 |
-| P1 | 새 `toString()`이 data key, nonce, AAD, 암호화 메타데이터와 S3 object bytes를 노출한다. Ktor plugin config도 provider/client/endpoint 객체를 직접 렌더링한다. | 원문 대신 길이·개수·설정 여부만 출력한다. | 고정 canary 문자열, credential, endpoint userinfo가 진단 문자열에 없음 |
-| P1 | helper 치환이 multipart 길이 0, Kinesis retry 0, DynamoDB Streams page 수 1을 거부한다. | 원래의 inclusive 경계 조건을 되살린다. | 각각 0, 0, 1 경계를 허용하고 음수/0 경계는 기존대로 거부 |
-| P2 | `WrappedDataKey.equals`가 null nonce 비교에서 대칭성을 위반한다. | nonce 비교를 양쪽 null 상태를 고려하는 content 비교로 바꾼다. | null/non-null 양방향 비교와 동등 객체의 hash 일치 |
-| P2 | `ProviderStreamingEnvelope.equals`가 byte 배열 내용 비교를 쓰지만 `hashCode`에는 배열 참조를 포함한다. | `hashCode`를 equality의 동일 필드로 구성한다. | 별도 배열 인스턴스의 같은 내용이 같은 hash를 가짐 |
+| 우선순위 | 발견                                                                                                                                                          | 수정 계획                                                     | 먼저 고정할 회귀 계약                                                  |
+|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------|------------------------------------------------------------------------|
+| P1       | AssumeRole 검증이 session token의 129,600초 상한을 사용한다.                                                                                                  | AssumeRole 전용 900..43,200 상수를 다시 사용한다.             | 43,200 허용, 43,201 거부; session token은 129,600 허용                 |
+| P1       | AWS Kotlin Bedrock builder가 명시 설정 뒤에 실행되어 endpoint, region, credentials, engine을 덮어쓴다.                                                        | builder를 먼저 적용하고 명시 인자를 나중에 적용한다.          | 서로 충돌하는 네 설정에서 명시 인자가 유지됨                           |
+| P1       | 새 `toString()`이 data key, nonce, AAD, 암호화 메타데이터와 S3 object bytes를 노출한다. Ktor plugin config도 provider/client/endpoint 객체를 직접 렌더링한다. | 원문 대신 길이·개수·설정 여부만 출력한다.                     | 고정 canary 문자열, credential, endpoint userinfo가 진단 문자열에 없음 |
+| P1       | helper 치환이 multipart 길이 0, Kinesis retry 0, DynamoDB Streams page 수 1을 거부한다.                                                                       | 원래의 inclusive 경계 조건을 되살린다.                        | 각각 0, 0, 1 경계를 허용하고 음수/0 경계는 기존대로 거부               |
+| P2       | `WrappedDataKey.equals`가 null nonce 비교에서 대칭성을 위반한다.                                                                                              | nonce 비교를 양쪽 null 상태를 고려하는 content 비교로 바꾼다. | null/non-null 양방향 비교와 동등 객체의 hash 일치                      |
+| P2       | `ProviderStreamingEnvelope.equals`가 byte 배열 내용 비교를 쓰지만 `hashCode`에는 배열 참조를 포함한다.                                                        | `hashCode`를 equality의 동일 필드로 구성한다.                 | 별도 배열 인스턴스의 같은 내용이 같은 hash를 가짐                      |
 
 수정 순서는 계약 테스트를 먼저 추가하고, 위 결함만 고친 다음 해당 모듈의 테스트·ABI·정적 분석 및 최종 exact-head CI를 실행하는 것이다. 병합은 새 HEAD에 대한 별도 최종 리뷰와 새 승인이 있기 전에는 진행하지 않는다.
 
@@ -76,23 +78,23 @@
 
 독립 source review는 `947fad86fd5f9aee3a1183f14bf9705fd18d14a4`에서 아래 문제를 더 확인했다. workflow 버전 지적은 PR base와 파일을 직접 비교해 재현했다.
 
-| 우선순위 | 발견 | 수정 |
-|---|---|---|
-| P1 | KMS `GenerateDataKeyResponse` 전체가 debug 로그에 포함되어 plaintext 키를 노출할 수 있다. | key ID와 ciphertext 크기만 기록하고, 응답·평문 canary가 로그에 없는 테스트를 추가했다. |
-| P1 | AppConfig 디코더가 설정 값이 든 전체 맵을 로그에 출력한다. | 형식과 property 개수만 기록하고, 비밀값 canary 로그 테스트를 추가했다. |
-| P2 | DynamoDB 필터 DSL이 expression attribute 값을 로그에 출력한다. | 값 대신 바인딩 개수만 기록하고 로그 canary 테스트를 추가했다. |
-| P2 | `.github/workflows/{code-quality,dependency-submission,nightly-tests,publish-snapshot,release}.yml`이 base의 `setup-java` v6.0.1에서 v6.0.0으로 후퇴했다. | tag 및 pinned SHA를 base의 v6.0.1로 복원했다. |
+| 우선순위 | 발견                                                                                                                                                      | 수정                                                                                   |
+|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
+| P1       | KMS `GenerateDataKeyResponse` 전체가 debug 로그에 포함되어 plaintext 키를 노출할 수 있다.                                                                 | key ID와 ciphertext 크기만 기록하고, 응답·평문 canary가 로그에 없는 테스트를 추가했다. |
+| P1       | AppConfig 디코더가 설정 값이 든 전체 맵을 로그에 출력한다.                                                                                                | 형식과 property 개수만 기록하고, 비밀값 canary 로그 테스트를 추가했다.                 |
+| P2       | DynamoDB 필터 DSL이 expression attribute 값을 로그에 출력한다.                                                                                            | 값 대신 바인딩 개수만 기록하고 로그 canary 테스트를 추가했다.                          |
+| P2       | `.github/workflows/{code-quality,dependency-submission,nightly-tests,publish-snapshot,release}.yml`이 base의 `setup-java` v6.0.1에서 v6.0.0으로 후퇴했다. | tag 및 pinned SHA를 base의 v6.0.1로 복원했다.                                          |
 
-이후 테스트는 작업 worktree의 현재 코드에서 Ktor 29개, AWS Kotlin 9개, AWS Java 13개, Spring Boot 29개가 통과했다. `compatibilityCheck --no-configuration-cache`도 성공했다. 첫 캐시 사용 시 실행은 Central snapshot 요청의 TLS `bad_record_mac` 및 configuration-cache 직렬화 문제로 실패했으나, 캐시 비활성 재실행에서 통과했다. 전체 detekt는 수정 전 PR 변경 코드에서 9건(Kotlin 1건, Spring Boot 8건)을 보고했다. Serializable 내부 타입에 `serialVersionUID`를 추가하고 긴 테스트 및 통합 facade에 국소 suppression을 적용한 뒤 전체 `detekt`가 통과했다. exact-head 원격 CI와 새 독립 리뷰는 아직 별도 완료가 필요하다.
+이후 테스트는 작업 worktree의 현재 코드에서 Ktor 29개, AWS Kotlin 9개, AWS Java 13개, Spring Boot 29개가 통과했다. `compatibilityCheck --no-configuration-cache`도 성공했다. 첫 캐시 사용 시 실행은 Central snapshot 요청의 TLS `bad_record_mac` 및 configuration-cache 직렬화 문제로 실패했으나, 캐시 비활성 재실행에서 통과했다. 전체 detekt는 수정 전 PR 변경 코드에서 9건 (Kotlin 1건, Spring Boot 8건)을 보고했다. Serializable 내부 타입에 `serialVersionUID`를 추가하고 긴 테스트 및 통합 facade에 국소 suppression을 적용한 뒤 전체 `detekt`가 통과했다. exact-head 원격 CI와 새 독립 리뷰는 아직 별도 완료가 필요하다.
 
 ## 2026-10-19 후속 P2 수정과 검증
 
 독립 source review가 `dd2c6875bc7e42de61051472e1eb4f06d8af8129`에서 두 P2 회귀를 확인했다. 둘 다 회귀 테스트에서 먼저 재현한 뒤 수정했다.
 
-| 발견 | 수정 및 회귀 검증 |
-|---|---|
-| 익명 RuntimeException에서 `KClass.simpleName`이 null이면 원래 오류를 `NullPointerException`으로 바꿀 수 있다. | Java 클래스의 간단한 이름을 사용하고 이름이 비어 있으면 클래스 전체 이름으로 fallback한다. 익명 예외가 안전한 `AwsConfigDataLoadException`으로 감싸지는 테스트를 추가했다. |
-| 함수 callback을 가진 `DynamoDbKtorTableDefinition`이 data class로 공개되어 불필요한 `copy`/`componentN` API와 callback 기반 equality를 생성한다. | 일반 `class`로 되돌리고 기존 안전한 `toString()`을 유지했다. JVM 공개 메서드에 소유권 복사 메서드가 없는지 검사한다. |
+| 발견                                                                                                                                             | 수정 및 회귀 검증                                                                                                                                                          |
+|--------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 익명 RuntimeException에서 `KClass.simpleName`이 null이면 원래 오류를 `NullPointerException`으로 바꿀 수 있다.                                    | Java 클래스의 간단한 이름을 사용하고 이름이 비어 있으면 클래스 전체 이름으로 fallback한다. 익명 예외가 안전한 `AwsConfigDataLoadException`으로 감싸지는 테스트를 추가했다. |
+| 함수 callback을 가진 `DynamoDbKtorTableDefinition`이 data class로 공개되어 불필요한 `copy`/`componentN` API와 callback 기반 equality를 생성한다. | 일반 `class`로 되돌리고 기존 안전한 `toString()`을 유지했다. JVM 공개 메서드에 소유권 복사 메서드가 없는지 검사한다.                                                       |
 
 - `AppConfigDataLoaderTest` — 4개 통과.
 - `DynamoDbKtorRuntimeConfigTest` — 13개 통과.

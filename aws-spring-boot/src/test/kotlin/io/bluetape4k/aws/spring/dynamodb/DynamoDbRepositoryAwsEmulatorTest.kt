@@ -9,7 +9,7 @@ import io.bluetape4k.aws.dynamodb.model.keySchemaElementOf
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.aws.spring.test.AwsSpringBootTestEmulator
 import io.bluetape4k.junit5.coroutines.runSuspendIO
-import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.support.hashOf
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import kotlinx.coroutines.flow.toList
@@ -41,7 +41,7 @@ import java.util.*
 
 class DynamoDbRepositoryAwsEmulatorTest {
 
-    companion object: KLogging() {
+    companion object: KLoggingChannel() {
         private const val TABLE_NAME = "orders"
         private const val TABLE_PREFIX = "spring-dynamodb-"
         private const val CUSTOMER_INDEX = "customer-createdAt-index"

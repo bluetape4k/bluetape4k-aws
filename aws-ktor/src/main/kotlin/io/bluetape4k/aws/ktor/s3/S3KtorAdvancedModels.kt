@@ -6,7 +6,6 @@ import io.bluetape4k.support.toUtf8Bytes
 import java.io.Serializable
 import java.net.URLConnection
 import java.nio.charset.Charset
-import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.util.*
 
@@ -130,7 +129,7 @@ data class S3KtorConfigObject(
     val bucket: String,
     val key: String,
     val text: String,
-    val charset: Charset = StandardCharsets.UTF_8,
+    val charset: Charset = Charsets.UTF_8,
     val contentType: String? = null,
     val metadata: Map<String, String> = emptyMap(),
 ): Serializable {

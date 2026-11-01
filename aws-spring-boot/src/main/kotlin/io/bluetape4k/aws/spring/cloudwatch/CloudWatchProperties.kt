@@ -42,6 +42,7 @@ data class CloudWatchProperties(
         val enabled: Boolean = true,
         val registry: Registry = Registry(),
     ): Serializable {
+
         data class Registry(
             val enabled: Boolean = false,
             val namespace: String? = null,
@@ -52,11 +53,9 @@ data class CloudWatchProperties(
             val filters: Filters = Filters(),
         ): Serializable {
             init {
-                batchSize.requireInRange(
-                    MIN_BATCH_SIZE,
-                    MAX_BATCH_SIZE,
-                    "$CLOUDWATCH_PROPERTIES_PREFIX.micrometer.registry.batch-size",
-                )
+                batchSize.requireInRange(MIN_BATCH_SIZE, MAX_BATCH_SIZE) {
+                    "$CLOUDWATCH_PROPERTIES_PREFIX.micrometer.registry.batch-size"
+                }
                 step.requireGe(MIN_STEP) {
                     "$CLOUDWATCH_PROPERTIES_PREFIX.micrometer.registry.step must be at least 1s."
                 }
@@ -125,7 +124,7 @@ data class CloudWatchLogsProperties(
         require(endpointOverride == null || !region.isNullOrBlank()) {
             "$CLOUDWATCH_LOGS_PROPERTIES_PREFIX.region is required when endpointOverride is configured."
         }
-        batchSize.requireInRange(1, 10_000, "$CLOUDWATCH_LOGS_PROPERTIES_PREFIX.batch-size")
+        batchSize.requireInRange(1, 10_000) { "$CLOUDWATCH_LOGS_PROPERTIES_PREFIX.batch-size" }
     }
 
     companion object {

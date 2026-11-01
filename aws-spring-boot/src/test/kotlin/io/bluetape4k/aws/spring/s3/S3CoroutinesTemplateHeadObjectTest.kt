@@ -2,6 +2,8 @@ package io.bluetape4k.aws.spring.s3
 
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.concurrent.completableFutureOf
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
@@ -18,6 +20,8 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner
 import java.time.Instant
 
 class S3CoroutinesTemplateHeadObjectTest {
+
+    companion object: KLogging()
 
     private val asyncClient = mockk<S3AsyncClient>(relaxed = true)
     private val s3Client = mockk<S3Client>(relaxed = true)
@@ -52,6 +56,7 @@ class S3CoroutinesTemplateHeadObjectTest {
 
         val metadata = template.headObject("images", "sample.png")
 
+        log.debug { "metadata=$metadata" }
         metadata shouldBeEqualTo S3ObjectMetadata(
             sizeBytes = 42,
             etag = "\"etag-token\"",

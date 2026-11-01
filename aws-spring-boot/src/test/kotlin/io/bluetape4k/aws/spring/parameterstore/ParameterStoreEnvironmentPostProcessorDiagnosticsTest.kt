@@ -5,6 +5,8 @@ import ch.qos.logback.classic.Logger
 import ch.qos.logback.core.read.ListAppender
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotContain
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import org.slf4j.LoggerFactory
 import org.springframework.boot.SpringApplication
@@ -12,6 +14,8 @@ import org.springframework.core.env.MapPropertySource
 import org.springframework.core.env.StandardEnvironment
 
 class ParameterStoreEnvironmentPostProcessorDiagnosticsTest {
+
+    companion object: KLogging()
 
     @Test
     fun `configuration diagnostics omit remote identifiers and endpoint`() {
@@ -44,6 +48,7 @@ class ParameterStoreEnvironmentPostProcessorDiagnosticsTest {
         }
 
         val diagnostics = appender.list.joinToString("\n") { it.formattedMessage }
+        log.debug { "diagnostics=$diagnostics" }
         diagnostics shouldContain "sourceCount=1"
         diagnostics shouldNotContain "endpoint-canary"
         diagnostics shouldNotContain "parameter-path-canary"

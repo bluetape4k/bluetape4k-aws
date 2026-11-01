@@ -123,8 +123,7 @@ internal class AwsModulithResolvedRegistration internal constructor(
     internal fun eventId(event: Any): String {
         val typedEvent = cast(event)
         return sanitizeExtractorFailure {
-            @Suppress("UNCHECKED_CAST")
-            val eventId = (eventIdExtractor as (Any) -> String)(typedEvent)
+            val eventId = eventIdExtractor(typedEvent)
             if (!eventId.isValidAwsModulithEventId()) {
                 throw AwsModulithEventRegistrationMismatchException()
             }

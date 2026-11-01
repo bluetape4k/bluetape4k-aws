@@ -255,6 +255,7 @@ class SqsConsumerRuntimeLocalStackTest {
         )
     }
 
+    @Suppress("DEPRECATION")
     private fun awsEmulator(vararg services: String): AwsEmulatorServer =
         when (val emulator = System.getProperty("bluetape4k.aws.emulator", "floci").trim().lowercase()) {
             "floci" -> FlociServer.Launcher.floci

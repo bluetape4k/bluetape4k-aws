@@ -35,10 +35,10 @@ internal class SqsObservationRuntime(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    internal suspend fun <T> observe(
+    internal suspend inline fun <T> observe(
         context: SqsObservationContext,
-        block: suspend SqsObservationExecution.() -> T,
-    ): T = prepare(context).observe(block = block)
+        crossinline block: suspend SqsObservationExecution.() -> T,
+    ): T = prepare(context).observe { block() }
 
     internal fun prepare(context: SqsObservationContext): SqsPreparedObservation {
         val observation = prepareSqsObservation(context, registry, customizers, factory)
@@ -117,13 +117,14 @@ internal class SqsPreparedObservation internal constructor(
     ): T = when {
         runtime == null || context == null -> SqsObservationExecution(null, Observation.NOOP).block()
         observation === Observation.NOOP -> SqsObservationExecution(context, observation).block()
-        else                             -> runtime.observePrepared(
-            context,
-            observation,
-            onSetupFailure,
-            onCleanupFailure,
-            block
-        )
+        else                             ->
+            runtime.observePrepared(
+                context,
+                observation,
+                onSetupFailure,
+                onCleanupFailure,
+                block
+            )
     }
 }
 
@@ -273,7 +274,7 @@ internal fun mergeSqsObservationCleanupFailure(
 ): Throwable = when {
     current == null -> next
     current === next -> current
-    else -> current.apply { addSuppressed(next) }
+    else            -> current.apply { addSuppressed(next) }
 }
 
 private fun ContextSnapshot.asContextElement(): CoroutineContext = ContextSnapshotElement(this)

@@ -9,7 +9,6 @@ import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.requireNotEmpty
 import org.springframework.boot.context.config.ConfigDataLocation
 import java.net.URLDecoder
-import java.nio.charset.StandardCharsets
 
 /**
  * `spring.config.import`의 AWS location을 검증된 내부 모델로 변환합니다.
@@ -210,7 +209,7 @@ internal class AwsConfigDataLocationParser {
         rejectControl(value)
 
         return try {
-            URLDecoder.decode(value.replace("+", "%2B"), StandardCharsets.UTF_8)
+            URLDecoder.decode(value.replace("+", "%2B"), Charsets.UTF_8)
         } catch (ex: IllegalArgumentException) {
             throw IllegalArgumentException("Invalid AWS ConfigData $label encoding.", ex)
         }.also { decoded ->

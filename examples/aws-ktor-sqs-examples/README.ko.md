@@ -6,8 +6,7 @@
 `SqsConsumer`를 설치하고 AWS Kotlin `SqsClient`로 메시지를 전송하며, 수신한 메시지를 메모리에 기록하고 queue 관리 route를 제공합니다. 핵심은 관찰 가능한 consumer contract입니다. Manual ack/nack, retry-once redelivery, interceptor event, observer summary를 모두 HTTP route로 확인할 수 있습니다. Route parameter 검증에는
 `bluetape4k-ktor-core`, 공통 Ktor response assertion에는 `bluetape4k-ktor-testing`을 사용합니다.
 
-`aws-ktor`의 API dependency는 plugin이 노출하는 Kotlin SQS client와 model을
-제공합니다. Ktor engine과 serialization 설정은 애플리케이션이 선택합니다.
+`aws-ktor`의 API dependency는 plugin이 노출하는 Kotlin SQS client와 model을 제공합니다. Ktor engine과 serialization 설정은 애플리케이션이 선택합니다.
 
 ## 아키텍처
 

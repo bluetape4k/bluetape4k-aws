@@ -45,11 +45,14 @@ class S3KtorServerExamplesTest {
             client.put("/s3/detected-objects/docs/data.json") {
                 setBody("""{"enabled":true}""")
             } shouldHaveStatus HttpStatusCode.OK
+
             client.put("/s3/config/config/application.conf") {
                 setBody("ktor { deployment { port = 8080 } }")
             } shouldHaveStatus HttpStatusCode.OK
+
             client.get("/s3/config/config/application.conf")
                 .bodyAsText() shouldBeEqualTo "ktor { deployment { port = 8080 } }"
+
             client.get("/s3/presigned-get/docs/hello.txt").bodyAsText().contains("X-Amz-Algorithm").shouldBeTrue()
             client.get("/s3/presigned-put/docs/hello.txt").bodyAsText().contains("X-Amz-Algorithm").shouldBeTrue()
             client.delete("/s3/objects/docs/hello.txt") shouldHaveStatus HttpStatusCode.NoContent
@@ -103,7 +106,7 @@ class S3KtorServerExamplesTest {
                 }
 
                 "DELETE" -> respond("", HttpStatusCode.NoContent)
-                else -> respond("", HttpStatusCode.BadRequest)
+                else  -> respond("", HttpStatusCode.BadRequest)
             }
         }
 

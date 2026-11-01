@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.sns
 
+import io.bluetape4k.support.toUtf8String
 import org.springframework.core.MethodParameter
 import org.springframework.core.io.buffer.DataBuffer
 import org.springframework.core.io.buffer.DataBufferUtils
@@ -41,7 +42,7 @@ class SnsWebFluxHttpMessageArgumentResolver(
                 }
                 Mono.fromCallable {
                     support.prepare(
-                        bytes.toString(Charsets.UTF_8),
+                        bytes.toUtf8String(),
                         exchange.request.headers.getFirst(SnsHttpMessageResolverSupport.SNS_MESSAGE_TYPE_HEADER),
                     )
                 }.subscribeOn(Schedulers.boundedElastic())

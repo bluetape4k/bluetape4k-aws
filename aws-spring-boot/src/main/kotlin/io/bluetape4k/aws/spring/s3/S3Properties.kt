@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.s3
 
+import io.bluetape4k.aws.spring.s3.S3Properties.Companion.PREFIX
 import io.bluetape4k.javatimes.minutes
 import io.bluetape4k.support.requireNotBlank
 import org.springframework.boot.context.properties.ConfigurationProperties
@@ -20,7 +21,7 @@ enum class ClientSideEncryptionProvider {
 /**
  * Spring Boot S3 지원용 구성 속성입니다.
  */
-@ConfigurationProperties(prefix = "bluetape4k.aws.s3")
+@ConfigurationProperties(prefix = PREFIX)
 data class S3Properties(
     val enabled: Boolean = true,
     val region: String? = null,
@@ -32,6 +33,12 @@ data class S3Properties(
     val transfer: Transfer = Transfer(),
     val clientSideEncryption: ClientSideEncryption = ClientSideEncryption(),
 ): Serializable {
+
+    companion object {
+        const val PREFIX = "bluetape4k.aws.s3"
+        private const val serialVersionUID: Long = -710482694906352408L
+    }
+
     data class Presign(
         val duration: Duration = 15.minutes(),
     ): Serializable {
@@ -62,16 +69,16 @@ data class S3Properties(
     ): Serializable {
         init {
             require(uploadDirectoryMaxDepth == null || uploadDirectoryMaxDepth >= 0) {
-                "bluetape4k.aws.s3.transfer.uploadDirectoryMaxDepth must be greater than or equal to 0."
+                "$PREFIX.transfer.uploadDirectoryMaxDepth must be greater than or equal to 0."
             }
             require(transferDirectoryMaxConcurrency == null || transferDirectoryMaxConcurrency > 0) {
-                "bluetape4k.aws.s3.transfer.transferDirectoryMaxConcurrency must be greater than 0."
+                "$PREFIX.transfer.transferDirectoryMaxConcurrency must be greater than 0."
             }
             require(outputStreamThresholdBytes > 0) {
-                "bluetape4k.aws.s3.transfer.outputStreamThresholdBytes must be greater than 0."
+                "$PREFIX.transfer.outputStreamThresholdBytes must be greater than 0."
             }
             require(outputStreamPartSizeBytes > 0) {
-                "bluetape4k.aws.s3.transfer.outputStreamPartSizeBytes must be greater than 0."
+                "$PREFIX.transfer.outputStreamPartSizeBytes must be greater than 0."
             }
         }
 
@@ -142,17 +149,16 @@ data class S3Properties(
 
         init {
             require(keyId == null || keyId.isSafeCseToken("keyId")) {
-                "bluetape4k.aws.s3.client-side-encryption.keyId must not be blank or contain control characters."
+                "$PREFIX.client-side-encryption.keyId must not be blank or contain control characters."
             }
             require(keyVersion == null || keyVersion.isSafeCseToken("keyVersion")) {
-                "bluetape4k.aws.s3.client-side-encryption.keyVersion must not be blank or contain control characters."
+                "$PREFIX.client-side-encryption.keyVersion must not be blank or contain control characters."
             }
             require(encryptionContext.keys.none { it.isBlank() || it.any(Char::isISOControl) }) {
-                "bluetape4k.aws.s3.client-side-encryption.encryptionContext keys must not be blank " +
-                        "or contain control characters."
+                "$PREFIX.client-side-encryption.encryptionContext keys must not be blank or contain control characters."
             }
             require(encryptionContext.values.none { it.any(Char::isISOControl) }) {
-                "bluetape4k.aws.s3.client-side-encryption.encryptionContext values must not contain control characters."
+                "$PREFIX.client-side-encryption.encryptionContext values must not contain control characters."
             }
         }
 
@@ -194,18 +200,14 @@ data class S3Properties(
             private const val serialVersionUID: Long = -2600404936788080311L
         }
     }
-
-    companion object {
-        private const val serialVersionUID: Long = -710482694906352408L
-    }
 }
 
 private fun String.isSafeCseToken(name: String): Boolean {
     requireNotBlank {
-        "bluetape4k.aws.s3.client-side-encryption.$name must not be blank."
+        "${S3Properties.PREFIX}.client-side-encryption.$name must not be blank."
     }
     require(none(Char::isISOControl)) {
-        "bluetape4k.aws.s3.client-side-encryption.$name must not contain control characters."
+        "${S3Properties.PREFIX}.client-side-encryption.$name must not contain control characters."
     }
     return true
 }

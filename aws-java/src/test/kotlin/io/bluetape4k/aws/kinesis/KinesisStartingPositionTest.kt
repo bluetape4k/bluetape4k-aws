@@ -13,6 +13,7 @@ class KinesisStartingPositionTest: AbstractKinesisTest() {
 
     companion object: KLogging()
 
+    @Suppress("DEPRECATION")
     private fun roundtrip(value: KinesisStartingPosition): KinesisStartingPosition {
         val bytes = BinarySerializers.JdkUnfiltered.serialize(value)
         return BinarySerializers.JdkUnfiltered.deserialize<KinesisStartingPosition>(bytes).shouldNotBeNull()

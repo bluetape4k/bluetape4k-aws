@@ -66,6 +66,7 @@ class AwsConfigDataLoaderTest {
     fun `S3 loader delegates to shared bootstrap client and returns one property source`() {
         val context = contextOf(bootstrap)
         val resource = resource("aws-s3:/bucket/application.json")
+
         mockkObject(S3ConfigDataSdkAdapter)
         try {
             every { S3ConfigDataSdkAdapter.load(bootstrap, resource) } returns mapOf("app.name" to "demo")
@@ -90,8 +91,8 @@ class AwsConfigDataLoaderTest {
         val context = contextOf(bootstrap)
         val optional = resource("optional:aws-s3:/bucket/missing")
         val required = resource("aws-s3:/bucket/missing")
-        mockkObject(S3ConfigDataSdkAdapter)
 
+        mockkObject(S3ConfigDataSdkAdapter)
         try {
             every {
                 S3ConfigDataSdkAdapter.load(any(), any())
@@ -116,8 +117,8 @@ class AwsConfigDataLoaderTest {
     fun `authentication failure is sanitized and does not retain SDK message`() {
         val context = contextOf(bootstrap)
         val resource = resource("optional:aws-s3:/secret-bucket/secret-key")
-        mockkObject(S3ConfigDataSdkAdapter)
 
+        mockkObject(S3ConfigDataSdkAdapter)
         try {
             every {
                 S3ConfigDataSdkAdapter.load(any(), any())
@@ -144,8 +145,8 @@ class AwsConfigDataLoaderTest {
         val context = contextOf(bootstrap)
         val parameter = resource("optional:aws-parameterstore:/missing")
         val secret = resource("optional:aws-secretsmanager:missing")
-        mockkObject(ParameterStoreConfigDataSdkAdapter, SecretsManagerConfigDataSdkAdapter)
 
+        mockkObject(ParameterStoreConfigDataSdkAdapter, SecretsManagerConfigDataSdkAdapter)
         try {
             every {
                 ParameterStoreConfigDataSdkAdapter.load(any(), any())

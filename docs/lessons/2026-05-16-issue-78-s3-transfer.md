@@ -2,8 +2,7 @@
 
 ## 배경
 
-`aws` 모듈은 이미 low-level `S3TransferManager` factory와 coroutine 확장을 제공한다.
-Spring Boot 지원에서 transfer 요청 생성이나 future-await 로직을 중복해서는 안 된다.
+`aws` 모듈은 이미 low-level `S3TransferManager` factory와 coroutine 확장을 제공한다. Spring Boot 지원에서 transfer 요청 생성이나 future-await 로직을 중복해서는 안 된다.
 
 ## 결정
 
@@ -16,8 +15,7 @@ Spring Boot 지원에서 transfer 요청 생성이나 future-await 로직을 중
 ## 보호 장치
 
 TransferManager 지원은 classpath 검사로 보호하고 의존성을 가볍게 유지한다. CRT 기반
-`S3AsyncClient` bean을 제공하면 CRT 기반 transfer를 사용할 수 있다. 기본 S3 object
-작업만 필요한 애플리케이션에 CRT runtime 의존성을 강제하지 않는다.
+`S3AsyncClient` bean을 제공하면 CRT 기반 transfer를 사용할 수 있다. 기본 S3 object 작업만 필요한 애플리케이션에 CRT runtime 의존성을 강제하지 않는다.
 
 ## 검증
 

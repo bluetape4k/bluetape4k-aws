@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.spring.sns
 
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.support.toUtf8String
 import jakarta.servlet.FilterChain
 import jakarta.servlet.ReadListener
 import jakarta.servlet.ServletInputStream
@@ -13,7 +14,6 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStreamReader
-import java.nio.charset.StandardCharsets
 
 /** SNS 구조·보안 gate를 수행하고 크기가 제한된 Servlet request body를 다시 읽을 수 있게 제공합니다. */
 class SnsHttpMessageServletFilter(
@@ -42,7 +42,7 @@ class SnsHttpMessageServletFilter(
             return
         }
         val message = try {
-            support.prepare(body.toString(StandardCharsets.UTF_8), header)
+            support.prepare(body.toUtf8String(), header)
         } catch (cause: kotlinx.coroutines.CancellationException) {
             throw cause
         } catch (cause: RuntimeException) {
@@ -115,7 +115,7 @@ private class ReplayableRequest(
         }
 
     override fun getReader(): BufferedReader =
-        BufferedReader(InputStreamReader(inputStream, characterEncoding ?: StandardCharsets.UTF_8.name()))
+        BufferedReader(InputStreamReader(inputStream, characterEncoding ?: Charsets.UTF_8.name()))
 
     override fun getContentLength(): Int = bytes.size
     override fun getContentLengthLong(): Long = bytes.size.toLong()

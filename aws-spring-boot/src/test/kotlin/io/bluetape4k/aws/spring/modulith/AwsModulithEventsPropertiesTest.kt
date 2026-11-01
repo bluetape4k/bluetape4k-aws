@@ -76,18 +76,22 @@ class AwsModulithEventsPropertiesTest {
     fun `producer integer boundaries are enforced`(property: String, value: Int, valid: Boolean) {
         if (valid) {
             when (property) {
-                "maxInFlight" -> AwsModulithEventsProperties.Producer(maxInFlight = value)
+                "maxInFlight" ->
+                    AwsModulithEventsProperties.Producer(maxInFlight = value)
                 "maxSerializedPayloadBytes" ->
                     AwsModulithEventsProperties.Producer(maxSerializedPayloadBytes = value)
-                else          -> AwsModulithEventsProperties.Producer(maxEnvelopeBytes = value)
+                else          ->
+                    AwsModulithEventsProperties.Producer(maxEnvelopeBytes = value)
             }
         } else {
             assertFailsWith<IllegalArgumentException> {
                 when (property) {
-                    "maxInFlight" -> AwsModulithEventsProperties.Producer(maxInFlight = value)
+                    "maxInFlight" ->
+                        AwsModulithEventsProperties.Producer(maxInFlight = value)
                     "maxSerializedPayloadBytes" ->
                         AwsModulithEventsProperties.Producer(maxSerializedPayloadBytes = value)
-                    else          -> AwsModulithEventsProperties.Producer(maxEnvelopeBytes = value)
+                    else          ->
+                        AwsModulithEventsProperties.Producer(maxEnvelopeBytes = value)
                 }
             }
         }

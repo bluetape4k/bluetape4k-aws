@@ -54,7 +54,6 @@ import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -849,8 +848,8 @@ class SqsObservationAwsEmulatorTest {
     internal class ObservedListener(
         private val registry: ObservationRegistry,
     ) {
-        val currentProcessObservations: MutableList<Observation> = CopyOnWriteArrayList()
-        val childParentMatches: MutableList<Boolean> = CopyOnWriteArrayList()
+        val currentProcessObservations: Queue<Observation> = ConcurrentLinkedQueue()
+        val childParentMatches: Queue<Boolean> = ConcurrentLinkedQueue()
 
         @SqsListener(queue = $$"${test.queue-url}", id = "observed-listener")
         suspend fun handle(
@@ -915,7 +914,7 @@ class SqsObservationAwsEmulatorTest {
     }
 
     internal class FifoListener {
-        val messages: MutableList<SqsReceivedMessage> = CopyOnWriteArrayList()
+        val messages: Queue<SqsReceivedMessage> = ConcurrentLinkedQueue()
 
         @SqsListener(queue = "\${test.queue-url}", id = "fifo-listener")
         fun handle(message: SqsReceivedMessage) {
@@ -1077,7 +1076,7 @@ class SqsObservationAwsEmulatorTest {
     )
 
     private class ObservationRecorder: ObservationHandler<SqsObservationContext> {
-        val snapshots: MutableList<ObservationSnapshot> = CopyOnWriteArrayList()
+        val snapshots: Queue<ObservationSnapshot> = ConcurrentLinkedQueue()
 
         override fun supportsContext(context: Observation.Context): Boolean = context is SqsObservationContext
 

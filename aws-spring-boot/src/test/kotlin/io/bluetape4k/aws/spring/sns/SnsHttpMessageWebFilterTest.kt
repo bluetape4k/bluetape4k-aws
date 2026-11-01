@@ -7,6 +7,7 @@ import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.concurrent.await
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
+import io.bluetape4k.support.toUtf8String
 import io.mockk.clearMocks
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -250,7 +251,7 @@ class SnsHttpMessageWebFilterTest: AbstractSnsTest() {
         DataBufferUtils.join(exchange.request.body)
             .map { buffer ->
                 try {
-                    ByteArray(buffer.readableByteCount()).also(buffer::read).toString(Charsets.UTF_8)
+                    ByteArray(buffer.readableByteCount()).also(buffer::read).toUtf8String()
                 } finally {
                     DataBufferUtils.release(buffer)
                 }
@@ -284,7 +285,7 @@ class SnsHttpMessageWebFilterTest: AbstractSnsTest() {
             DataBufferUtils.join(body)
                 .map { buffer ->
                     try {
-                        ByteArray(buffer.readableByteCount()).also(buffer::read).toString(Charsets.UTF_8)
+                        ByteArray(buffer.readableByteCount()).also(buffer::read).toUtf8String()
                     } finally {
                         DataBufferUtils.release(buffer)
                     }

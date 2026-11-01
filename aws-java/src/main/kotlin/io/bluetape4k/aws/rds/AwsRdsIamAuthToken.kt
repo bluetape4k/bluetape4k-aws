@@ -2,8 +2,8 @@ package io.bluetape4k.aws.rds
 
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.toUtf8Bytes
 import java.io.Serializable
-import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 
 /**
@@ -33,8 +33,8 @@ class AwsRdsIamAuthToken private constructor(private val value: String): Seriali
 
     override fun equals(other: Any?): Boolean =
         this === other || other is AwsRdsIamAuthToken && MessageDigest.isEqual(
-            value.toByteArray(StandardCharsets.UTF_8),
-            other.value.toByteArray(StandardCharsets.UTF_8),
+            value.toUtf8Bytes(),
+            other.value.toUtf8Bytes(),
         )
 
     override fun hashCode(): Int = REDACTED.hashCode()

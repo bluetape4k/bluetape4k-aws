@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.spring.s3
 
-import io.bluetape4k.aws.s3.model.getObjectRequestOf
+import io.bluetape4k.aws.s3.getAsPublisher
+import io.bluetape4k.aws.s3.putAsByteArray
 import io.bluetape4k.aws.spring.s3.S3BoundedEncryptedReadOperations.Companion.MAX_CIPHERTEXT_BYTES
 import io.bluetape4k.aws.spring.sqs.SqsExtendedPayloadReadException
 import io.bluetape4k.support.checkBeFalse
@@ -10,7 +11,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.withContext
-import software.amazon.awssdk.core.async.AsyncRequestBody
 import software.amazon.awssdk.core.async.AsyncResponseTransformer
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model.PutObjectResponse
@@ -66,20 +66,10 @@ class S3ClientSideEncryptionProviderTemplate(
 
         val envelope = newEncryptionEnvelope(bytes, encryptionContext)
         return try {
-            s3AsyncClient.putObject(
-                { builder ->
-                    builder.bucket(bucket)
-                    builder.key(key)
-                    contentType?.let(builder::contentType)
-                    builder.metadata(ProviderEnvelope.mergeMetadata(metadata, envelope.metadata))
-                },
-                AsyncRequestBody.fromBytes(envelope.ciphertext),
-            ).await()
-
-//            s3AsyncClient.putAsByteArray(bucket, key, envelope.ciphertext) {
-//                contentType?.let { contentType(it) }
-//                metadata(ProviderEnvelope.mergeMetadata(metadata, envelope.metadata))
-//            }
+            s3AsyncClient.putAsByteArray(bucket, key, envelope.ciphertext) {
+                contentType?.let { contentType(it) }
+                metadata(ProviderEnvelope.mergeMetadata(metadata, envelope.metadata))
+            }
         } finally {
             envelope.ciphertext.fill(0)
         }
@@ -124,10 +114,7 @@ class S3ClientSideEncryptionProviderTemplate(
         key.requireNotBlank("key")
         maxCiphertextBytes.requireInRange(1, MAX_CIPHERTEXT_BYTES, "maxCiphertextBytes")
 
-        val publisher = s3AsyncClient.getObject(
-            getObjectRequestOf(bucket, key),
-            AsyncResponseTransformer.toPublisher(),
-        ).await()
+        val publisher = s3AsyncClient.getAsPublisher(bucket, key)
         val accumulator = ZeroizingByteArrayOutputStream(minOf(maxCiphertextBytes, 8 * 1024))
         var size = 0
         var ciphertext: ByteArray? = null

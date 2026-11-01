@@ -1,8 +1,8 @@
 package io.bluetape4k.aws.spring.kms
 
 import io.bluetape4k.support.toUtf8Bytes
+import io.bluetape4k.support.toUtf8String
 import java.lang.reflect.Field
-import java.nio.charset.StandardCharsets
 import java.util.*
 
 /**
@@ -61,7 +61,7 @@ class KmsEncryptedFieldCodec(
                 encryptionContext = effectiveEncryptionContext(annotation),
             )
             try {
-                plaintext.toString(StandardCharsets.UTF_8)
+                plaintext.toUtf8String()
             } finally {
                 plaintext.fill(0)
             }

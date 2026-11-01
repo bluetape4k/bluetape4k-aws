@@ -2,7 +2,8 @@
 
 package io.bluetape4k.aws.spring.sqs
 
-import java.nio.charset.StandardCharsets
+import io.bluetape4k.support.toUtf8Bytes
+import io.bluetape4k.support.toUtf8String
 import java.security.MessageDigest
 import java.util.*
 import javax.crypto.Mac
@@ -87,8 +88,8 @@ internal object SqsExtendedPointerCodec {
             contentType.orEmpty(),
             if (encrypted) "1" else "0",
         ).joinToString("\u0000")
-        val payloadEncoded = base64Url(payload.toByteArray(StandardCharsets.UTF_8))
-        val signature = base64Url(hmac(payload.toByteArray(StandardCharsets.UTF_8), signingKey))
+        val payloadEncoded = base64Url(payload.toUtf8Bytes())
+        val signature = base64Url(hmac(payload.toUtf8Bytes(), signingKey))
         return "$PREFIX.$payloadEncoded.$signature"
     }
 
@@ -108,7 +109,7 @@ internal object SqsExtendedPointerCodec {
             require(base64Url(signature) == parts[2])
             require(signature.size == 32)
             require(MessageDigest.isEqual(signature, hmac(payload, signingKey)))
-            val fields = payload.toString(StandardCharsets.UTF_8).split('\u0000')
+            val fields = payload.toUtf8String().split('\u0000')
             require(fields.size == 8 && fields[0] == PREFIX && fields[1] == TYPE)
             require(fields[2] == expectedQueueUrl && fields[3] == expectedPolicyFingerprint)
             val encrypted = when (fields[7]) {

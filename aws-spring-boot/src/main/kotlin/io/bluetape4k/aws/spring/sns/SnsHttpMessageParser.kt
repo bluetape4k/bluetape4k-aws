@@ -2,8 +2,8 @@ package io.bluetape4k.aws.spring.sns
 
 import io.bluetape4k.aws.sns.SnsHttpEnvelope
 import io.bluetape4k.aws.sns.SnsHttpEnvelopePolicy
+import io.bluetape4k.jackson3.jsonMapper
 import tools.jackson.core.StreamReadFeature
-import tools.jackson.core.json.JsonFactory
 import tools.jackson.databind.ObjectMapper
 
 /**
@@ -17,11 +17,10 @@ object SnsHttpMessageParser {
 
     const val MESSAGE_TYPE_HEADER: String = SnsHttpEnvelopePolicy.MESSAGE_TYPE_HEADER
 
-    private val objectMapper: ObjectMapper = ObjectMapper(
-        JsonFactory.builder()
-            .enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION)
-            .build()
-    )
+    private val objectMapper: ObjectMapper = jsonMapper {
+        findAndAddModules()
+        enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION)
+    }
 
     fun parse(json: String, messageTypeHeader: String? = null): SnsHttpMessage =
         SnsHttpEnvelopePolicy.parse(

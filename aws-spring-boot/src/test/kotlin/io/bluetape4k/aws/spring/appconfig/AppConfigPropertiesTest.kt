@@ -22,6 +22,7 @@ class AppConfigPropertiesTest {
     fun `defaults keep refresh disabled and enforce the minimum poll interval`() {
         val properties = AppConfigProperties()
 
+        log.debug { "properties = $properties" }
         properties.enabled.shouldBeTrue()
         properties.failFast.shouldBeTrue()
         properties.separator shouldBeEqualTo "#"

@@ -2,8 +2,7 @@
 
 ## 배경
 
-`aws-spring-boot`에는 AWS SDK 서비스 jar를 소비자에게 선택 사항으로 유지한다는 저장소
-규칙을 지키면서 CloudWatch 및 CloudWatch Logs를 일급 기능으로 지원해야 했다.
+`aws-spring-boot`에는 AWS SDK 서비스 jar를 소비자에게 선택 사항으로 유지한다는 저장소 규칙을 지키면서 CloudWatch 및 CloudWatch Logs를 일급 기능으로 지원해야 했다.
 
 ## 결정
 
@@ -14,9 +13,7 @@
 
 ## 결과
 
-애플리케이션은 코루틴 메트릭/로그 게시 도우미와 기본 네임스페이스 및 로그 그룹/스트림
-프로퍼티 지원을 얻는다. `MeterRegistry` 빈이 있으면 Micrometer 스냅샷 게시자도
-제공한다. 기존 서비스 자동 구성 패턴과 AWS 자격 증명/사용자 지정 경로는 변경하지 않는다.
+애플리케이션은 코루틴 메트릭/로그 게시 도우미와 기본 네임스페이스 및 로그 그룹/스트림 프로퍼티 지원을 얻는다. `MeterRegistry` 빈이 있으면 Micrometer 스냅샷 게시자도 제공한다. 기존 서비스 자동 구성 패턴과 AWS 자격 증명/사용자 지정 경로는 변경하지 않는다.
 
 ## 검증
 
@@ -28,6 +25,5 @@
 
 ## 향후 보호 장치
 
-명시적 메트릭 스냅샷 게시와 Micrometer 레지스트리 내보내기를 혼동하지 않는다. 사용자가
-예약된 CloudWatch 레지스트리 내보내기를 필요로 하면 `micrometer-registry-cloudwatch`
+명시적 메트릭 스냅샷 게시와 Micrometer 레지스트리 내보내기를 혼동하지 않는다. 사용자가 예약된 CloudWatch 레지스트리 내보내기를 필요로 하면 `micrometer-registry-cloudwatch`
 통합용 별도 이슈를 만들고 운영 절충점을 따로 문서화한다.

@@ -7,13 +7,11 @@
 
 ## 결정
 
-Exposed BOM과 AWS release line은 유지하면서 local catalog의 projects BOM version을
-기존 1.9.2 버전에서 1.10.0으로 갱신합니다.
+Exposed BOM과 AWS release line은 유지하면서 local catalog의 projects BOM version을 기존 1.9.2 버전에서 1.10.0으로 갱신합니다.
 
 ## 결과
 
-AWS build는 공통 bluetape4k module version에 안정 버전인 projects 1.10.0 BOM을
-사용합니다.
+AWS build는 공통 bluetape4k module version에 안정 버전인 projects 1.10.0 BOM을 사용합니다.
 
 ## 검증
 

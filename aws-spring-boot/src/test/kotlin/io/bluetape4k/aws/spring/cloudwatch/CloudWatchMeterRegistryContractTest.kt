@@ -88,9 +88,7 @@ class CloudWatchMeterRegistryContractTest {
             registry.counter("orders.secret.token").increment()
             registry.counter("jvm.memory.used").increment()
 
-            val names = registry.meters.map { it.id.name }
-
-            log.debug { "names=$names" }
+            val names = registry.meters.map { it.id.name }.onEach { log.debug { "name=$it" } }
             names shouldContain "orders.accepted"
             names shouldNotContain "orders.secret.token"
             names shouldNotContain "jvm.memory.used"

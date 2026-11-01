@@ -1,8 +1,8 @@
 package io.bluetape4k.aws.spring.kinesis
 
 import io.bluetape4k.javatimes.millis
+import io.bluetape4k.javatimes.requireZeroOrPositiveDuration
 import io.bluetape4k.javatimes.seconds
-import io.bluetape4k.support.requireGe
 import io.bluetape4k.support.requireInRange
 import io.bluetape4k.support.requireZeroOrPositiveNumber
 import java.io.Serializable
@@ -29,12 +29,12 @@ data class KinesisRecordFlowOptions(
 
     init {
         batchLimit.requireInRange(1, KinesisRecordFlowOptions.MAX_KINESIS_BATCH_LIMIT, "batchLimit")
-        pollInterval.requireGe(Duration.ZERO, "pollInterval")
-        emptyBackoff.requireGe(Duration.ZERO, "emptyBackoff")
+        pollInterval.requireZeroOrPositiveDuration("pollInterval")
+        emptyBackoff.requireZeroOrPositiveDuration("emptyBackoff")
         maxIteratorRetries.requireZeroOrPositiveNumber("maxIteratorRetries")
         maxThrottleRetries.requireZeroOrPositiveNumber("maxThrottleRetries")
-        initialThrottleBackoff.requireGe(Duration.ZERO, "initialThrottleBackoff")
-        maxThrottleBackoff.requireGe(Duration.ZERO, "maxThrottleBackoff")
+        initialThrottleBackoff.requireZeroOrPositiveDuration("initialThrottleBackoff")
+        maxThrottleBackoff.requireZeroOrPositiveDuration("maxThrottleBackoff")
         jitterRatio.requireInRange(0.0, 1.0, "jitterRatio")
     }
 

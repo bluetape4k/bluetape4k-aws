@@ -275,7 +275,7 @@ class AwsSigV4PluginTest {
         val client = signedClient(payloadSigningEnabled = false) {
             authorization = it.headers[HttpHeaders.Authorization]
             payloadHash = it.headers["X-Amz-Content-Sha256"]
-            capturedBody = it.body as? OutgoingContent
+            capturedBody = it.body //as? OutgoingContent
         }
 
         client.post("https://api.example.com/prod/orders") {

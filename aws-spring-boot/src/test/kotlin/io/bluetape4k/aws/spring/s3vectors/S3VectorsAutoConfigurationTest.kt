@@ -50,9 +50,12 @@ class S3VectorsAutoConfigurationTest {
                 S3VectorsAutoConfiguration::class.java,
             )
         )
-        .withBean(AwsCredentialsProvider::class.java, {
-            StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test"))
-        })
+        .withBean(
+            AwsCredentialsProvider::class.java,
+            {
+                StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test"))
+            }
+        )
         .withPropertyValues(
             "bluetape4k.aws.s3-vectors.enabled=true",
             "bluetape4k.aws.s3-vectors.region=us-east-1",

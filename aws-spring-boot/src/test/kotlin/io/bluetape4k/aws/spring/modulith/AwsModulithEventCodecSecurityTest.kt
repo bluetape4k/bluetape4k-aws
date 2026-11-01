@@ -203,7 +203,7 @@ class AwsModulithEventCodecSecurityTest {
 
     private fun decode(payload: String) = decodeEnvelope(envelope(payload = payload))
 
-    private fun decodeEnvelope(body: String) = testCodec().decode(body, emptyMap<String, String>())
+    private fun decodeEnvelope(body: String) = testCodec().decode(body, emptyMap())
 
     private fun assertDecodeFails(body: String) {
         assertDecodeFailsAs<AwsModulithInboundEnvelopeException>(body)

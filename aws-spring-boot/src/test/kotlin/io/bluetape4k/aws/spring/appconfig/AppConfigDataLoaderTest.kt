@@ -41,7 +41,8 @@ class AppConfigDataLoaderTest {
         val data = loader.load(contextOf(bootstrap), resource(bootstrap, disabled = true))
 
         data.shouldNotBeNull()
-        (data.propertySources.single() as MapPropertySource).source shouldBeEqualTo emptyMap()
+        data.propertySources.single().shouldBeInstanceOf<MapPropertySource>()
+            .source shouldBeEqualTo emptyMap()
 
         verify(exactly = 0) { bootstrap.get<Any>(any()) }
     }
@@ -71,7 +72,7 @@ class AppConfigDataLoaderTest {
 
             data.shouldNotBeNull()
             data.propertySources.single().shouldBeInstanceOf<AppConfigDataPropertySource>()
-            (data.propertySources.single() as AppConfigDataPropertySource).valuesSnapshot() shouldBeEqualTo emptyMap()
+                .valuesSnapshot() shouldBeEqualTo emptyMap()
         } finally {
             unmockkObject(AppConfigDataSdkAdapter)
         }
@@ -108,7 +109,9 @@ class AppConfigDataLoaderTest {
                 .load(contextOf(bootstrap), nonFailFast)
 
             empty.shouldNotBeNull()
-            (empty.propertySources.single() as MapPropertySource).source shouldBeEqualTo emptyMap()
+
+            empty.propertySources.single().shouldBeInstanceOf<MapPropertySource>()
+                .source shouldBeEqualTo emptyMap()
         } finally {
             unmockkObject(AppConfigDataSdkAdapter)
         }
@@ -148,7 +151,7 @@ class AppConfigDataLoaderTest {
     )
 
     private fun contextOf(bootstrap: ConfigurableBootstrapContext): ConfigDataLoaderContext = mockk {
-        every { getBootstrapContext() } returns bootstrap
+        every { bootstrapContext } returns bootstrap
     }
 
     private class FakeSessionClient: AppConfigDataSessionClient {

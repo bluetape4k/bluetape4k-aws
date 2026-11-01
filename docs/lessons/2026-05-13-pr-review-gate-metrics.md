@@ -2,24 +2,22 @@
 
 ## 배경
 
-PR #60은 병합 전에 Codex 검토와 Claude Code CLI 검토를 수행하는 새 PR 이후 검토
-게이트를 처음 적용한 bluetape4k-aws PR이다. 게이트를 시작하기 전에 로컬 테스트와
-GitHub CI는 이미 통과한 상태였다.
+PR #60은 병합 전에 Codex 검토와 Claude Code CLI 검토를 수행하는 새 PR 이후 검토 게이트를 처음 적용한 bluetape4k-aws PR이다. 게이트를 시작하기 전에 로컬 테스트와 GitHub CI는 이미 통과한 상태였다.
 
 ## 지표
 
-| 지표 | 수치 | 설명 |
-|---|---:|---|
-| 공식 검토 횟수 | 8 | 첫 PR 이후 검토부터 두 검토자 모두 최종 승인할 때까지의 횟수 |
-| 검토에서 시작된 수정 반복 | 6 | Codex/Claude의 `REQUEST_CHANGES` 또는 가치가 높은 `COMMENT`로 시작한 반복 |
-| 사용자 지시에 따른 테스트 안정화 반복 | 1 | 불안정한 원시 `delay` 대기를 Awaitility / `untilSuspending`으로 교체 |
-| P0 지적 | 0 | 데이터 손실/보안에 치명적인 즉시 차단 항목은 P0로 분류되지 않음 |
-| 원시 P1 지적 | 11 | 두 검토자가 같은 문제를 찾은 중복 지적 포함 |
-| 고유 P1 결함 | 10 | 근본 원인 기준으로 중복 제거 |
-| 병합 전 수정한 P2/P3 지적 | 3 | Awaitility hold-window 오용, 종료 중 수명 주기 race, `deleted` 가시성 |
-| 검토 후 추가한 새 회귀 테스트 | 4 | Backpressure, drain 중 heartbeat, shutdown timeout/heartbeat cancellation, start-during-stop |
-| 최종 SQS 대상 테스트 | 14 | `./gradlew :aws-ktor:test --tests 'io.bluetape4k.aws.ktor.sqs.*'` |
-| 최종 모듈 테스트 | 33 | `./gradlew :aws-ktor:test` |
+| 지표                                  | 수치 | 설명                                                                                         |
+|---------------------------------------|-----:|----------------------------------------------------------------------------------------------|
+| 공식 검토 횟수                        |    8 | 첫 PR 이후 검토부터 두 검토자 모두 최종 승인할 때까지의 횟수                                 |
+| 검토에서 시작된 수정 반복             |    6 | Codex/Claude의 `REQUEST_CHANGES` 또는 가치가 높은 `COMMENT`로 시작한 반복                    |
+| 사용자 지시에 따른 테스트 안정화 반복 |    1 | 불안정한 원시 `delay` 대기를 Awaitility / `untilSuspending`으로 교체                         |
+| P0 지적                               |    0 | 데이터 손실/보안에 치명적인 즉시 차단 항목은 P0로 분류되지 않음                              |
+| 원시 P1 지적                          |   11 | 두 검토자가 같은 문제를 찾은 중복 지적 포함                                                  |
+| 고유 P1 결함                          |   10 | 근본 원인 기준으로 중복 제거                                                                 |
+| 병합 전 수정한 P2/P3 지적             |    3 | Awaitility hold-window 오용, 종료 중 수명 주기 race, `deleted` 가시성                        |
+| 검토 후 추가한 새 회귀 테스트         |    4 | Backpressure, drain 중 heartbeat, shutdown timeout/heartbeat cancellation, start-during-stop |
+| 최종 SQS 대상 테스트                  |   14 | `./gradlew :aws-ktor:test --tests 'io.bluetape4k.aws.ktor.sqs.*'`                            |
+| 최종 모듈 테스트                      |   33 | `./gradlew :aws-ktor:test`                                                                   |
 
 ## 발견한 P1 결함
 
@@ -36,9 +34,7 @@ GitHub CI는 이미 통과한 상태였다.
 
 ## 결정
 
-Runtime, 보안, 자동 구성, coroutine, persistence 작업에는 PR 이후 외부 검토 게이트를
-필수로 유지한다. `COMMENT`가 비용이 낮고 확신도 높은 정확성 개선을 지적하면 P1이
-아니어도 병합 차단 항목으로 취급한다.
+Runtime, 보안, 자동 구성, coroutine, persistence 작업에는 PR 이후 외부 검토 게이트를 필수로 유지한다. `COMMENT`가 비용이 낮고 확신도 높은 정확성 개선을 지적하면 P1이 아니어도 병합 차단 항목으로 취급한다.
 
 ## 결과
 
@@ -54,12 +50,12 @@ PR #60은 다음 조건을 모두 충족한 뒤 병합했다.
 PR #60에서 게이트를 확립한 뒤 모듈별 강화 PR 네 개가 `:aws`, `:aws-kotlin`,
 `:aws-spring-boot`, `:aws-ktor`에 같은 원칙을 적용했다.
 
-| 모듈 | PR | 변경 파일 | 검토 횟수 | P0 | P1 | P2 수정/수용 | 로컬 테스트 증거 | CI 증거 |
-|---|---:|---:|---:|---:|---:|---:|---|---|
-| `:aws` | #64 | 테스트 14개 + 교훈 1개 | 3 | 0 | 0 | 3 | 252개 통과, 2개 pending | `Test / aws` 통과 |
-| `:aws-kotlin` | #65 | 테스트 37개 + 교훈 1개 | 3 | 0 | 0 | 4 | 443개 통과, 5개 pending | `Test / aws-kotlin` 통과 |
-| `:aws-spring-boot` | #66 | 테스트 8개 + 교훈 1개 | 2 | 0 | 0 | 3 | 68개 통과 | `Test / aws-spring-boot` 통과 |
-| `:aws-ktor` | #67 | 테스트 5개 + 교훈 1개 | 2 | 0 | 0 | 2 | 33개 통과 | `Test / aws-ktor` 통과 |
+| 모듈               |  PR |              변경 파일 | 검토 횟수 | P0 | P1 | P2 수정/수용 | 로컬 테스트 증거        | CI 증거                       |
+|--------------------|----:|-----------------------:|----------:|---:|---:|-------------:|-------------------------|-------------------------------|
+| `:aws`             | #64 | 테스트 14개 + 교훈 1개 |         3 |  0 |  0 |            3 | 252개 통과, 2개 pending | `Test / aws` 통과             |
+| `:aws-kotlin`      | #65 | 테스트 37개 + 교훈 1개 |         3 |  0 |  0 |            4 | 443개 통과, 5개 pending | `Test / aws-kotlin` 통과      |
+| `:aws-spring-boot` | #66 |  테스트 8개 + 교훈 1개 |         2 |  0 |  0 |            3 | 68개 통과               | `Test / aws-spring-boot` 통과 |
+| `:aws-ktor`        | #67 |  테스트 5개 + 교훈 1개 |         2 |  0 |  0 |            2 | 33개 통과               | `Test / aws-ktor` 통과        |
 
 시리즈 합계:
 
@@ -74,17 +70,12 @@ PR #60에서 게이트를 확립한 뒤 모듈별 강화 PR 네 개가 `:aws`, `
 
 반복해서 확인한 규칙:
 
-- 변경한 테스트에서는 `bluetape4k-assertions`를 사용한다. 검토 전에 `kotlin.test.*`,
-  AssertJ, Kluent, JUnit assertion import를 scan한다.
-- 비동기 consumer 테스트에서 고정 sleep보다 Awaitility 또는 `untilSuspending {}`을
-  우선한다.
-- LocalStack, AWS SDK, Ktor, 기타 blocking I/O 경계에는 `runSuspendIO`를 사용하고,
-  가상 시간 또는 순수 coroutine 수명 주기 테스트에는 `runTest`를 유지한다.
+- 변경한 테스트에서는 `bluetape4k-assertions`를 사용한다. 검토 전에 `kotlin.test.*`, AssertJ, Kluent, JUnit assertion import를 scan한다.
+- 비동기 consumer 테스트에서 고정 sleep보다 Awaitility 또는 `untilSuspending {}`을 우선한다.
+- LocalStack, AWS SDK, Ktor, 기타 blocking I/O 경계에는 `runSuspendIO`를 사용하고, 가상 시간 또는 순수 coroutine 수명 주기 테스트에는 `runTest`를 유지한다.
 - Framework callback이 동기식이면 blocking bridge를 숨기지 말고
   `runBlocking(Dispatchers.IO)`을 유지하는 이유를 문서화한다.
 
 ## 향후 지침
 
-이 게이트는 병합 후가 아니라 병합 전에 실행한다. Coroutine 수명 주기, visibility,
-acknowledgement 결함을 도입 후에 발견하는 비용보다 검토 비용이 낮다. 게이트에서 P0/P1
-결함을 찾으면 관련 교훈에 정량 검토 지표를 기록한다.
+이 게이트는 병합 후가 아니라 병합 전에 실행한다. Coroutine 수명 주기, visibility, acknowledgement 결함을 도입 후에 발견하는 비용보다 검토 비용이 낮다. 게이트에서 P0/P1 결함을 찾으면 관련 교훈에 정량 검토 지표를 기록한다.

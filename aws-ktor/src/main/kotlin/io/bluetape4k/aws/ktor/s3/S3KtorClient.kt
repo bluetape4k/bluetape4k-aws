@@ -54,7 +54,6 @@ import io.ktor.http.contentType
 import io.ktor.http.encodeURLPathPart
 import io.ktor.http.takeFrom
 import java.nio.charset.Charset
-import java.nio.charset.StandardCharsets
 import java.time.Clock
 import java.time.Duration
 import java.util.concurrent.atomic.AtomicBoolean
@@ -446,7 +445,7 @@ class S3KtorClient(
     suspend fun getConfigObject(
         bucket: String,
         key: String,
-        charset: Charset = StandardCharsets.UTF_8,
+        charset: Charset = Charsets.UTF_8,
     ): S3KtorConfigObject {
         val response = getObject(bucket, key)
         return S3KtorConfigObject(

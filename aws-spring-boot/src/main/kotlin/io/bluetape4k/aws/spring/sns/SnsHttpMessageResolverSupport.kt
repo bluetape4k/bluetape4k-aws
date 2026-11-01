@@ -142,7 +142,8 @@ class SnsHttpMessageResolverSupport(
                 }
                 SnsNotificationStatus(message, operations)
             }
-            else                                                               -> error("Unsupported SNS HTTP handler parameter: ${parameter.parameterName ?: parameterType.name}.")
+            else                                                               ->
+                error("Unsupported SNS HTTP handler parameter: ${parameter.parameterName ?: parameterType.name}.")
         }
     }
 

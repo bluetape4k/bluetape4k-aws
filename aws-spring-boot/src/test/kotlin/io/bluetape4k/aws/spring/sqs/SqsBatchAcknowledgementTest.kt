@@ -6,6 +6,7 @@ import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotContain
+import io.bluetape4k.coroutines.support.log
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
@@ -56,7 +57,9 @@ class SqsBatchAcknowledgementTest {
         }
         val cancellation = CancellationException("cancel during commit")
 
-        val first = async(start = CoroutineStart.UNDISPATCHED) { acknowledgement.acknowledge() }
+        val first = async(start = CoroutineStart.UNDISPATCHED) {
+            acknowledgement.acknowledge()
+        }
         commitBlocked.await()
         first.cancel(cancellation)
         mutex.unlock()
@@ -114,6 +117,7 @@ class SqsBatchAcknowledgementTest {
 
         acknowledgement.acknowledge()
         acknowledgement.acknowledge()
+
         assertFailsWith<IllegalArgumentException> {
             acknowledgement.acknowledge(messages + message(99))
         }
@@ -133,9 +137,15 @@ class SqsBatchAcknowledgementTest {
                 deleteRelease = release
             }
             val acknowledgement = acknowledgement(messages, operations)
-            val first = async(start = CoroutineStart.UNDISPATCHED) { acknowledgement.acknowledge() }
+            val first = async(start = CoroutineStart.UNDISPATCHED) {
+                acknowledgement.acknowledge()
+            }.log("First")
+
             started.await()
-            val waiter = async(start = CoroutineStart.UNDISPATCHED) { acknowledgement.acknowledge() }
+
+            val waiter = async(start = CoroutineStart.UNDISPATCHED) {
+                acknowledgement.acknowledge()
+            }.log("Waiter")
 
             operations.deleteRelease = null
             first.cancel(CancellationException("cancel batch acknowledgement"))
@@ -161,11 +171,14 @@ class SqsBatchAcknowledgementTest {
 
         val first = async(start = CoroutineStart.UNDISPATCHED) {
             acknowledgement.acknowledge()
-        }
+        }.log("First")
+
         started.await()
+
         val waiter = async(start = CoroutineStart.UNDISPATCHED) {
             acknowledgement.acknowledge()
-        }
+        }.log("Waiter")
+
         release.complete(Unit)
 
         first.await().status shouldBeEqualTo SqsBatchAcknowledgementStatus.SUCCESS
@@ -230,9 +243,11 @@ class SqsBatchAcknowledgementTest {
         result.operation shouldBeEqualTo SqsBatchAcknowledgementOperation.ACKNOWLEDGE
         result.status shouldBeEqualTo SqsBatchAcknowledgementStatus.SUCCESS
         result.successfulMessageIds shouldBeEqualTo listOf("message-1", "message-2", "message-3")
+
         log.debug { "acknowledgement=$result" }
         acknowledgement.pending shouldBeEqualTo emptyList()
         acknowledgement.completed.shouldBeTrue()
+
         log.debug { "operations=$operations" }
         operations.deleteBatchCalls shouldBeEqualTo 1
         operations.deleteRequests.single() shouldBeEqualTo listOf("receipt-1", "receipt-2", "receipt-3")
@@ -353,7 +368,6 @@ class SqsBatchAcknowledgementTest {
 
         log.debug { "rendered=$rendered" }
         rendered shouldContain "SqsBatchAcknowledgementResult"
-
         rendered shouldNotContain "message-1"
         rendered shouldNotContain "receipt-1"
         rendered shouldNotContain "payload-1"
@@ -456,7 +470,9 @@ class SqsBatchAcknowledgementTest {
             ),
         )
 
-        val actual = assertFailsWith<AssertionError> { acknowledgement.acknowledge() }
+        val actual = assertFailsWith<AssertionError> {
+            acknowledgement.acknowledge()
+        }
 
         actual shouldBeEqualTo fatal
         acknowledgement.isObservationSetupFailure(actual).shouldBeFalse()

@@ -5,6 +5,7 @@ import io.bluetape4k.aws.spring.sqs.SqsOperations
 import io.bluetape4k.aws.spring.sqs.SqsSendRequest
 import io.bluetape4k.codec.encodeHexString
 import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.requireNotEmpty
 import io.bluetape4k.support.toUtf8Bytes
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -38,7 +39,7 @@ internal class AwsModulithSqsTargetPublisher internal constructor(
     private val queueUrlFlights = mutableMapOf<String, CompletableDeferred<String>>()
 
     init {
-        require(this.configuredAliases.isNotEmpty()) { "configuredAliases must not be empty." }
+        this.configuredAliases.requireNotEmpty { "configuredAliases must not be empty." }
     }
 
     private sealed interface QueueUrlResolution {

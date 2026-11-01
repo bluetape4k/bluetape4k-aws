@@ -4,6 +4,7 @@ import io.bluetape4k.aws.s3.existsBucket
 import io.bluetape4k.aws.s3.getAsByteArray
 import io.bluetape4k.aws.s3.getAsPublisher
 import io.bluetape4k.aws.s3.model.getObjectPresignRequestOf
+import io.bluetape4k.aws.s3.model.headObjectRequestOf
 import io.bluetape4k.aws.s3.model.putObjectPresignRequestOf
 import io.bluetape4k.aws.s3.model.putObjectRequest
 import io.bluetape4k.aws.s3.putAsByteArray
@@ -21,7 +22,6 @@ import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.DeleteObjectResponse
-import software.amazon.awssdk.services.s3.model.HeadObjectRequest
 import software.amazon.awssdk.services.s3.model.PutObjectResponse
 import software.amazon.awssdk.services.s3.model.S3Exception
 import software.amazon.awssdk.services.s3.model.S3Object
@@ -71,12 +71,7 @@ class S3CoroutinesTemplate(
         s3AsyncClient.existsBucket(bucket)
 
     override suspend fun headObject(bucket: String, key: String): S3ObjectMetadata {
-        val response = s3AsyncClient.headObject(
-            HeadObjectRequest.builder()
-                .bucket(bucket)
-                .key(key)
-                .build(),
-        ).await()
+        val response = s3AsyncClient.headObject(headObjectRequestOf(bucket, key)).await()
 
         return S3ObjectMetadata(
             sizeBytes = requireNotNull(response.contentLength()) {
@@ -89,12 +84,7 @@ class S3CoroutinesTemplate(
     }
 
     override suspend fun headObjectWithMetadata(bucket: String, key: String): S3HeadMetadata {
-        val response = s3AsyncClient.headObject(
-            HeadObjectRequest.builder()
-                .bucket(bucket)
-                .key(key)
-                .build(),
-        ).await()
+        val response = s3AsyncClient.headObject(headObjectRequestOf(bucket, key)).await()
 
         return S3HeadMetadata(
             sizeBytes = response.contentLength() ?: 0L,

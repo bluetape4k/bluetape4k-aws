@@ -2,7 +2,7 @@ package io.bluetape4k.aws.kotlin.dynamodb.coordination
 
 import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.logging.KLogging
-import java.nio.charset.StandardCharsets
+import io.bluetape4k.support.toUtf8Bytes
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
@@ -37,7 +37,7 @@ fun interface DynamoDbCoordinationNameResolver {
 
         private fun lengthPrefixed(vararg values: String): String = buildString {
             values.forEach { value ->
-                val byteLength = value.toByteArray(StandardCharsets.UTF_8).size
+                val byteLength = value.toUtf8Bytes().size
                 append(byteLength)
                 append(':')
                 append(value)
@@ -167,7 +167,7 @@ class DynamoDbCoordinationSchema(
 
         /** metadata payload의 UTF-8 크기를 확인합니다. */
         internal fun validateMetadataValue(value: String): String {
-            require(value.toByteArray(StandardCharsets.UTF_8).size <= MAX_METADATA_VALUE_UTF8_BYTES) {
+            require(value.toUtf8Bytes().size <= MAX_METADATA_VALUE_UTF8_BYTES) {
                 "metadata value UTF-8 length must be <= $MAX_METADATA_VALUE_UTF8_BYTES bytes"
             }
             return value
@@ -220,7 +220,7 @@ internal fun String.validateCoordinationIdentifier(
 ): String {
     require(isNotBlank()) { "$name must not be blank" }
     require(none(Char::isISOControl)) { "$name must not contain control characters" }
-    require(toByteArray(StandardCharsets.UTF_8).size <= maxUtf8Bytes) {
+    require(toByteArray(Charsets.UTF_8).size <= maxUtf8Bytes) {
         "$name UTF-8 length must be <= $maxUtf8Bytes bytes"
     }
     return this
@@ -229,13 +229,13 @@ internal fun String.validateCoordinationIdentifier(
 /** length-prefixed UTF-8 tuple canonicalization으로 scope identity를 생성합니다. */
 private fun canonicalize(vararg values: String): String = buildString {
     values.forEach { value ->
-        val byteLength = value.toByteArray(StandardCharsets.UTF_8).size
+        val byteLength = value.toUtf8Bytes().size
         append(byteLength)
         append(':')
         append(value)
     }
 }.also {
-    require(it.toByteArray(StandardCharsets.UTF_8).size <= DynamoDbCoordinationSchema.MAX_SCOPE_ID_UTF8_BYTES) {
+    require(it.toUtf8Bytes().size <= DynamoDbCoordinationSchema.MAX_SCOPE_ID_UTF8_BYTES) {
         "coordination scope id exceeds ${DynamoDbCoordinationSchema.MAX_SCOPE_ID_UTF8_BYTES} bytes"
     }
 }

@@ -65,8 +65,8 @@ internal object AwsMicrometerSupport: KLogging() {
     suspend inline fun <T> record(
         meterRegistry: MeterRegistry,
         meterName: String,
-        crossinline tagFactory: (String, Throwable?) -> Tags,
-        crossinline block: suspend () -> T,
+        tagFactory: (String, Throwable?) -> Tags,
+        block: suspend () -> T,
     ): T {
         val startedAt = System.nanoTime()
         return try {
@@ -85,8 +85,8 @@ internal object AwsMicrometerSupport: KLogging() {
     inline fun <T> record(
         meterRegistry: MeterRegistry,
         meterName: String,
-        crossinline tagFactory: (String, Throwable?) -> Tags,
-        crossinline block: () -> T,
+        tagFactory: (String, Throwable?) -> Tags,
+        block: () -> T,
     ): T {
         val startedAt = System.nanoTime()
         return try {

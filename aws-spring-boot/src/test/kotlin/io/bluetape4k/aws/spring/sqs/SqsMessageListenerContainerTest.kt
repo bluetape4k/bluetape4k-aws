@@ -302,7 +302,7 @@ class SqsMessageListenerContainerTest {
     fun `CREATE queue failure logs bounded OBS-201 without queue or throwable`() = runSuspendIO {
         val containerLogger = LoggerFactory.getLogger(SqsMessageListenerContainer::class.java) as Logger
         val appender = ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>().apply {
-            list = CopyOnWriteArrayList()
+            list = arrayListOf()
             start()
         }
         val previousLevel = containerLogger.level

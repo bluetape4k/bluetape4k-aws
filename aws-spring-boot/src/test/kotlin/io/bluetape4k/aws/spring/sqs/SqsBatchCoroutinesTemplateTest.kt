@@ -18,7 +18,7 @@ class SqsBatchCoroutinesTemplateTest {
 
     @Test
     fun `direct and batch templates preserve requests and return the same outcomes`() = runTest {
-        val groupId = "group-${Base58.randomString(16)}"
+        val groupId = "group-${Base58.randomString(12)}"
         val sends = listOf(
             sendEntry("parity-success", groupId = groupId),
             sendEntry("parity-failure", groupId = groupId),
@@ -104,9 +104,9 @@ class SqsBatchCoroutinesTemplateTest {
         val properties = templateProperties(enabled = batchEnabled)
         val resources = if (batchEnabled) {
             SqsBatchTransportResources(
-                transport,
-                AutoCloseable {},
-                ScheduledThreadPoolExecutor(1),
+                transport = transport,
+                manager = {},
+                executor = ScheduledThreadPoolExecutor(1),
             )
         } else {
             null

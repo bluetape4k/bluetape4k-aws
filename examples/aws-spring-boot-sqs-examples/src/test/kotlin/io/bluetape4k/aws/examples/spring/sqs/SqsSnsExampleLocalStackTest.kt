@@ -179,7 +179,7 @@ class SqsSnsExampleLocalStackTest {
         return queueUrl
     }
 
-    private suspend fun waitUntil(description: String, predicate: suspend () -> Boolean) {
+    private suspend inline fun waitUntil(description: String, crossinline predicate: suspend () -> Boolean) {
         var lastResult = false
         try {
             await

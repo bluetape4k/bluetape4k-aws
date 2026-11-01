@@ -73,7 +73,7 @@ class AwsServiceConnectionAutoConfigurationTest {
                 .withConfiguration(AutoConfigurations.of(AwsAutoConfiguration::class.java, autoConfiguration))
                 .withPropertyValues(
                     "bluetape4k.aws.$serviceName.region=us-east-1",
-                    "bluetape4k.aws.$serviceName.endpoint-override=http://properties:4566",
+                    "bluetape4k.aws.$serviceName.endpoint-override=https://properties:4566",
                 )
                 .run { context ->
                     context.startupFailure.shouldBeNull()
@@ -87,7 +87,7 @@ class AwsServiceConnectionAutoConfigurationTest {
                         "kinesis" -> context.getBean<KinesisAsyncClient>()
                             .serviceClientConfiguration().endpointOverride().orElse(null)
                         else      -> error("Unexpected service $serviceName")
-                    } shouldBeEqualTo URI.create("http://properties:4566")
+                    } shouldBeEqualTo URI.create("https://properties:4566")
                 }
         }
     }

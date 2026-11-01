@@ -74,8 +74,8 @@ class KinesisAutoConfiguration {
             )
             .apply {
                 httpClient.getIfAvailable()?.let { httpClient(it) }
+                applyGlobalCustomizers("kinesis", globalCustomizers)
             }
-            .also { it.applyGlobalCustomizers("kinesis", globalCustomizers) }
             .applyServiceCustomizers(serviceCustomizers)
             .build()
 

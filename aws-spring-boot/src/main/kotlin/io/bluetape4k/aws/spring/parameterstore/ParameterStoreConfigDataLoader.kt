@@ -4,6 +4,7 @@ import io.bluetape4k.aws.spring.config.AwsConfigDataBackend
 import io.bluetape4k.aws.spring.config.AwsConfigDataFailurePolicy
 import io.bluetape4k.aws.spring.config.AwsConfigDataResource
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.springframework.boot.bootstrap.ConfigurableBootstrapContext
 import org.springframework.boot.context.config.ConfigData
 import org.springframework.boot.context.config.ConfigDataLoader
@@ -22,7 +23,7 @@ class ParameterStoreConfigDataLoader(
         resource.backendKey == AwsConfigDataBackend.PARAMETER_STORE.key
 
     override fun load(context: ConfigDataLoaderContext, resource: AwsConfigDataResource): ConfigData? {
-        log.debug("Loading parameters from ${resource.backendKey}")
+        log.debug { "Loading parameters from ${resource.backendKey}" }
 
         if (resource.isDisabled) {
             return AwsConfigDataFailurePolicy.toConfigData(resource, emptyMap())

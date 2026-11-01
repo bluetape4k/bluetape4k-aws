@@ -8,6 +8,7 @@ import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldHaveSize
+import io.bluetape4k.aws.sns.model.messageAttributeValueOf
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.concurrent.completableFutureOf
 import io.bluetape4k.logging.coroutines.KLoggingChannel
@@ -75,14 +76,11 @@ class SnsCoroutinesTemplateTest: AbstractSnsTest() {
         }
 
         val attributes = mapOf(
-            "trace" to MessageAttributeValue.builder()
-                .dataType("String")
-                .stringValue("trace-${Base58.randomString(16)}")
-                .build(),
+            "trace" to messageAttributeValueOf("trace-${Base58.randomString(16)}", "String")
         )
         val request = SnsPublishBatchRequest(
             topicArn = "arn:aws:sns:us-east-1:000000000000:orders.fifo",
-            entries = (1..11).map { index ->
+            entries = List(11) { index ->
                 SnsPublishBatchEntry(
                     id = "entry-$index-${Base58.randomString(16)}",
                     message = "message-$index-${Base58.randomString(16)}",
@@ -103,11 +101,11 @@ class SnsCoroutinesTemplateTest: AbstractSnsTest() {
 
         val firstEntry = capturedRequests.first().publishBatchRequestEntries().first()
         log.debug { "firstEntry=$firstEntry" }
-        firstEntry.subject() shouldBeEqualTo "subject-1"
+        firstEntry.subject() shouldBeEqualTo "subject-0"
         firstEntry.messageAttributes()["trace"]?.stringValue() shouldBeEqualTo attributes.getValue("trace")
             .stringValue()
-        firstEntry.messageGroupId() shouldBeEqualTo "group-1"
-        firstEntry.messageDeduplicationId() shouldBeEqualTo "dedup-1"
+        firstEntry.messageGroupId() shouldBeEqualTo "group-0"
+        firstEntry.messageDeduplicationId() shouldBeEqualTo "dedup-0"
 
         result.successful.map { it.entryId } shouldBeEqualTo request.entries.map { it.id }
         verify(exactly = 2) { client.publishBatch(any<PublishBatchRequest>()) }
