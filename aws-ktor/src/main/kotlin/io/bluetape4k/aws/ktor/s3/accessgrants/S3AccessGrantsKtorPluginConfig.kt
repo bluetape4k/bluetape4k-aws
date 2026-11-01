@@ -91,7 +91,9 @@ class S3AccessGrantsKtorPluginConfig {
                 provider = endpointProvider ?: DefaultS3ControlEndpointProvider(),
                 region = { it.region },
                 allowInsecureLocalHttpEndpoint = defaults.allowInsecureLocalHttpEndpoint,
-                create = { resolver -> S3ControlEndpointProvider { parameters -> resolver(parameters) } },
+                create = { resolver ->
+                    S3ControlEndpointProvider { parameters -> resolver(parameters) }
+                },
             )
             interceptors.add(
                 AwsKotlinEndpointPolicyInterceptor(

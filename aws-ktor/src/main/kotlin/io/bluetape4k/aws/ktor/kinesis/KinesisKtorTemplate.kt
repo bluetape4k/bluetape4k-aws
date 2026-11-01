@@ -117,7 +117,7 @@ class KinesisKtorTemplate(
                 iteratorRetryCount = 0
                 throttleRetryCount = 0
 
-                val records = response.records.orEmpty()
+                val records = response.records
                 for (record in records) {
                     emit(record)
                     lastSeenSequenceNumber = record.sequenceNumber
@@ -173,6 +173,7 @@ class KinesisKtorTemplate(
                     is KinesisStartingPosition.AfterSequenceNumber -> startingSequenceNumber = position.sequenceNumber
                     is KinesisStartingPosition.AtTimestamp      -> timestamp =
                         SmithyInstant.fromEpochSeconds(position.timestamp.epochSecond, position.timestamp.nano)
+
                     KinesisStartingPosition.TrimHorizon,
                     KinesisStartingPosition.Latest,
                                                                 -> Unit

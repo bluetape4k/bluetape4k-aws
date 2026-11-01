@@ -99,7 +99,9 @@ class CloudWatchKtorPluginConfig {
                     provider = endpointProvider ?: DefaultCloudWatchEndpointProvider(),
                     region = { it.region },
                     allowInsecureLocalHttpEndpoint = defaults.allowInsecureLocalHttpEndpoint,
-                    create = { resolver -> CloudWatchEndpointProvider { parameters -> resolver(parameters) } },
+                    create = { resolver ->
+                        CloudWatchEndpointProvider { parameters -> resolver(parameters) }
+                    },
                 )
                 interceptors.add(
                     AwsKotlinEndpointPolicyInterceptor(

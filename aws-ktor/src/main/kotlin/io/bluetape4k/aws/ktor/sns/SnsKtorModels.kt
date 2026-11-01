@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.ktor.sns
 
+import io.bluetape4k.support.hashOf
 import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.requireNotNull
 import java.io.Serializable
@@ -31,8 +32,7 @@ class SnsMessageAttribute(
                     else                     -> binaryValueValue.contentEquals(other.binaryValueValue)
                 })
 
-    override fun hashCode(): Int = 31 * (31 * dataType.hashCode() + (stringValue?.hashCode() ?: 0)) +
-            (binaryValueValue?.contentHashCode() ?: 0)
+    override fun hashCode(): Int = hashOf(dataType, stringValue, binaryValue?.contentHashCode())
 
     override fun toString(): String =
         "SnsMessageAttribute(dataType=$dataType, stringValueConfigured=${stringValue != null}, binarySize=${binaryValueValue?.size ?: 0})"

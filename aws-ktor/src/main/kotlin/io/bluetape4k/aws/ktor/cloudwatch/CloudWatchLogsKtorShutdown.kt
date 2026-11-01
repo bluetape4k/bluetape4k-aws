@@ -78,8 +78,7 @@ class CloudWatchLogsShutdownTimeoutException(
     /** client close 직전에 남은 pending event 수입니다. */
     val pendingEventCount: Int,
 ): IllegalStateException(
-    "CloudWatch Logs shutdown flush timed out after $timeout with " +
-            "$pendingEventCount pending event(s).",
+    "CloudWatch Logs shutdown flush timed out after $timeout with $pendingEventCount pending event(s).",
 ) {
 
     init {

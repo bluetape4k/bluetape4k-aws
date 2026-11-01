@@ -96,7 +96,9 @@ class KinesisKtorPluginConfig {
                     provider = endpointProvider ?: DefaultKinesisEndpointProvider(),
                     region = { it.region },
                     allowInsecureLocalHttpEndpoint = defaults.allowInsecureLocalHttpEndpoint,
-                    create = { resolver -> KinesisEndpointProvider { parameters -> resolver(parameters) } },
+                    create = { resolver ->
+                        KinesisEndpointProvider { parameters -> resolver(parameters) }
+                    },
                 )
                 interceptors.add(
                     AwsKotlinEndpointPolicyInterceptor(

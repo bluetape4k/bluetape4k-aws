@@ -166,7 +166,7 @@ class CloudWatchLogsKtorRuntime(
      * [logEvent]를 구성된 기본 로그 스트림 버퍼에 추가합니다.
      */
     suspend fun append(logEvent: InputLogEvent) {
-        requireNotNull(logStream) {
+        logStream.requireNotNull {
             "logGroupName and logStreamName must be configured for buffered publishing."
         }
         bufferMutex.withLock {
@@ -295,6 +295,7 @@ class CloudWatchLogsKtorRuntime(
             val message = "CloudWatch Logs shutdown flush ${observation.outcome.name.lowercase()} " +
                     "with ${observation.pendingEventCount} pending event(s); " +
                     "${observation.droppedEventCount} event(s) will not be retried."
+
             observation.cause?.let { cause ->
                 log.warn(cause) { message }
             } ?: log.warn { message }

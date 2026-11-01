@@ -125,7 +125,9 @@ class DynamoDbKtorPluginConfig {
                         provider = this.endpointProvider ?: DefaultDynamoDbEndpointProvider(),
                         region = { it.region },
                         allowInsecureLocalHttpEndpoint = defaults.allowInsecureLocalHttpEndpoint,
-                        create = { resolver -> DynamoDbEndpointProvider { parameters -> resolver(parameters) } },
+                        create = { resolver ->
+                            DynamoDbEndpointProvider { parameters -> resolver(parameters) }
+                        },
                     )
                     interceptors.add(
                         AwsKotlinEndpointPolicyInterceptor(

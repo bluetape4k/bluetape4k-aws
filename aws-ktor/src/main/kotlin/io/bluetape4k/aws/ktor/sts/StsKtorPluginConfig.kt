@@ -90,7 +90,9 @@ class StsKtorPluginConfig {
                     provider = endpointProvider ?: DefaultStsEndpointProvider(),
                     region = { it.region },
                     allowInsecureLocalHttpEndpoint = defaults.allowInsecureLocalHttpEndpoint,
-                    create = { resolver -> StsEndpointProvider { parameters -> resolver(parameters) } },
+                    create = { resolver ->
+                        StsEndpointProvider { parameters -> resolver(parameters) }
+                    },
                 )
                 interceptors.add(
                     AwsKotlinEndpointPolicyInterceptor(

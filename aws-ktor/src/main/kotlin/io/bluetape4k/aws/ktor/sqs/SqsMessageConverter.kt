@@ -33,6 +33,7 @@ object StringOrByteArraySqsMessageConverter: SqsMessageConverter {
     @Suppress("UNCHECKED_CAST")
     override fun <T: Any> convert(message: Message, targetType: KClass<T>): T {
         val body = message.body.orEmpty()
+
         val converted: Any = when (targetType) {
             String::class  -> body
             ByteArray::class -> body.encodeToByteArray()

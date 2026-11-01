@@ -2,7 +2,9 @@ package io.bluetape4k.aws.ktor.kinesis
 
 import aws.sdk.kotlin.services.kinesis.model.ShardIteratorType
 import io.bluetape4k.javatimes.millis
+import io.bluetape4k.javatimes.requireZeroOrPositiveDuration
 import io.bluetape4k.javatimes.seconds
+import io.bluetape4k.support.hashOf
 import io.bluetape4k.support.requireGe
 import io.bluetape4k.support.requireInRange
 import io.bluetape4k.support.requireNotBlank
@@ -61,8 +63,7 @@ class KinesisPutRecordRequest(
                         dataBytes.contentEquals(other.dataBytes)
                 )
 
-    override fun hashCode(): Int =
-        31 * (31 * streamName.hashCode() + partitionKey.hashCode()) + dataBytes.contentHashCode()
+    override fun hashCode(): Int = hashOf(streamName, partitionKey, dataBytes.contentHashCode())
 
     override fun toString(): String =
         "KinesisPutRecordRequest(streamName=$streamName, partitionKey=$partitionKey, dataSize=${dataBytes.size})"
@@ -176,12 +177,12 @@ data class KinesisRecordFlowOptions(
 
     init {
         batchLimit.requireInRange(1, MAX_KINESIS_BATCH_LIMIT, "batchLimit")
-        require(!pollInterval.isNegative) { "pollInterval must not be negative." }
-        require(!emptyBackoff.isNegative) { "emptyBackoff must not be negative." }
+        pollInterval.requireZeroOrPositiveDuration("pollInterval")
+        emptyBackoff.requireZeroOrPositiveDuration("emptyBackoff")
         maxIteratorRetries.requireGe(0, "maxIteratorRetries")
         maxThrottleRetries.requireGe(0, "maxThrottleRetries")
-        require(!initialThrottleBackoff.isNegative) { "initialThrottleBackoff must not be negative." }
-        require(!maxThrottleBackoff.isNegative) { "maxThrottleBackoff must not be negative." }
+        initialThrottleBackoff.requireZeroOrPositiveDuration("initialThrottleBackoff")
+        maxThrottleBackoff.requireZeroOrPositiveDuration("maxThrottleBackoff")
         jitterRatio.requireInRange(0.0, 1.0, "jitterRatio")
     }
 

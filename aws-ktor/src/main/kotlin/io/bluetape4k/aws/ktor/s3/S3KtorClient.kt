@@ -542,7 +542,7 @@ class S3KtorClient(
         return URLBuilder().applyS3Endpoint(bucket = bucket, key = key).build()
     }
 
-    private suspend fun presign(method: HttpMethod, url: Url, expires: Duration): S3KtorPresignedRequest {
+    private suspend inline fun presign(method: HttpMethod, url: Url, expires: Duration): S3KtorPresignedRequest {
         expires.requireGt(Duration.ZERO, "expires")
         expires.requireInRange(MIN_PRESIGN_EXPIRY, MAX_PRESIGN_EXPIRY, "expires")
 

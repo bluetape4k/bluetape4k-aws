@@ -14,7 +14,11 @@ import aws.smithy.kotlin.runtime.http.request.headers
 import aws.smithy.kotlin.runtime.http.request.url
 import aws.smithy.kotlin.runtime.http.response.HttpResponse
 import aws.smithy.kotlin.runtime.net.url.Url
+import io.bluetape4k.javatimes.requirePositiveDuration
 import io.bluetape4k.javatimes.seconds
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.support.checkNotEmpty
+import io.bluetape4k.support.requireZeroOrPositiveNumber
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -68,7 +72,7 @@ internal class ImdsSmithyAdapter(
             },
         ).requireSuccess()
         val value = bytes.decodeToString().trim()
-        check(value.isNotEmpty()) { "IMDS token response was empty." }
+        value.checkNotEmpty { "IMDS token response was empty." }
 
         val tokenReceivedAtNanos = nowNanos()
         val expiresAtNanos = tokenReceivedAtNanos + ttlSeconds.seconds().toNanos()
@@ -140,7 +144,7 @@ internal class ImdsSmithyAdapter(
 
     private data class CachedToken(val value: String, val expiresAtNanos: Long)
 
-    private companion object {
+    private companion object: KLoggingChannel() {
         const val TOKEN_PATH = "/latest/api/token"
         const val TOKEN_TTL_HEADER = "x-aws-ec2-metadata-token-ttl-seconds"
         const val TOKEN_HEADER = "x-aws-ec2-metadata-token"
@@ -164,7 +168,7 @@ internal object ImdsRetryPolicy {
     }
 
     fun backoffCapMillis(retryIndex: Int): Long {
-        require(retryIndex >= 0) { "retryIndex must be non-negative" }
+        retryIndex.requireZeroOrPositiveNumber { "retryIndex must be non-negative" }
         val multiplier = 1L shl retryIndex.coerceAtMost(20)
         return (INITIAL_BACKOFF_MILLIS * multiplier).coerceAtMost(MAX_BACKOFF_MILLIS)
     }
@@ -180,17 +184,13 @@ internal object ImdsRetryPolicy {
 /** Creates the IMDS-specific engine with service timeouts and an explicit no-proxy selector. */
 internal object ImdsHttpClientFactory {
     fun createEngine(metadataServiceTimeout: Duration): CloseableHttpClientEngine {
-        require(!metadataServiceTimeout.isZero && !metadataServiceTimeout.isNegative) {
-            "metadataServiceTimeout must be greater than zero."
-        }
+        metadataServiceTimeout.requirePositiveDuration("metadataServiceTimeout")
         val client = createClient(metadataServiceTimeout)
         return ImdsOwnedHttpClientEngine(OkHttpEngine(client), client)
     }
 
     fun createClient(metadataServiceTimeout: Duration): OkHttpClient {
-        require(!metadataServiceTimeout.isZero && !metadataServiceTimeout.isNegative) {
-            "metadataServiceTimeout must be greater than zero."
-        }
+        metadataServiceTimeout.requirePositiveDuration("metadataServiceTimeout")
         return OkHttpClient.Builder()
             .retryOnConnectionFailure(false)
             .proxy(Proxy.NO_PROXY)

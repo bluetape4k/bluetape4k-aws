@@ -18,6 +18,7 @@ import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.warn
 import io.bluetape4k.support.requireGe
 import io.bluetape4k.support.requireInRange
+import io.bluetape4k.support.requireNotNull
 import io.bluetape4k.support.requirePositiveNumber
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
@@ -934,4 +935,4 @@ class SqsConsumerRuntime(
 }
 
 private fun Message.requireReceiptHandle(): String =
-    requireNotNull(receiptHandle) { "Received SQS message has no receipt handle." }
+    receiptHandle.requireNotNull { "Received SQS message has no receipt handle." }

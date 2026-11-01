@@ -25,16 +25,16 @@ import java.time.Clock
  * }
  * ```
  */
-class AwsSigV4PluginConfig {
-    var region: String = ""
-    var service: String = ""
-    var credentialsProvider: CredentialsProvider? = null
-    var authLocation: AwsSigV4AuthLocation = AwsSigV4AuthLocation.Header
-    var doubleUrlEncode: Boolean = true
-    var normalizePath: Boolean = true
-    var payloadSigningEnabled: Boolean = true
-    var signedBodyHeader: AwsSignedBodyHeader = AwsSignedBodyHeader.X_AMZ_CONTENT_SHA256
-    var allowInsecureLocalHttpEndpoint: Boolean = false
-    var signingClock: Clock? = null
-    var signer: AwsSigner = DefaultAwsSigner
-}
+data class AwsSigV4PluginConfig(
+    var region: String = "",
+    var service: String = "",
+    var credentialsProvider: CredentialsProvider? = null,
+    var authLocation: AwsSigV4AuthLocation = AwsSigV4AuthLocation.Header,
+    var doubleUrlEncode: Boolean = true,
+    var normalizePath: Boolean = true,
+    var payloadSigningEnabled: Boolean = true,
+    var signedBodyHeader: AwsSignedBodyHeader = AwsSignedBodyHeader.X_AMZ_CONTENT_SHA256,
+    var allowInsecureLocalHttpEndpoint: Boolean = false,
+    var signingClock: Clock? = null,
+    var signer: AwsSigner = DefaultAwsSigner,
+)

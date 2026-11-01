@@ -19,6 +19,7 @@ import aws.sdk.kotlin.services.dynamodb.paginators.listTablesPaginated
 import aws.sdk.kotlin.services.dynamodb.paginators.scanPaginated
 import aws.sdk.kotlin.services.dynamodb.paginators.tableNames
 import aws.sdk.kotlin.services.dynamodb.putItem
+import aws.sdk.kotlin.services.dynamodb.waiters.waitUntilTableExists
 import io.bluetape4k.aws.kotlin.dynamodb.model.toAttributeValue
 import io.bluetape4k.aws.kotlin.dynamodb.model.toAttributeValueMap
 import io.bluetape4k.logging.KLogging
@@ -162,7 +163,7 @@ suspend fun DynamoDbClient.waitForTableReady(
     timeout: Duration = 60.seconds,
 ) {
     DynamoDbClientLog.log.debug { "DynamoDb 테이블[$name]이 준비될 때까지 [$timeout] 만큼 대기합니다 ... " }
-
+    waitUntilTableExists { tableName = name }
     withTimeout(timeout) {
         while (this@waitForTableReady.getTableStatus(name) != TableStatus.Active) {
             delay(10.milliseconds)

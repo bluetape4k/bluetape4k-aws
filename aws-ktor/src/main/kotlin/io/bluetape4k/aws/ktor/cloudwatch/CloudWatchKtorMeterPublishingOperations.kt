@@ -86,7 +86,7 @@ class CloudWatchKtorMeterPublishingTemplate(
             metricName = "${meterName}.${statistic.name.lowercase(Locale.US)}"
             this.dimensions = dimensions
             unit = statistic.toStandardUnit()
-            this.value = value
+            // this.value = value
         }
 
     private fun Statistic.toStandardUnit(): StandardUnit =

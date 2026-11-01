@@ -15,6 +15,7 @@ import io.bluetape4k.aws.exposed.AwsSecretString
 import io.bluetape4k.aws.exposed.NoopAwsDatabaseSettingsResolver
 import io.bluetape4k.support.requireGt
 import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.requireNull
 import kotlinx.coroutines.Dispatchers
 import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration
@@ -87,7 +88,7 @@ class AwsExposedPluginConfig {
         name: String,
         configure: AwsExposedConnectionConfig.() -> Unit,
     ) {
-        require(explicitDatabaseProperties == null) {
+        explicitDatabaseProperties.requireNull {
             "database DSL cannot be combined with databaseProperties."
         }
         name.requireNotBlank("name")
@@ -109,11 +110,11 @@ class AwsExposedPluginConfig {
         startTimeout.requireGt(Duration.ZERO, "startTimeout")
         stopTimeout.requireGt(Duration.ZERO, "stopTimeout")
 
-        val properties = explicitDatabaseProperties ?: AwsDatabaseProperties(
-            defaultDatabase = defaultDatabaseConfig?.toConnectionProperties()
-                ?: AwsDatabaseConnectionProperties(),
-            namedDatabases = namedDatabaseConfigs.mapValues { (_, config) -> config.toConnectionProperties() },
-        )
+        val properties = explicitDatabaseProperties
+            ?: AwsDatabaseProperties(
+                defaultDatabase = defaultDatabaseConfig?.toConnectionProperties() ?: AwsDatabaseConnectionProperties(),
+                namedDatabases = namedDatabaseConfigs.mapValues { (_, config) -> config.toConnectionProperties() },
+            )
 
         return AwsExposedKtorRuntimeConfig(
             databaseProperties = properties,
