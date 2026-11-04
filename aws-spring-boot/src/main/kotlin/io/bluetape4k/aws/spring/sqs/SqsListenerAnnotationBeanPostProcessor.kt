@@ -134,7 +134,7 @@ class SqsListenerAnnotationBeanPostProcessor(
                     "ON_SUCCESS cannot declare SqsAcknowledgement"
                 }
             }
-            SqsAcknowledgementMode.MANUAL -> {
+            SqsAcknowledgementMode.MANUAL  -> {
                 if (listener.batch) {
                     require(invoker.hasBatchAcknowledgement) {
                         "MANUAL requires SqsBatchAcknowledgement"

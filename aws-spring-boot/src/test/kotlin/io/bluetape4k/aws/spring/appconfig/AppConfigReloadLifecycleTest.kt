@@ -7,6 +7,7 @@ import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.aws.spring.config.AwsConfigDataLocationParser
 import io.bluetape4k.aws.spring.config.AwsConfigDataResource
+import io.bluetape4k.concurrent.await
 import io.bluetape4k.javatimes.millis
 import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.logging.KLogging
@@ -149,8 +150,8 @@ class AppConfigReloadLifecycleTest {
                                 delay,
                                 unit,
                             )
-                            callbackStarted.await(1, TimeUnit.SECONDS).shouldBeTrue()
-                            retryRequested.await(1, TimeUnit.SECONDS).shouldBeTrue()
+                            callbackStarted.await(1.seconds).shouldBeTrue()
+                            retryRequested.await(1.seconds).shouldBeTrue()
                             return future
                         }
                         return super.schedule(command, delay, unit)

@@ -102,6 +102,7 @@ class SqsClientTest: AbstractSqsTest() {
     @Order(7)
     fun `delete messages`() {
         val messages = client.receiveMessages(queueUrl, 3).messages()
+            .onEach { log.debug { "messages=$it" } }
 
         val responses = messages.map { message ->
             client.deleteMessage(queueUrl, message.receiptHandle())

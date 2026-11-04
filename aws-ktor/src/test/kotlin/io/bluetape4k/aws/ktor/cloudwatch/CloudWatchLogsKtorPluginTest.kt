@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.ktor.cloudwatch
 
+import aws.sdk.kotlin.services.cloudwatchlogs.CloudWatchLogsClient
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
@@ -7,17 +8,16 @@ import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.aws.ktor.AwsKtorCore
 import io.bluetape4k.junit5.coroutines.runSuspendIO
-import aws.smithy.kotlin.runtime.net.url.Url as SmithyUrl
-import io.ktor.http.Url as KtorUrl
 import io.ktor.server.application.install
 import io.ktor.server.testing.testApplication
 import io.mockk.clearMocks
 import io.mockk.mockk
 import io.mockk.verify
-import aws.sdk.kotlin.services.cloudwatchlogs.CloudWatchLogsClient
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import aws.smithy.kotlin.runtime.net.url.Url as SmithyUrl
+import io.ktor.http.Url as KtorUrl
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CloudWatchLogsKtorPluginTest {

@@ -2,6 +2,7 @@ package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.javatimes.millis
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.error
 import io.bluetape4k.logging.info
 import io.bluetape4k.logging.warn
 import kotlinx.coroutines.CancellationException
@@ -28,9 +29,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.springframework.context.SmartLifecycle
 import software.amazon.awssdk.services.sqs.model.QueueDoesNotExistException
-import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * 하나의 `@SqsListener` 엔드포인트를 실행하는 SQS 메시지 리스너 컨테이너.
@@ -117,7 +118,7 @@ class SqsMessageListenerContainer internal constructor(
         val id: Long,
         val scope: CoroutineScope,
         maxInFlight: Int,
-        val pollerJobs: CopyOnWriteArrayList<Job> = CopyOnWriteArrayList(),
+        val pollerJobs: ConcurrentLinkedQueue<Job> = ConcurrentLinkedQueue(),
         val handlerJobs: MutableSet<Job> = ConcurrentHashMap.newKeySet(),
         val inFlight: Semaphore = Semaphore(maxInFlight),
         val groupDispatchOrder: SqsGroupDispatchOrder = SqsGroupDispatchOrder(),
@@ -422,7 +423,7 @@ class SqsMessageListenerContainer internal constructor(
             throw e
         } catch (e: Throwable) {
             if (e === receiveFailure) {
-                log.warn("SQS receive failed: listenerId=${endpoint.id}, queueUrl=$queueUrl", e)
+                log.warn(e) { "SQS receive failed: listenerId=${endpoint.id}, queueUrl=$queueUrl" }
             } else {
                 logObservationFailure(target = "poll", stage = "receive", reason = "telemetry_setup")
             }
@@ -460,11 +461,11 @@ class SqsMessageListenerContainer internal constructor(
         }
     }
 
-    private suspend fun launchHandler(
+    private suspend inline fun launchHandler(
         current: ListenerGeneration,
         messageGroupId: String? = null,
         permitCount: Int = 1,
-        block: suspend () -> Unit,
+        crossinline block: suspend () -> Unit,
     ) {
         current.ensureActiveOperation()
         val permits = permitCount.coerceIn(1, admissionLimit)
@@ -500,12 +501,12 @@ class SqsMessageListenerContainer internal constructor(
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: FatalHeartbeatError) {
-                    log.error(
+                    log.error(e) {
                         "SQS listener handler terminated with a fatal heartbeat error: " +
-                                "listenerId=${endpoint.id}, errorType=${e.original::class.java.name}",
-                    )
+                                "listenerId=${endpoint.id}, errorType=${e.original::class.java.name}"
+                    }
                 } catch (e: Error) {
-                    log.error("SQS listener handler terminated with an error: listenerId=${endpoint.id}", e)
+                    log.error(e) { "SQS listener handler terminated with an error: listenerId=${endpoint.id}" }
                 } finally {
                     groupDispatchTicket?.let(current.groupDispatchOrder::complete)
                     repeat(permits) { current.inFlight.release() }
@@ -547,13 +548,13 @@ class SqsMessageListenerContainer internal constructor(
         }
     }
 
-    private suspend fun observeProcessWithSetupRetry(
+    private suspend inline fun observeProcessWithSetupRetry(
         queueUrl: String,
         messages: List<SqsReceivedMessage>,
         batch: Boolean,
         generation: ListenerGeneration,
         onSetupFailure: suspend (attempt: Int, error: Throwable) -> Unit,
-        block: suspend SqsObservationExecution.(attempt: Int) -> Unit,
+        crossinline block: suspend SqsObservationExecution.(attempt: Int) -> Unit,
     ) {
         var attempt = 1
         while (attempt <= endpoint.retry.maxAttempts) {
@@ -604,14 +605,14 @@ class SqsMessageListenerContainer internal constructor(
         applyErrorVisibility(queueUrl, message, acknowledgement)
     }
 
-    private suspend fun handleObservedSingle(
+    private suspend inline fun handleObservedSingle(
         queueUrl: String,
         message: SqsReceivedMessage,
         generation: ListenerGeneration,
         initialAttempt: Int,
-        onRetry: (Int) -> Unit,
-        onFailure: (String) -> Unit,
-        onCancellation: (String) -> Unit,
+        crossinline onRetry: (Int) -> Unit,
+        crossinline onFailure: (String) -> Unit,
+        crossinline onCancellation: (String) -> Unit,
     ) {
         var heartbeatAcknowledgement: HeartbeatAwareSqsAcknowledgement? = null
         withVisibilityHeartbeat(
@@ -633,7 +634,7 @@ class SqsMessageListenerContainer internal constructor(
     }
 
     @Suppress("CyclomaticComplexMethod", "ReturnCount", "LongMethod")
-    private suspend fun handleSingleAttempts(
+    private suspend inline fun handleSingleAttempts(
         queueUrl: String,
         message: SqsReceivedMessage,
         generation: ListenerGeneration,
@@ -704,9 +705,9 @@ class SqsMessageListenerContainer internal constructor(
         }
     }
 
-    private suspend fun runCancellationCleanup(
+    private suspend inline fun runCancellationCleanup(
         cancellation: CancellationException,
-        cleanup: suspend () -> Unit,
+        crossinline cleanup: suspend () -> Unit,
     ) {
         try {
             withContext(NonCancellable) {
@@ -813,11 +814,11 @@ class SqsMessageListenerContainer internal constructor(
         }
         if (result == null) return
         if (result.failed.isNotEmpty()) {
-            log.warn(
+            log.warn {
                 "SQS batch visibility heartbeat partially failed: " +
                         "listenerId=${endpoint.id}, queueUrl=$queueUrl, " +
-                        "batchSize=${pending.size}, failed=${result.failed.size}",
-            )
+                        "batchSize=${pending.size}, failed=${result.failed.size}"
+            }
         }
     }
 
@@ -922,7 +923,7 @@ class SqsMessageListenerContainer internal constructor(
                     handleBatchFailure(queueUrl, acknowledgement)
                     true
                 }
-                else -> {
+                else                                  -> {
                     interceptors.forEach {
                         it.onBatchRetry(context, correlation, pending.size, attempt + 1, null)
                     }
@@ -962,12 +963,12 @@ class SqsMessageListenerContainer internal constructor(
         }
     }
 
-    private suspend fun <T> withVisibilityHeartbeat(
+    private suspend inline fun <T> withVisibilityHeartbeat(
         generation: ListenerGeneration,
         target: String,
-        shouldContinue: () -> Boolean = { true },
-        operation: suspend (timeoutSeconds: Int) -> Unit,
-        block: suspend () -> T,
+        crossinline shouldContinue: () -> Boolean = { true },
+        crossinline operation: suspend (timeoutSeconds: Int) -> Unit,
+        crossinline block: suspend () -> T,
     ): T {
         val intervalSeconds = endpoint.messageVisibilityHeartbeatIntervalSeconds
         val heartbeatSeconds = endpoint.messageVisibilityHeartbeatSeconds
@@ -979,7 +980,7 @@ class SqsMessageListenerContainer internal constructor(
             val heartbeatJob = launch(CoroutineName("sqs-visibility-heartbeat")) {
                 while (isActive) {
                     try {
-                        delay(timeMillis = Duration.ofSeconds(intervalSeconds.toLong()).toMillis())
+                        delay(intervalSeconds.seconds)
                         if (!isActive) {
                             return@launch
                         }
@@ -993,10 +994,9 @@ class SqsMessageListenerContainer internal constructor(
                     } catch (e: Error) {
                         throw FatalHeartbeatError(e)
                     } catch (e: Throwable) {
-                        log.warn(
-                            "SQS visibility heartbeat failed: listenerId=${endpoint.id}, target=$target",
-                            e,
-                        )
+                        log.warn(e) {
+                            "SQS visibility heartbeat failed: listenerId=${endpoint.id}, target=$target"
+                        }
                     }
                 }
             }
@@ -1011,18 +1011,18 @@ class SqsMessageListenerContainer internal constructor(
     }
 
     private fun logHeartbeatObservationFailure(target: String) {
-        log.warn(
+        log.warn {
             "BT4K-SQS-OBS-202 SQS visibility heartbeat observation cleanup failed: " +
                     "listenerId=${endpoint.id}, target=$target, stage=acknowledgement, " +
-                    "action=change_visibility, reason=telemetry_cleanup",
-        )
+                    "action=change_visibility, reason=telemetry_cleanup"
+        }
     }
 
     private fun logObservationFailure(target: String, stage: String, reason: String) {
-        log.warn(
+        log.warn {
             "BT4K-SQS-OBS-202 SQS observation failed: " +
-                    "listenerId=${endpoint.id}, target=$target, stage=$stage, reason=$reason",
-        )
+                    "listenerId=${endpoint.id}, target=$target, stage=$stage, reason=$reason"
+        }
     }
 
     private suspend fun invokeBatchHandler(
@@ -1081,11 +1081,9 @@ class SqsMessageListenerContainer internal constructor(
                         reason = "telemetry_setup",
                     )
                 } else {
-                    log.warn(
-                        "SQS batch changeVisibility failed: listenerId=${endpoint.id}, queueUrl=$queueUrl, " +
-                                "batchSize=${pending.size}",
-                        e,
-                    )
+                    log.warn(e) {
+                        "SQS batch changeVisibility failed: listenerId=${endpoint.id}, queueUrl=$queueUrl, batchSize=${pending.size}"
+                    }
                 }
             }
         }
@@ -1100,11 +1098,9 @@ class SqsMessageListenerContainer internal constructor(
         if (acknowledgement is DefaultSqsAcknowledgement && acknowledgement.isObservationSetupFailure(error)) {
             logObservationFailure(target = "single", stage = "acknowledgement", reason = "telemetry_setup")
         } else {
-            log.warn(
-                "SQS message handling failed: " +
-                        "listenerId=${endpoint.id}, queueUrl=$queueUrl, messageId=${message.messageId}",
-                error,
-            )
+            log.warn(error) {
+                "SQS message handling failed: listenerId=${endpoint.id}, queueUrl=$queueUrl, messageId=${message.messageId}"
+            }
         }
         applyErrorVisibility(queueUrl, message, acknowledgement)
     }
@@ -1127,11 +1123,10 @@ class SqsMessageListenerContainer internal constructor(
                 if (acknowledgement is DefaultSqsAcknowledgement && acknowledgement.isObservationSetupFailure(ve)) {
                     logObservationFailure(target = "single", stage = "acknowledgement", reason = "telemetry_setup")
                 } else {
-                    log.warn(
+                    log.warn(ve) {
                         "SQS changeVisibility failed: " +
-                                "listenerId=${endpoint.id}, queueUrl=$queueUrl, messageId=${message.messageId}",
-                        ve,
-                    )
+                                "listenerId=${endpoint.id}, queueUrl=$queueUrl, messageId=${message.messageId}"
+                    }
                 }
             }
         }
@@ -1145,7 +1140,9 @@ class SqsMessageListenerContainer internal constructor(
 
         val queueUrl = when {
             endpoint.queue.startsWith("http://") || endpoint.queue.startsWith("https://") -> endpoint.queue
-            else -> operations.getQueueUrl(endpoint.queue)
+            else -> operations.getQueueUrl(
+                endpoint.queue
+            )
         }
         if (endpoint.queueAttributeNames.isNotEmpty()) {
             queueAttributesResolver.resolve(queueUrl, endpoint.queueAttributeNames)
@@ -1216,7 +1213,7 @@ class SqsMessageListenerContainer internal constructor(
 }
 
 @Suppress("TooGenericExceptionCaught")
-internal suspend fun runSqsNonCancellableFinalization(finalize: suspend () -> Unit) {
+internal suspend inline fun runSqsNonCancellableFinalization(crossinline finalize: suspend () -> Unit) {
     val parentJob = currentCoroutineContext()[Job]
     try {
         withContext(NonCancellable) {

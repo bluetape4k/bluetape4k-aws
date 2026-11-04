@@ -2,15 +2,11 @@
 
 ## 배경
 
-Issue #206에서는 0.3.0 AWSpring parity 작업 중 Spring Boot 예제 범위를 마무리한다.
-마일스톤 범위는 S3/SQS와 공통 기본값이며 CloudWatch, IMDS, DAX는 0.4.0 버전으로
-미뤘다.
+Issue #206에서는 0.3.0 AWSpring parity 작업 중 Spring Boot 예제 범위를 마무리한다. 마일스톤 범위는 S3/SQS와 공통 기본값이며 CloudWatch, IMDS, DAX는 0.4.0 버전으로 미뤘다.
 
 ## 결정
 
-다른 모듈을 만들지 않고 기존 Spring Boot S3/SQS 예제를 확장한다. 이제 예제에서 선택적
-S3 client-side 암호화, typed SQS payload 변환, 수동 acknowledgement, 재시도, listener
-interceptor event를 다룬다.
+다른 모듈을 만들지 않고 기존 Spring Boot S3/SQS 예제를 확장한다. 이제 예제에서 선택적 S3 client-side 암호화, typed SQS payload 변환, 수동 acknowledgement, 재시도, listener interceptor event를 다룬다.
 
 ## 결과
 
@@ -27,6 +23,4 @@ interceptor event를 다룬다.
 
 ## 향후 보호 장치
 
-예제 issue는 adoption 테스트로 취급한다. 예제에 공개 auto-configuration 계약의
-workaround가 필요하다면 예제 전용 연결에 문제를 숨기지 말고 계약을 수정한 뒤 예제
-테스트로 검증한다.
+예제 issue는 adoption 테스트로 취급한다. 예제에 공개 auto-configuration 계약의 workaround가 필요하다면 예제 전용 연결에 문제를 숨기지 말고 계약을 수정한 뒤 예제 테스트로 검증한다.

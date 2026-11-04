@@ -31,10 +31,7 @@ application {
 ```
 
 `ServiceCoverageExampleOptions` groups the resource names used by the routes:
-CloudWatch namespace, CloudWatch Logs stream, Kinesis stream name, and SNS topic ARN.
-The operations use AWS Kotlin service clients and models exposed by `aws-ktor`;
-production applications own the injected clients, endpoint overrides, credentials,
-Ktor engine, and serialization integration.
+CloudWatch namespace, CloudWatch Logs stream, Kinesis stream name, and SNS topic ARN. The operations use AWS Kotlin service clients and models exposed by `aws-ktor`; production applications own the injected clients, endpoint overrides, credentials, Ktor engine, and serialization integration.
 
 ## Emulator And Fallback Policy
 

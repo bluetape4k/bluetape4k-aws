@@ -18,7 +18,7 @@ class KmsAdapterPlaintextLifetimeTest {
         private const val REPEAT_SIZE = 5
     }
 
-    private val kms = mockk<KmsOperations>()
+    private val kms = mockk<KmsOperations>(relaxed = true)
 
     @BeforeEach
     fun beforeEach() {

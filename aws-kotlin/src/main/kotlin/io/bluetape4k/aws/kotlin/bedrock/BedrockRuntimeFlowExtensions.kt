@@ -35,11 +35,11 @@ fun BedrockRuntimeClient.converseStreamFlow(
  * 네이티브 이벤트 순서, SDK 실패, 구조화된 취소를 보존합니다. 이 클라이언트는 호출자가 소유합니다.
  * [withBedrockRuntimeClient]를 사용할 때는 클라이언트가 닫히기 전에 범위 블록 안에서 최종 수집을 완료해야 합니다.
  */
-fun BedrockRuntimeClient.converseStreamFlow(
+inline fun BedrockRuntimeClient.converseStreamFlow(
     modelId: String,
     messages: Collection<Message>,
     inferenceConfig: InferenceConfiguration? = null,
-    builder: ConverseStreamRequest.Builder.() -> Unit = {},
+    crossinline builder: ConverseStreamRequest.Builder.() -> Unit = {},
 ): Flow<ConverseStreamOutput> =
     converseStreamFlow(
         converseStreamRequestOf(

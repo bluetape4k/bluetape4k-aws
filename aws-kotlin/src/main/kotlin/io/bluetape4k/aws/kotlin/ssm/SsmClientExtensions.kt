@@ -19,7 +19,7 @@ import io.bluetape4k.aws.kotlin.ssm.model.putStringParameterRequestOf
 /**
  * 기본적으로 복호화 없이 파라미터를 가져옵니다.
  */
-suspend fun SsmClient.getParameter(
+suspend inline fun SsmClient.getParameter(
     name: String,
     withDecryption: Boolean = false,
 ): GetParameterResponse =
@@ -36,7 +36,7 @@ suspend fun SsmClient.getSecureParameter(name: String): AwsSecretValue =
 /**
  * 최대 10개의 파라미터를 가져오고 SDK 원본의 잘못된 파라미터 상세 정보를 보존합니다.
  */
-suspend fun SsmClient.getParameters(
+suspend inline fun SsmClient.getParameters(
     names: Collection<String>,
     withDecryption: Boolean = false,
 ): GetParametersResponse =
@@ -45,7 +45,7 @@ suspend fun SsmClient.getParameters(
 /**
  * 경로에 해당하는 파라미터 페이지 하나를 가져옵니다.
  */
-suspend fun SsmClient.getParametersByPath(
+suspend inline fun SsmClient.getParametersByPath(
     path: String,
     recursive: Boolean? = null,
     withDecryption: Boolean = false,
@@ -57,7 +57,7 @@ suspend fun SsmClient.getParametersByPath(
 /**
  * 파라미터 페이지 하나를 설명합니다.
  */
-suspend fun SsmClient.describeParameters(
+suspend inline fun SsmClient.describeParameters(
     maxResults: Int? = null,
     nextToken: String? = null,
 ): DescribeParametersResponse =
@@ -70,7 +70,7 @@ suspend fun SsmClient.describeParameters(
  * [overwrite]는 기존 값을 대체할 수 있는지 제어합니다. IAM/KMS 정책과 감사 경계는 호출자가 책임집니다.
  * 드러낸 값을 로그에 남기거나 출력하지 마세요.
  */
-suspend fun SsmClient.putSecureParameter(
+suspend inline fun SsmClient.putSecureParameter(
     name: String,
     value: AwsSecretValue,
     overwrite: Boolean = false,
@@ -81,7 +81,7 @@ suspend fun SsmClient.putSecureParameter(
 /**
  * 비밀이 아닌 String 파라미터를 저장합니다.
  */
-suspend fun SsmClient.putStringParameter(
+suspend inline fun SsmClient.putStringParameter(
     name: String,
     value: String,
     overwrite: Boolean = false,
@@ -92,7 +92,7 @@ suspend fun SsmClient.putStringParameter(
 /**
  * 비밀이 아닌 StringList 파라미터를 저장합니다.
  */
-suspend fun SsmClient.putStringListParameter(
+suspend inline fun SsmClient.putStringListParameter(
     name: String,
     values: Collection<String>,
     overwrite: Boolean = false,

@@ -127,10 +127,10 @@ internal object S3ConfigPropertySourceLoader: KLogging() {
             S3ConfigFormat.AUTO -> when (key.substringAfterLast('.', "").lowercase(Locale.ROOT)) {
                 "properties" -> S3ConfigFormat.PROPERTIES
                 "yml", "yaml" -> S3ConfigFormat.YAML
-                "json" -> S3ConfigFormat.JSON
-                else -> S3ConfigFormat.PROPERTIES
+                "json"       -> S3ConfigFormat.JSON
+                else         -> S3ConfigFormat.PROPERTIES
             }
-            else -> format
+            else                -> format
         }
 
     private fun handleFailure(

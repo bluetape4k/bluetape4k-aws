@@ -11,7 +11,9 @@ import io.bluetape4k.aws.spring.kms.KmsOperations
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.coroutines.flow.extensions.log
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.debug
 import io.bluetape4k.support.toUtf8Bytes
+import io.bluetape4k.support.toUtf8String
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import kotlinx.coroutines.flow.toList
 import org.junit.jupiter.api.Test
@@ -23,7 +25,6 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.services.kms.model.DataKeySpec
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.S3Client
-import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -68,7 +69,7 @@ class S3CoroutinesTemplateAwsEmulatorTest: AbstractS3Test() {
 
                 operations.existsBucket(bucketName).shouldBeTrue()
                 operations.downloadText(bucketName, key) shouldBeEqualTo "hello s3"
-                operations.downloadBytes(bucketName, key).toString(StandardCharsets.UTF_8) shouldBeEqualTo "hello s3"
+                operations.downloadBytes(bucketName, key).toUtf8String() shouldBeEqualTo "hello s3"
 
                 val page = operations.listPage(bucketName, prefix = "docs/", maxKeys = 10)
                 page.objects.map { it.key() } shouldContain key
@@ -85,10 +86,12 @@ class S3CoroutinesTemplateAwsEmulatorTest: AbstractS3Test() {
                 resource.inputStream.bufferedReader().use { it.readText() } shouldBeEqualTo "hello s3"
 
                 val getUrl = operations.presignGet(bucketName, key).toString()
+                log.debug { "getUrl=$getUrl" }
                 getUrl shouldContain bucketName
                 getUrl shouldContain key
 
                 val putUrl = operations.presignPut(bucketName, "docs/write.txt", contentType = "text/plain").toString()
+                log.debug { "putUrl=$putUrl" }
                 putUrl shouldContain bucketName
                 putUrl shouldContain "docs/write.txt"
 
@@ -113,7 +116,7 @@ class S3CoroutinesTemplateAwsEmulatorTest: AbstractS3Test() {
                 val contents = "hello transfer manager"
                 val source = tempDir.resolve("report.txt")
                 val destination = tempDir.resolve("downloaded-report.txt")
-                Files.writeString(source, contents, StandardCharsets.UTF_8)
+                Files.writeString(source, contents, Charsets.UTF_8)
 
                 val upload = transferOperations.uploadFile(transferBucketName, key, source)
                 upload.response().sdkHttpResponse().isSuccessful.shouldBeTrue()
@@ -131,7 +134,7 @@ class S3CoroutinesTemplateAwsEmulatorTest: AbstractS3Test() {
 
                 val download = transferOperations.downloadFile(transferBucketName, key, destination)
                 download.response().sdkHttpResponse().isSuccessful.shouldBeTrue()
-                Files.readString(destination, StandardCharsets.UTF_8) shouldBeEqualTo contents
+                Files.readString(destination, Charsets.UTF_8) shouldBeEqualTo contents
 
                 val bytes = transferOperations.downloadBytes(transferBucketName, key)
                 bytes.result().asUtf8String() shouldBeEqualTo contents
@@ -174,6 +177,8 @@ class S3CoroutinesTemplateAwsEmulatorTest: AbstractS3Test() {
                     value = document,
                     converter = typedConverter,
                 )
+
+                @Suppress("UNCHECKED_CAST")
                 val restored = typedOperations.downloadObject(
                     bucket = transferBucketName,
                     key = "typed/document.json",

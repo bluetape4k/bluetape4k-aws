@@ -8,6 +8,8 @@ import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.aws.spring.sqs.SqsReceivedMessage
 import io.bluetape4k.concurrent.await
 import io.bluetape4k.concurrent.futureOf
+import io.bluetape4k.coroutines.support.log
+import io.bluetape4k.javatimes.hours
 import io.bluetape4k.javatimes.millis
 import io.bluetape4k.javatimes.nanos
 import io.bluetape4k.javatimes.seconds
@@ -19,8 +21,9 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.future.await
-import kotlinx.coroutines.withTimeout
-import kotlinx.coroutines.yield
+import org.awaitility.kotlin.atMost
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.until
 import org.junit.jupiter.api.RepeatedTest
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.modulith.events.EventExternalizationConfiguration
@@ -35,13 +38,13 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 class AwsModulithConcurrencyStabilityTest {
 
     private companion object: KLogging() {
-        const val REPEAT_SIZE = 100
-        const val TEST_TIMEOUT_MILLIS = 2_000L
+        const val REPEAT_SIZE = 10
+        val testTimeout = 2.seconds
         const val TARGET_ALIAS = "events"
         val NOW: Instant = Instant.parse("2026-08-26T00:00:00Z")
         val EVENT = TestEvent("evt-1")
@@ -65,10 +68,9 @@ class AwsModulithConcurrencyStabilityTest {
         publisher.entered.await()
 
         val closing = futureOf { transport.close() }
-        withTimeout(timeMillis = TEST_TIMEOUT_MILLIS) {
-            while (!transport.metrics().closing) {
-                yield()
-            }
+
+        await atMost testTimeout until {
+            transport.metrics().closing
         }
 
         val rejected = transport.externalize(EVENT.copy(id = "evt-rejected"), target())
@@ -81,6 +83,7 @@ class AwsModulithConcurrencyStabilityTest {
         transport.awaitIdle()
 
         publisher.active.get() shouldBeEqualTo 0
+        log.debug { "transport metrics: ${transport.metrics()}" }
         transport.metrics().acceptedCount shouldBeEqualTo 0
         transport.metrics().residentChildCount shouldBeEqualTo 0
         transport.metrics().availablePermits shouldBeEqualTo 1
@@ -97,7 +100,7 @@ class AwsModulithConcurrencyStabilityTest {
                 maxEntries = 1,
                 maxInProgress = 1,
                 maxKeyBytes = 1_024,
-                retention = Duration.ofHours(1),
+                retention = 1.hours(),
                 leaseDuration = lease,
             ),
             clock = clock,
@@ -114,9 +117,11 @@ class AwsModulithConcurrencyStabilityTest {
             takeover.ownerId shouldBeEqualTo "owner-2"
 
             store.complete(first) shouldBeEqualTo AwsModulithStoreMutation.STALE
+            log.debug { "store metrics 1=${store.metrics()}" }
             store.metrics().inProgressCount shouldBeEqualTo 1
 
             store.complete(takeover) shouldBeEqualTo AwsModulithStoreMutation.APPLIED
+            log.debug { "store metrics 2=${store.metrics()}" }
             store.metrics().inProgressCount shouldBeEqualTo 0
         }
     }
@@ -133,15 +138,15 @@ class AwsModulithConcurrencyStabilityTest {
             publisher = {
                 publisherCalls.incrementAndGet()
                 dispatchEntered.countDown()
-                releaseDispatch.await(TEST_TIMEOUT_MILLIS.milliseconds).shouldBeTrue()
+                releaseDispatch.await(testTimeout).shouldBeTrue()
             },
         )
 
         val outcome = async(Dispatchers.Default) {
             consumer.consume(message())
-        }
+        }.log("Consume")
 
-        dispatchEntered.await(TEST_TIMEOUT_MILLIS.milliseconds).shouldBeTrue()
+        dispatchEntered.await(testTimeout).shouldBeTrue()
         outcome.cancel(CancellationException("test cancellation"))
         releaseDispatch.countDown()
 

@@ -40,9 +40,10 @@ inline fun s3TablesAsyncClientOf(
     region: Region? = null,
     credentialsProvider: AwsCredentialsProvider? = null,
     httpClient: SdkAsyncHttpClient = SdkAsyncHttpClientProvider.defaultHttpClient,
-    noinline builder: S3TablesAsyncClientBuilder.() -> Unit = {},
-): S3TablesAsyncClient = buildS3TablesAsyncClient(endpoint, region, credentialsProvider, httpClient, builder)
-    .apply(ShutdownQueue::register)
+    crossinline builder: S3TablesAsyncClientBuilder.() -> Unit = {},
+): S3TablesAsyncClient =
+    buildS3TablesAsyncClient(endpoint, region, credentialsProvider, httpClient) { builder() }
+        .apply(ShutdownQueue::register)
 
 /**
  * 짧은 범위에서 사용할 미등록 [S3TablesAsyncClient]를 생성하고 block 종료 시 service client를 닫습니다.
@@ -73,7 +74,7 @@ suspend inline fun <R> withS3TablesAsyncClient(
     }
 }
 
-internal suspend fun <R> withS3TablesAsyncClient(
+internal suspend inline fun <R> withS3TablesAsyncClient(
     clientFactory: () -> S3TablesAsyncClient,
     block: suspend (S3TablesAsyncClient) -> R,
 ): R {
@@ -86,16 +87,19 @@ internal suspend fun <R> withS3TablesAsyncClient(
 }
 
 @PublishedApi
-internal fun buildS3TablesAsyncClient(
+internal inline fun buildS3TablesAsyncClient(
     endpoint: URI?,
     region: Region?,
     credentialsProvider: AwsCredentialsProvider?,
     httpClient: SdkAsyncHttpClient,
     builder: S3TablesAsyncClientBuilder.() -> Unit,
-): S3TablesAsyncClient = S3TablesAsyncClient.builder().apply {
-    endpoint?.let(::endpointOverride)
-    region?.let(::region)
-    credentialsProvider?.let(::credentialsProvider)
-    httpClient(httpClient)
-    builder()
-}.build()
+): S3TablesAsyncClient =
+    S3TablesAsyncClient.builder()
+        .apply {
+            endpoint?.let(::endpointOverride)
+            region?.let(::region)
+            credentialsProvider?.let(::credentialsProvider)
+            httpClient(httpClient)
+            builder()
+        }
+        .build()

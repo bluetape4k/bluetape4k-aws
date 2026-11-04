@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.spring.sns
 
 import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.requirePositiveNumber
 import software.amazon.awssdk.services.sns.model.MessageAttributeValue
 import java.io.Serializable
 
@@ -160,7 +161,7 @@ data class SnsBatchExecutionOptions(
 ): Serializable {
 
     init {
-        require(maxInFlightBatches > 0) { "maxInFlightBatches must be positive." }
+        maxInFlightBatches.requirePositiveNumber("maxInFlightBatches")
     }
 
     companion object {

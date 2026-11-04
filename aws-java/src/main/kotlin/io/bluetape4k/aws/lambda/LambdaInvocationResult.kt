@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.lambda
 
 import io.bluetape4k.support.hashOf
+import io.bluetape4k.support.toUtf8String
 import software.amazon.awssdk.services.lambda.model.InvokeResponse
 import java.util.*
 
@@ -52,7 +53,7 @@ data class LambdaInvocationResult<T>(
 fun <T> InvokeResponse.toLambdaInvocationResult(codec: LambdaPayloadCodec<T>): LambdaInvocationResult<T> {
     val copiedPayload = payload()?.asByteArrayUnsafe()?.copyOf()
     val decodedValue = copiedPayload?.let(codec::decode)
-    val decodedLogTail = logResult()?.let { Base64.getDecoder().decode(it).toString(Charsets.UTF_8) }
+    val decodedLogTail = logResult()?.let { Base64.getDecoder().decode(it).toUtf8String() }
 
     return LambdaInvocationResult(
         response = this,

@@ -1,8 +1,8 @@
 package io.bluetape4k.aws.spring.imds
 
 import io.bluetape4k.javatimes.hours
+import io.bluetape4k.javatimes.requirePositiveDuration
 import io.bluetape4k.javatimes.seconds
-import io.bluetape4k.support.requireGt
 import io.bluetape4k.support.requireZeroOrPositiveNumber
 import org.springframework.boot.context.properties.ConfigurationProperties
 import software.amazon.awssdk.imds.EndpointMode
@@ -31,8 +31,8 @@ data class ImdsProperties(
 ): Serializable {
 
     init {
-        tokenTtl.requireGt(Duration.ZERO, "$IMDS_PROPERTIES_PREFIX.token-ttl")
-        requestTimeout.requireGt(Duration.ZERO, "$IMDS_PROPERTIES_PREFIX.request-timeout")
+        tokenTtl.requirePositiveDuration("$IMDS_PROPERTIES_PREFIX.token-ttl")
+        requestTimeout.requirePositiveDuration("$IMDS_PROPERTIES_PREFIX.request-timeout")
         retries.requireZeroOrPositiveNumber("$IMDS_PROPERTIES_PREFIX.retries")
     }
 

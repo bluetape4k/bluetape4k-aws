@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import java.time.Instant
 
 class CustomerRepositoryTest: AbstractFoodApplicationTest() {
+
     companion object: KLoggingChannel() {
         private fun createCustomer(): CustomerDocument =
             CustomerDocument(
@@ -29,14 +30,13 @@ class CustomerRepositoryTest: AbstractFoodApplicationTest() {
     private val repository: CustomerRepository = uninitialized()
 
     @Test
-    fun `save one customer and load`() =
-        runSuspendIO {
-            val customer = createCustomer()
-            log.debug { "Save customer. $customer" }
-            repository.save(customer)
+    fun `save one customer and load`() = runSuspendIO {
+        val customer = createCustomer()
+        log.debug { "Save customer. $customer" }
+        repository.save(customer)
 
-            val loaded = repository.findByPartitionKey(customer.partitionKey)
-            log.debug { "Loaded customer. $loaded" }
-            loaded shouldBeEqualTo listOf(customer)
-        }
+        val loaded = repository.findByPartitionKey(customer.partitionKey)
+        log.debug { "Loaded customer. $loaded" }
+        loaded shouldBeEqualTo listOf(customer)
+    }
 }

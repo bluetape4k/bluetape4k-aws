@@ -441,10 +441,10 @@ fun interface AwsKtorHttpClientCustomizer {
     fun customize(config: HttpClientConfig<*>)
 }
 
-    /**
-     * 플러그인이 생성할 AWS Kotlin SDK CloudWatch 클라이언트 빌더를 사용자 정의합니다.
-     * 동적 endpoint provider는 지원하지 않으며, 고정 endpoint는 플러그인의 `endpointOverride`를 사용합니다.
-     */
+/**
+ * 플러그인이 생성할 AWS Kotlin SDK CloudWatch 클라이언트 빌더를 사용자 정의합니다.
+ * 동적 endpoint provider는 지원하지 않으며, 고정 endpoint는 플러그인의 `endpointOverride`를 사용합니다.
+ */
 fun interface AwsKtorCloudWatchClientCustomizer {
     fun customize(builder: CloudWatchClient.Config.Builder)
 }

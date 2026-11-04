@@ -164,6 +164,7 @@ class DynamoDbQueryDslTest: AbstractDynamodbTest() {
         }
 
         val diagnostics = appender.list.joinToString("\n") { it.formattedMessage }
+        log.debug { "diagnostics = $diagnostics" }
         diagnostics shouldNotContain "dynamodb-secret-canary"
         diagnostics shouldContain "expressionAttributeValueCount=1"
     }

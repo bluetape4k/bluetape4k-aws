@@ -362,11 +362,11 @@ class S3ClientSideEncryptionTransferTemplate(
 }
 
 @Suppress("TooGenericExceptionCaught")
-private suspend fun preserveCleanupFailure(
+private suspend inline fun preserveCleanupFailure(
     primary: Throwable?,
     operation: S3TransferCleanupOperation,
     configuredDispatcher: CoroutineDispatcher,
-    cleanup: () -> Unit,
+    crossinline cleanup: () -> Unit,
 ) {
     val failures = mutableListOf<Throwable>()
     for (dispatcher in listOf(configuredDispatcher, Dispatchers.IO)) {

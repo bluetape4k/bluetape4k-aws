@@ -6,13 +6,19 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.dynamodb.AbstractDynamodbTest
+import io.bluetape4k.aws.dynamodb.model.CreateTableRequest
 import io.bluetape4k.aws.dynamodb.model.DeleteTableRequest
 import io.bluetape4k.aws.dynamodb.model.PutItemRequest
+import io.bluetape4k.aws.dynamodb.model.attributeDefinitionOf
 import io.bluetape4k.aws.dynamodb.model.attributeValue
+import io.bluetape4k.aws.dynamodb.model.keySchemaElementOf
+import io.bluetape4k.aws.dynamodb.model.provisionedThroughputOf
+import io.bluetape4k.aws.dynamodb.model.streamSpecificationOf
 import io.bluetape4k.aws.http.SdkAsyncHttpClientProvider
+import io.bluetape4k.coroutines.flow.extensions.log
 import io.bluetape4k.junit5.awaitility.untilSuspending
 import io.bluetape4k.junit5.coroutines.runSuspendIO
-import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
@@ -24,14 +30,10 @@ import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
-import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition
-import software.amazon.awssdk.services.dynamodb.model.CreateTableRequest
+import org.testcontainers.utility.Base58
 import software.amazon.awssdk.services.dynamodb.model.DescribeTableRequest
-import software.amazon.awssdk.services.dynamodb.model.KeySchemaElement
 import software.amazon.awssdk.services.dynamodb.model.KeyType
-import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput
 import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType
-import software.amazon.awssdk.services.dynamodb.model.StreamSpecification
 import software.amazon.awssdk.services.dynamodb.model.StreamViewType
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -40,9 +42,9 @@ import kotlin.time.Duration.Companion.seconds
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class DynamoDbStreamsFlociTest: AbstractDynamodbTest() {
 
-    companion object: KLogging() {
+    companion object: KLoggingChannel() {
         private const val RECORD_COUNT = 3
-        private val TABLE_NAME = "streams-flow-${System.nanoTime()}"
+        private val TABLE_NAME = "streams-flow-${Base58.randomString(8).lowercase()}"
     }
 
     private lateinit var streamArn: String
@@ -51,32 +53,19 @@ class DynamoDbStreamsFlociTest: AbstractDynamodbTest() {
     @Order(1)
     fun `Floci creates a DynamoDB table with Streams enabled`() = runSuspendIO {
         client.createTable(
-            CreateTableRequest.builder()
-                .tableName(TABLE_NAME)
-                .keySchema(
-                    KeySchemaElement.builder()
-                        .attributeName("id")
-                        .keyType(KeyType.HASH).build()
+            CreateTableRequest {
+                tableName(TABLE_NAME)
+                keySchema(keySchemaElementOf("id", KeyType.HASH))
+                attributeDefinitions(
+                    attributeDefinitionOf("id", ScalarAttributeType.S)
                 )
-                .attributeDefinitions(
-                    AttributeDefinition.builder()
-                        .attributeName("id")
-                        .attributeType(ScalarAttributeType.S)
-                        .build(),
+                provisionedThroughput(
+                    provisionedThroughputOf(5L, 5L)
                 )
-                .provisionedThroughput(
-                    ProvisionedThroughput.builder()
-                        .readCapacityUnits(5)
-                        .writeCapacityUnits(5)
-                        .build(),
+                streamSpecification(
+                    streamSpecificationOf(true, StreamViewType.NEW_AND_OLD_IMAGES)
                 )
-                .streamSpecification(
-                    StreamSpecification.builder()
-                        .streamEnabled(true)
-                        .streamViewType(StreamViewType.NEW_AND_OLD_IMAGES)
-                        .build(),
-                )
-                .build(),
+            }
         )
         val describeReq = DescribeTableRequest.builder().tableName(TABLE_NAME).build()
 
@@ -132,11 +121,15 @@ class DynamoDbStreamsFlociTest: AbstractDynamodbTest() {
             )
             val checkpointStore = InMemoryDynamoDbStreamsCheckpointStore()
             val records = withTimeout(45.seconds) {
-                streamsClient.shardRecordFlow(
-                    streamArn = streamArn,
-                    options = options,
-                    checkpointStore = checkpointStore,
-                ).take(RECORD_COUNT).toList()
+                streamsClient
+                    .shardRecordFlow(
+                        streamArn = streamArn,
+                        options = options,
+                        checkpointStore = checkpointStore,
+                    )
+                    .log("Records")
+                    .take(RECORD_COUNT)
+                    .toList()
             }
 
             records.size shouldBeEqualTo RECORD_COUNT

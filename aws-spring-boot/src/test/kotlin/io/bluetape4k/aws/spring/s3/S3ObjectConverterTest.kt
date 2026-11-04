@@ -2,9 +2,12 @@ package io.bluetape4k.aws.spring.s3
 
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.jackson3.Jackson
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
 
 class S3ObjectConverterTest {
+
+    companion object: KLogging()
 
     private val jsonMapper = Jackson.defaultJsonMapper
 

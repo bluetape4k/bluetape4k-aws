@@ -46,7 +46,7 @@ class SqsSnsExampleLocalStackTest {
             when (val emulator = System.getProperty("bluetape4k.aws.emulator", "floci").trim().lowercase()) {
                 "floci" -> FlociServer.Launcher.floci
                 "localstack" -> localStack
-                else -> error("Unsupported AWS emulator: $emulator. Use floci or localstack.")
+                else    -> error("Unsupported AWS emulator: $emulator. Use floci or localstack.")
             }
         }
     }
@@ -179,7 +179,7 @@ class SqsSnsExampleLocalStackTest {
         return queueUrl
     }
 
-    private suspend fun waitUntil(description: String, predicate: suspend () -> Boolean) {
+    private suspend inline fun waitUntil(description: String, crossinline predicate: suspend () -> Boolean) {
         var lastResult = false
         try {
             await

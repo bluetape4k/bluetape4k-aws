@@ -2,8 +2,7 @@
 
 ## 배경
 
-KMS Spring Boot 지원을 포함한 PR #58을 병합한 뒤 검토에서 P1 시작 오류 1건과 P2
-테스트 견고성 문제 1건을 발견했다.
+KMS Spring Boot 지원을 포함한 PR #58을 병합한 뒤 검토에서 P1 시작 오류 1건과 P2 테스트 견고성 문제 1건을 발견했다.
 
 - P1 발견 사항: 1
 - P2 발견 사항: 1
@@ -11,12 +10,10 @@ KMS Spring Boot 지원을 포함한 PR #58을 병합한 뒤 검토에서 P1 시�
 
 ## 결정
 
-`KmsTextEncryptorAutoConfiguration`은 `bluetape4k.aws.kms.text-encryptor.enabled`뿐
-아니라 상위 `bluetape4k.aws.kms.enabled` switch도 따라야 한다.
+`KmsTextEncryptorAutoConfiguration`은 `bluetape4k.aws.kms.text-encryptor.enabled`뿐 아니라 상위 `bluetape4k.aws.kms.enabled` switch도 따라야 한다.
 
 Text-encryptor 단계는 `KmsProperties`도 명시적으로 등록한다. 따라서 사용자가 제공한
-`KmsOperations`는 client auto-configuration 단계에 의존하지 않고도 adapter를 사용할
-수 있다.
+`KmsOperations`는 client auto-configuration 단계에 의존하지 않고도 adapter를 사용할 수 있다.
 
 ## 결과
 
@@ -38,6 +35,4 @@ Text-encryptor 단계는 `KmsProperties`도 명시적으로 등록한다. 따라
 
 ## 향후 보호 장치
 
-Spring Boot auto-configuration 단계에서는 모든 단계 class에 상위 `enabled` 조건을
-적용한다. Context 시작을 테스트할 때는 AssertJ보다 `startupFailure.shouldBeNull()` 같은
-직접적인 bluetape4k assertion과 infix 동등성 검사를 우선한다.
+Spring Boot auto-configuration 단계에서는 모든 단계 class에 상위 `enabled` 조건을 적용한다. Context 시작을 테스트할 때는 AssertJ보다 `startupFailure.shouldBeNull()` 같은 직접적인 bluetape4k assertion과 infix 동등성 검사를 우선한다.

@@ -5,12 +5,12 @@ import io.bluetape4k.assertions.shouldNotBeBlank
 import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.aws.kinesis.model.putRecordsRequestEntry
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.junit5.awaitility.untilSuspending
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
-import org.awaitility.kotlin.until
 import org.awaitility.kotlin.withPollInterval
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
@@ -34,7 +34,7 @@ import kotlin.time.Duration.Companion.seconds
 class KinesisAsyncClientCoroutinesExtensionsTest: AbstractKinesisTest() {
 
     companion object: KLoggingChannel() {
-        private val STREAM_NAME = "test-async-stream-" + Base58.randomString(6).lowercase()
+        private val STREAM_NAME = "test-async-stream-" + Base58.randomString(8).lowercase()
     }
 
     private lateinit var shardId: String
@@ -50,9 +50,9 @@ class KinesisAsyncClientCoroutinesExtensionsTest: AbstractKinesisTest() {
 
     @Test
     @Order(2)
-    fun `스트림 ACTIVE 상태 대기`() {
-        await atMost 10.seconds withPollInterval 100.milliseconds until {
-            val desc = client.describeStream(STREAM_NAME)
+    fun `스트림 ACTIVE 상태 대기`() = runSuspendIO {
+        await atMost 10.seconds withPollInterval 100.milliseconds untilSuspending {
+            val desc = asyncClient.describeStream(STREAM_NAME)
             val status = desc.streamDescription().streamStatus()
 
             log.debug { "stream=$STREAM_NAME status=$status" }

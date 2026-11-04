@@ -1,8 +1,8 @@
 package io.bluetape4k.aws.ktor.s3.accessgrants
 
+import aws.sdk.kotlin.services.s3control.S3ControlClient
 import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.ktor.core.ApplicationResourceRegistry
-import aws.sdk.kotlin.services.s3control.S3ControlClient
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking

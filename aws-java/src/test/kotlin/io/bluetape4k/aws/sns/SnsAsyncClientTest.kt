@@ -103,8 +103,8 @@ class SnsAsyncClientTest: AbstractSnsTest() {
     @Test
     @Order(6)
     fun `send message`() = runSuspendIO {
+        val message = "Hello, World!"
         val response = asyncClient.publish {
-            val message = "Hello, World!"
             it.subject("[TEST]")
             it.message(message)
             it.topicArn(topicArn)

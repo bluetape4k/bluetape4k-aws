@@ -6,27 +6,33 @@ import aws.smithy.kotlin.runtime.http.HttpException
 import aws.smithy.kotlin.runtime.http.HttpMethod
 import aws.smithy.kotlin.runtime.http.SdkHttpClient
 import aws.smithy.kotlin.runtime.http.complete
-import aws.smithy.kotlin.runtime.http.readAll
 import aws.smithy.kotlin.runtime.http.engine.CloseableHttpClientEngine
 import aws.smithy.kotlin.runtime.http.engine.okhttp.OkHttpEngine
+import aws.smithy.kotlin.runtime.http.readAll
 import aws.smithy.kotlin.runtime.http.request.HttpRequest
 import aws.smithy.kotlin.runtime.http.request.headers
 import aws.smithy.kotlin.runtime.http.request.url
 import aws.smithy.kotlin.runtime.http.response.HttpResponse
 import aws.smithy.kotlin.runtime.net.url.Url
+import io.bluetape4k.javatimes.requirePositiveDuration
+import io.bluetape4k.javatimes.seconds
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.support.checkNotEmpty
+import io.bluetape4k.support.requireZeroOrPositiveNumber
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
 import java.io.IOException
-import java.net.URI
 import java.net.Proxy
+import java.net.URI
 import java.time.Duration
 import kotlin.random.Random
-import okhttp3.OkHttpClient
+import kotlin.time.Duration.Companion.milliseconds
 
 /** IMDSv2 token and metadata protocol over the public Smithy HTTP client API. */
 internal class ImdsSmithyAdapter(
@@ -35,7 +41,7 @@ internal class ImdsSmithyAdapter(
     private val tokenTtl: Duration,
     private val retries: Int,
     private val nowNanos: () -> Long = System::nanoTime,
-    private val sleep: suspend (Long) -> Unit = { delay(it) },
+    private val sleep: suspend (Long) -> Unit = { delay(it.milliseconds) },
     private val randomLong: (Long, Long) -> Long = { from, until -> Random.nextLong(from, until) },
 ) {
 
@@ -66,10 +72,10 @@ internal class ImdsSmithyAdapter(
             },
         ).requireSuccess()
         val value = bytes.decodeToString().trim()
-        check(value.isNotEmpty()) { "IMDS token response was empty." }
+        value.checkNotEmpty { "IMDS token response was empty." }
 
         val tokenReceivedAtNanos = nowNanos()
-        val expiresAtNanos = tokenReceivedAtNanos + Duration.ofSeconds(ttlSeconds).toNanos()
+        val expiresAtNanos = tokenReceivedAtNanos + ttlSeconds.seconds().toNanos()
         cachedToken = CachedToken(value, expiresAtNanos)
         value
     }
@@ -138,7 +144,7 @@ internal class ImdsSmithyAdapter(
 
     private data class CachedToken(val value: String, val expiresAtNanos: Long)
 
-    private companion object {
+    private companion object: KLoggingChannel() {
         const val TOKEN_PATH = "/latest/api/token"
         const val TOKEN_TTL_HEADER = "x-aws-ec2-metadata-token-ttl-seconds"
         const val TOKEN_HEADER = "x-aws-ec2-metadata-token"
@@ -147,7 +153,7 @@ internal class ImdsSmithyAdapter(
 }
 
 /** A status failure kept separate from transport errors for the retry matrix. */
-internal class ImdsHttpResponseException(val statusCode: Int) :
+internal class ImdsHttpResponseException(val statusCode: Int):
     IllegalStateException("IMDS returned HTTP $statusCode.")
 
 /** The fixed retry matrix and full-jitter schedule used by IMDS operations. */
@@ -158,11 +164,11 @@ internal object ImdsRetryPolicy {
     fun shouldRetry(cause: Throwable): Boolean = when (cause) {
         is ImdsHttpResponseException -> cause.statusCode in 500..599
         is HttpException -> cause.sdkErrorMetadata.isRetryable
-        else -> false
+        else             -> false
     }
 
     fun backoffCapMillis(retryIndex: Int): Long {
-        require(retryIndex >= 0) { "retryIndex must be non-negative" }
+        retryIndex.requireZeroOrPositiveNumber { "retryIndex must be non-negative" }
         val multiplier = 1L shl retryIndex.coerceAtMost(20)
         return (INITIAL_BACKOFF_MILLIS * multiplier).coerceAtMost(MAX_BACKOFF_MILLIS)
     }
@@ -178,17 +184,13 @@ internal object ImdsRetryPolicy {
 /** Creates the IMDS-specific engine with service timeouts and an explicit no-proxy selector. */
 internal object ImdsHttpClientFactory {
     fun createEngine(metadataServiceTimeout: Duration): CloseableHttpClientEngine {
-        require(!metadataServiceTimeout.isZero && !metadataServiceTimeout.isNegative) {
-            "metadataServiceTimeout must be greater than zero."
-        }
+        metadataServiceTimeout.requirePositiveDuration("metadataServiceTimeout")
         val client = createClient(metadataServiceTimeout)
         return ImdsOwnedHttpClientEngine(OkHttpEngine(client), client)
     }
 
     fun createClient(metadataServiceTimeout: Duration): OkHttpClient {
-        require(!metadataServiceTimeout.isZero && !metadataServiceTimeout.isNegative) {
-            "metadataServiceTimeout must be greater than zero."
-        }
+        metadataServiceTimeout.requirePositiveDuration("metadataServiceTimeout")
         return OkHttpClient.Builder()
             .retryOnConnectionFailure(false)
             .proxy(Proxy.NO_PROXY)
@@ -205,7 +207,7 @@ internal object ImdsHttpClientFactory {
 internal class ImdsOwnedHttpClientEngine(
     private val delegate: CloseableHttpClientEngine,
     val client: OkHttpClient,
-) : CloseableHttpClientEngine by delegate {
+): CloseableHttpClientEngine by delegate {
 
     override fun close() {
         var failure: Throwable? = null

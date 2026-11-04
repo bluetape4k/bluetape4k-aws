@@ -55,13 +55,13 @@ private object DynamoDbClientLog: KLogging()
  * @param writeCapacityUnits 쓰기 용량 단위 (null이면 생략)
  * @throws IllegalArgumentException [tableName]이 blank인 경우
  */
-suspend fun DynamoDbClient.createTable(
+suspend inline fun DynamoDbClient.createTable(
     tableName: String,
     keySchema: List<KeySchemaElement>? = null,
     attributeDefinitions: List<AttributeDefinition>? = null,
     readCapacityUnits: Long? = null,
     writeCapacityUnits: Long? = null,
-    builder: CreateTableRequest.Builder.() -> Unit = {},
+    crossinline builder: CreateTableRequest.Builder.() -> Unit = {},
 ): CreateTableResponse {
     tableName.requireNotBlank("tableName")
 
@@ -162,7 +162,6 @@ suspend fun DynamoDbClient.waitForTableReady(
     timeout: Duration = 60.seconds,
 ) {
     DynamoDbClientLog.log.debug { "DynamoDb 테이블[$name]이 준비될 때까지 [$timeout] 만큼 대기합니다 ... " }
-
     withTimeout(timeout) {
         while (this@waitForTableReady.getTableStatus(name) != TableStatus.Active) {
             delay(10.milliseconds)

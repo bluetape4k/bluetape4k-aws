@@ -1,7 +1,7 @@
 package io.bluetape4k.aws.spring.dynamodb
 
+import io.bluetape4k.javatimes.requireZeroOrPositiveDuration
 import io.bluetape4k.javatimes.seconds
-import io.bluetape4k.support.requireGe
 import io.bluetape4k.support.requireInRange
 import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.requireNotNull
@@ -89,7 +89,7 @@ data class DynamoDbDaxProperties(
     }
 
     private fun requireNonNegative(duration: Duration, propertyName: String) {
-        duration.requireGe(Duration.ZERO, propertyName)
+        duration.requireZeroOrPositiveDuration(propertyName)
     }
 
     companion object {

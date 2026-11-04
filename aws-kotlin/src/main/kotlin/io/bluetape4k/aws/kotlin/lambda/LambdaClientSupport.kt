@@ -22,12 +22,12 @@ inline fun lambdaClientOf(
 }
 
 /** Lambda client를 생성해 block을 실행한 뒤 service client만 닫습니다. */
-suspend fun <R> withLambdaClient(
+suspend inline fun <R> withLambdaClient(
     endpointUrl: Url? = null,
     region: String? = null,
     credentialsProvider: CredentialsProvider? = null,
     httpClient: HttpClientEngine? = null,
-    builder: LambdaClient.Config.Builder.() -> Unit = {},
+    crossinline builder: LambdaClient.Config.Builder.() -> Unit = {},
     block: suspend (LambdaClient) -> R,
 ): R = withLambdaClient(
     clientFactory = { lambdaClientOf(endpointUrl, region, credentialsProvider, httpClient, builder) },
@@ -35,9 +35,10 @@ suspend fun <R> withLambdaClient(
 )
 
 /** client factory를 주입해 lifecycle을 네트워크 I/O 없이 검증하는 내부 seam입니다. */
-internal suspend fun <R> withLambdaClient(
+suspend inline fun <R> withLambdaClient(
     clientFactory: () -> LambdaClient,
     block: suspend (LambdaClient) -> R,
-): R = clientFactory().useSafe { client ->
-    block(client)
-}
+): R =
+    clientFactory().useSafe { client ->
+        block(client)
+    }

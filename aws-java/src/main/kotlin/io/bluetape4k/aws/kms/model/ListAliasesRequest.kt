@@ -15,7 +15,7 @@ import software.amazon.awssdk.services.kms.model.ListAliasesRequest
  * // request.limit() == 10
  * ```
  */
-fun listAliasesRequest(
+inline fun listAliasesRequest(
     builder: ListAliasesRequest.Builder.() -> Unit,
 ): ListAliasesRequest =
     ListAliasesRequest.builder().apply(builder).build()
@@ -35,18 +35,16 @@ fun listAliasesRequest(
  * // request.limit() == 20
  * ```
  */
-fun listAliasesRequestOf(
+inline fun listAliasesRequestOf(
     keyId: String? = null,
     limit: Int? = null,
     marker: String? = null,
     builder: ListAliasesRequest.Builder.() -> Unit = {},
-): ListAliasesRequest {
-
-    return listAliasesRequest {
+): ListAliasesRequest =
+    listAliasesRequest {
         keyId?.let { keyId(it) }
         limit?.let { limit(it) }
         marker?.let { marker(it) }
 
         builder()
     }
-}

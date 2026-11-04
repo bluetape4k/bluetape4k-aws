@@ -1,21 +1,17 @@
 package io.bluetape4k.aws.ktor.client
 
+import aws.smithy.kotlin.runtime.auth.awscredentials.Credentials
+import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
 import aws.smithy.kotlin.runtime.auth.awssigning.AwsSignatureType
 import aws.smithy.kotlin.runtime.auth.awssigning.AwsSigner
 import aws.smithy.kotlin.runtime.auth.awssigning.AwsSigningConfig
 import aws.smithy.kotlin.runtime.auth.awssigning.AwsSigningResult
 import aws.smithy.kotlin.runtime.auth.awssigning.DefaultAwsSigner
 import aws.smithy.kotlin.runtime.auth.awssigning.HashSpecification
-import aws.smithy.kotlin.runtime.auth.awscredentials.Credentials
-import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
 import aws.smithy.kotlin.runtime.collections.Attributes
 import aws.smithy.kotlin.runtime.http.HttpBody
-import aws.smithy.kotlin.runtime.http.HttpMethod as SmithyHttpMethod
-import aws.smithy.kotlin.runtime.http.request.HttpRequest as SmithyHttpRequest
 import aws.smithy.kotlin.runtime.http.request.headers
 import aws.smithy.kotlin.runtime.http.request.url
-import aws.smithy.kotlin.runtime.net.url.Url as SmithyUrl
-import aws.smithy.kotlin.runtime.time.Instant as SmithyInstant
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldContain
@@ -37,6 +33,10 @@ import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
 import kotlin.time.Duration.Companion.seconds
+import aws.smithy.kotlin.runtime.http.HttpMethod as SmithyHttpMethod
+import aws.smithy.kotlin.runtime.http.request.HttpRequest as SmithyHttpRequest
+import aws.smithy.kotlin.runtime.net.url.Url as SmithyUrl
+import aws.smithy.kotlin.runtime.time.Instant as SmithyInstant
 
 class AwsSigV4PluginTest {
 
@@ -143,7 +143,7 @@ class AwsSigV4PluginTest {
 
         client.post(
             "https://s3.ap-northeast-2.amazonaws.com:8443/demo.bucket/a%2Fb/" +
-                "app%20log.txt?dup=1&dup=&flag&empty=&encoded=a%2Fb",
+                    "app%20log.txt?dup=1&dup=&flag&empty=&encoded=a%2Fb",
         ) {
             headers {
                 append("X-Duplicate", "first")
@@ -275,14 +275,14 @@ class AwsSigV4PluginTest {
         val client = signedClient(payloadSigningEnabled = false) {
             authorization = it.headers[HttpHeaders.Authorization]
             payloadHash = it.headers["X-Amz-Content-Sha256"]
-            capturedBody = it.body as? OutgoingContent
+            capturedBody = it.body //as? OutgoingContent
         }
 
         client.post("https://api.example.com/prod/orders") {
             setBody(
                 object: OutgoingContent.WriteChannelContent() {
                     override suspend fun writeTo(channel: ByteWriteChannel) {
-                            bodyWrites += 1
+                        bodyWrites += 1
                     }
                 }
             )

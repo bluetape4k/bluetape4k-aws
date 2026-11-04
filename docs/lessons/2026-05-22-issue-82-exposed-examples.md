@@ -2,8 +2,7 @@
 
 ## 배경
 
-Issue #82에서는 공통 `bluetape4k-aws-exposed` 데이터베이스 기반을 사용하는 Spring
-Boot 및 Ktor 예제 모듈을 추가했다.
+Issue #82에서는 공통 `bluetape4k-aws-exposed` 데이터베이스 기반을 사용하는 Spring Boot 및 Ktor 예제 모듈을 추가했다.
 
 ## 결정
 
@@ -19,8 +18,7 @@ Boot 및 Ktor 예제 모듈을 추가했다.
 - `:aws-spring-boot-exposed-examples`
 - `:aws-ktor-exposed-examples`
 
-Spring AOT/test와 Ktor 테스트가 재사용하는 공통 PostgreSQL singleton을 두고 경합할
-수 있으므로 이제 Nightly 예제 테스트 명령은 `--max-workers=1`을 사용한다.
+Spring AOT/test와 Ktor 테스트가 재사용하는 공통 PostgreSQL singleton을 두고 경합할 수 있으므로 이제 Nightly 예제 테스트 명령은 `--max-workers=1`을 사용한다.
 
 ## 검증
 
@@ -32,6 +30,4 @@ Spring AOT/test와 Ktor 테스트가 재사용하는 공통 PostgreSQL singleton
 
 ## 향후 보호 장치
 
-Nightly step에 새 모듈을 추가할 때는 dynamic discovery step만 유일한 커버리지
-수단으로 사용하기로 결정하고 이를 문서화한 경우가 아니라면, 이전에 명시한 모듈
-task를 유지한다.
+Nightly step에 새 모듈을 추가할 때는 dynamic discovery step만 유일한 커버리지 수단으로 사용하기로 결정하고 이를 문서화한 경우가 아니라면, 이전에 명시한 모듈 task를 유지한다.

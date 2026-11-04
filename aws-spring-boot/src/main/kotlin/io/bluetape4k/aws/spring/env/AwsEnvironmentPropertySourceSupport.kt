@@ -2,6 +2,7 @@ package io.bluetape4k.aws.spring.env
 
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
+import io.bluetape4k.logging.warn
 import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.toUtf8Bytes
 import org.springframework.boot.context.properties.bind.Binder
@@ -80,7 +81,7 @@ internal fun opaqueAwsPropertySourceIdentity(name: String): String {
         name.startsWith("bluetape4k.aws.s3.config.") -> "s3"
         name.startsWith("bluetape4k.aws.parameter-store.") -> "parameter-store"
         name.startsWith("bluetape4k.aws.secrets-manager.") -> "secrets-manager"
-        else -> "legacy"
+        else                                         -> "legacy"
     }
     return opaqueAwsDiagnosticIdentity(backend, name)
 }
@@ -118,10 +119,14 @@ private fun ConfigurableEnvironment.addAwsPropertySource(source: PropertySource<
         .lastOrNull { it.startsWith("bluetape4k.aws.") }
 
     when {
-        previousAwsSource != null -> propertySources.addAfter(previousAwsSource, source)
+        previousAwsSource != null ->
+            propertySources.addAfter(previousAwsSource, source)
+
         propertySources.contains(COMMAND_LINE_PROPERTY_SOURCE_NAME) ->
             propertySources.addAfter(COMMAND_LINE_PROPERTY_SOURCE_NAME, source)
-        else -> propertySources.addFirst(source)
+
+        else                      ->
+            propertySources.addFirst(source)
     }
 }
 
@@ -176,10 +181,10 @@ internal class RefreshingAwsMapPropertySource(
                     currentValues = values.toMap()
                 }
             } catch (e: RuntimeException) {
-                log.warn(
+                log.warn {
                     "Keeping previous AWS property source values after refresh failure: " +
-                            "${opaqueAwsPropertySourceIdentity(name)} (${e::class.java.simpleName}).",
-                )
+                            "${opaqueAwsPropertySourceIdentity(name)} (${e::class.java.simpleName})."
+                }
             }
             nextRefreshAt = lockedNow.plus(refreshInterval)
         }
@@ -238,8 +243,8 @@ private fun flattenValue(
             val childKey = if (key == null) "[$index]" else "$key[$index]"
             flattenValue(entryValue, childKey, target)
         }
-        null -> Unit
-        else -> {
+        null         -> Unit
+        else         -> {
             require(!key.isNullOrBlank()) { "JSON scalar value requires a property key." }
             target[key] = value
         }

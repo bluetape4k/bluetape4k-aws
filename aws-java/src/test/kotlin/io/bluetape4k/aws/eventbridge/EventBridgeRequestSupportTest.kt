@@ -7,8 +7,8 @@ import io.bluetape4k.aws.AbstractAwsTest
 import io.bluetape4k.aws.eventbridge.model.listRulesRequestOf
 import io.bluetape4k.aws.eventbridge.model.listTargetsByRuleRequestOf
 import io.bluetape4k.aws.eventbridge.model.putEventsRequest
-import io.bluetape4k.aws.eventbridge.model.putEventsRequestEntryOf
 import io.bluetape4k.aws.eventbridge.model.putEventsRequestEntry
+import io.bluetape4k.aws.eventbridge.model.putEventsRequestEntryOf
 import io.bluetape4k.aws.eventbridge.model.putEventsRequestOf
 import io.bluetape4k.aws.eventbridge.model.putRuleRequest
 import io.bluetape4k.aws.eventbridge.model.putRuleRequestOf

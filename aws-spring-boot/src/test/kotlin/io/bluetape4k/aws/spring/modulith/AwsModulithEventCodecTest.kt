@@ -18,6 +18,38 @@ import java.util.concurrent.CancellationException
 
 class AwsModulithEventCodecTest {
 
+    private companion object: KLogging() {
+        const val JSON_ESCAPED_NULL_BYTES = 6
+
+        val registry: AwsModulithEventTypeRegistry = AwsModulithEventTypeRegistry.of(
+            AwsModulithEventTypeRegistration(
+                type = "order.placed",
+                version = 1,
+                eventClass = OrderPlaced::class.java,
+                eventId = { it.eventId },
+                allowedHeaderNames = setOf("tenant"),
+                headers = { mapOf("tenant" to it.tenant) },
+            )
+        )
+
+        fun envelope(
+            id: String = "evt-1",
+            type: String = "order.placed",
+            version: Int = 1,
+            payload: String = "{}",
+            headers: String = "{\"tenant\":\"acme\"}",
+        ): String = """
+            {
+              "specVersion": 1,
+              "id": "$id",
+              "type": "$type",
+              "version": $version,
+              "payload": ${ObjectMapper().writeValueAsString(payload)},
+              "headers": $headers
+            }
+        """.trimIndent()
+    }
+
     @Test
     fun `encode and decode round trip uses the registry and system attributes`() {
         val event = OrderPlaced("evt-1", "acme")
@@ -215,37 +247,7 @@ class AwsModulithEventCodecTest {
         return "\u0000".repeat(escapedCount) + "x".repeat(plainCount)
     }
 
-    private companion object: KLogging() {
-        const val JSON_ESCAPED_NULL_BYTES = 6
 
-        val registry: AwsModulithEventTypeRegistry = AwsModulithEventTypeRegistry.of(
-            AwsModulithEventTypeRegistration(
-                type = "order.placed",
-                version = 1,
-                eventClass = OrderPlaced::class.java,
-                eventId = { it.eventId },
-                allowedHeaderNames = setOf("tenant"),
-                headers = { mapOf("tenant" to it.tenant) },
-            )
-        )
-
-        fun envelope(
-            id: String = "evt-1",
-            type: String = "order.placed",
-            version: Int = 1,
-            payload: String = "{}",
-            headers: String = "{\"tenant\":\"acme\"}",
-        ): String = """
-            {
-              "specVersion": 1,
-              "id": "$id",
-              "type": "$type",
-              "version": $version,
-              "payload": ${ObjectMapper().writeValueAsString(payload)},
-              "headers": $headers
-            }
-        """.trimIndent()
-    }
 }
 
 private fun String.utf8Size(): Int = toUtf8Bytes().size

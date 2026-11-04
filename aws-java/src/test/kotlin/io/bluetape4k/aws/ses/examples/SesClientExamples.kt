@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.ses.examples
 
+import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.aws.ses.AbstractSesTest
 import io.bluetape4k.aws.ses.model.bodyOf
@@ -27,17 +28,15 @@ class SesClientExamples: AbstractSesTest() {
             it.identities(domain, senderEmail)
         }
         val attrs = response.verificationAttributes()
-        attrs.forEach { (key, attr) ->
-            log.debug { "key=$key, attr=$attr" }
-        }
+            .onEach { (key, attr) -> log.debug { "key: $key, attr: $attr" } }
+        attrs shouldHaveSize 2
     }
 
     @Test
     @Order(2)
     fun `list identifiers`() {
         val response: ListIdentitiesResponse = client.listIdentities()
-        val identities: List<String> = response.identities()
-        identities.forEach { log.debug { "Identity=$it" } }
+        response.identities().onEach { log.debug { "Identity=$it" } }
     }
 
     @Test

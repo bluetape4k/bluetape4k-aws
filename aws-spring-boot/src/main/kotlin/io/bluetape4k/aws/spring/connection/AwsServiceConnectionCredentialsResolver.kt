@@ -33,12 +33,12 @@ internal object AwsServiceConnectionCredentialsResolver {
     }
 
     private fun serviceName(details: AwsServiceConnectionDetails): String = when (details) {
-        is S3ConnectionDetails -> "s3"
-        is SqsConnectionDetails -> "sqs"
-        is SnsConnectionDetails -> "sns"
+        is S3ConnectionDetails      -> "s3"
+        is SqsConnectionDetails     -> "sqs"
+        is SnsConnectionDetails     -> "sns"
         is DynamoDbConnectionDetails -> "dynamodb"
         is KinesisConnectionDetails -> "kinesis"
-        else -> "aws"
+        else                        -> "aws"
     }
 
     private class CredentialTuple(

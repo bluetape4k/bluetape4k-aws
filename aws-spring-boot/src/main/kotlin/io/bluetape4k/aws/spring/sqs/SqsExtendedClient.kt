@@ -9,6 +9,7 @@ import io.bluetape4k.aws.spring.s3.S3ObjectMetadataOperations
 import io.bluetape4k.aws.spring.s3.S3Operations
 import io.bluetape4k.aws.spring.s3.S3PutIfAbsentResult
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.support.toUtf8Bytes
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
@@ -18,14 +19,15 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import okio.withLock
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 import java.nio.ByteBuffer
 import java.nio.CharBuffer
 import java.nio.charset.CodingErrorAction
-import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.locks.ReentrantLock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -59,7 +61,7 @@ class SqsExtendedClient(
     private val activeOperations = AtomicInteger(0)
     private val acceptingOperations = AtomicReference(true)
     private val lifecycleFailure = AtomicReference<SqsExtendedDrainTimeoutException?>(null)
-    private val admissionLock = Any()
+    private val admissionLock = ReentrantLock()
 
     override suspend fun send(request: SqsExtendedSendRequest): SqsExtendedSendResult =
         withOperation {
@@ -152,9 +154,12 @@ class SqsExtendedClient(
         maxMessages: Int,
         waitTimeSeconds: Int,
         visibilityTimeoutSeconds: Int,
-    ): Flow<SqsExtendedReceivedMessage> = flow {
-        receive(queueUrl, maxMessages, waitTimeSeconds, visibilityTimeoutSeconds).forEach { emit(it) }
-    }
+    ): Flow<SqsExtendedReceivedMessage> =
+        flow {
+            receive(queueUrl, maxMessages, waitTimeSeconds, visibilityTimeoutSeconds).forEach {
+                emit(it)
+            }
+        }
 
     override suspend fun acknowledge(message: SqsExtendedReceivedMessage): SqsExtendedAcknowledgementResult =
         withOperation {
@@ -270,7 +275,7 @@ class SqsExtendedClient(
         val configuredTimeout = properties.shutdownDrainTimeoutSeconds.toLong().seconds
         val effectiveTimeout = timeout ?: configuredTimeout
         if (effectiveTimeout <= Duration.ZERO || effectiveTimeout > configuredTimeout) configurationError()
-        val activeAtStart = synchronized(admissionLock) {
+        val activeAtStart = admissionLock.withLock {
             acceptingOperations.set(false)
             activeOperations.get()
         }
@@ -481,7 +486,7 @@ class SqsExtendedClient(
         "${policy.normalizedKeyPrefix()}.ack-marker/${
             sha256(
                 "${pointer.bucket}|${pointer.key}".toByteArray(
-                    StandardCharsets.UTF_8
+                    Charsets.UTF_8
                 )
             )
         }"
@@ -494,13 +499,13 @@ class SqsExtendedClient(
         MARKER_VERSION_METADATA to MARKER_VERSION,
         MARKER_POINTER_DIGEST_METADATA to pointerDigest,
         MARKER_POLICY_FINGERPRINT_METADATA to policyFingerprint,
-        MARKER_QUEUE_DIGEST_METADATA to sha256(queueUrl.toByteArray(StandardCharsets.UTF_8)),
+        MARKER_QUEUE_DIGEST_METADATA to sha256(queueUrl.toUtf8Bytes()),
     )
 
     private fun constantTimeEquals(actual: String?, expected: String): Boolean =
         actual != null && MessageDigest.isEqual(
-            actual.toByteArray(StandardCharsets.UTF_8),
-            expected.toByteArray(StandardCharsets.UTF_8),
+            actual.toUtf8Bytes(),
+            expected.toUtf8Bytes(),
         )
 
     private suspend fun inlineSend(request: SqsExtendedSendRequest): SqsExtendedSendResult {
@@ -563,7 +568,7 @@ class SqsExtendedClient(
                 acknowledgement = SqsExtendedAcknowledgementToken(
                     queueUrl = queueUrl,
                     receiptHandle = message.receiptHandle,
-                    pointerDigest = pointer?.let { sha256(body.toByteArray(StandardCharsets.UTF_8)) },
+                    pointerDigest = pointer?.let { sha256(body.toUtf8Bytes()) },
                     policyFingerprint = fingerprint,
                 ),
             )
@@ -574,7 +579,8 @@ class SqsExtendedClient(
                         SqsExtendedClientMetrics.PayloadReadFailureKind.POINTER_FORMAT
                     SqsExtendedFailureKind.CONFIGURATION ->
                         SqsExtendedClientMetrics.PayloadReadFailureKind.CONFIGURATION
-                    else -> SqsExtendedClientMetrics.PayloadReadFailureKind.S3_READ
+                    else                                 ->
+                        SqsExtendedClientMetrics.PayloadReadFailureKind.S3_READ
                 },
             )
             throw failure
@@ -652,8 +658,8 @@ class SqsExtendedClient(
         )
     }
 
-    private suspend fun <T> withOperation(block: suspend () -> T): T {
-        synchronized(admissionLock) {
+    private suspend inline fun <T> withOperation(block: suspend () -> T): T {
+        admissionLock.withLock {
             if (!acceptingOperations.get()) {
                 throw SqsExtendedConfigurationException.drainAdmission()
             }
@@ -703,10 +709,10 @@ class SqsExtendedClient(
         idempotencyKey: String,
         payloadDigest: String,
     ): String =
-        "${policy.normalizedKeyPrefix()}${sha256("$queueUrl|$idempotencyKey|$payloadDigest".toByteArray(StandardCharsets.UTF_8))}"
+        "${policy.normalizedKeyPrefix()}${sha256("$queueUrl|$idempotencyKey|$payloadDigest".toUtf8Bytes())}"
 
     private fun strictUtf8(value: String): ByteArray = try {
-        val encoder = StandardCharsets.UTF_8.newEncoder()
+        val encoder = Charsets.UTF_8.newEncoder()
             .onMalformedInput(CodingErrorAction.REPORT)
             .onUnmappableCharacter(CodingErrorAction.REPORT)
         val encoded = encoder.encode(CharBuffer.wrap(value))
@@ -716,7 +722,7 @@ class SqsExtendedClient(
     }
 
     private fun strictDecode(bytes: ByteArray): String = try {
-        val decoder = StandardCharsets.UTF_8.newDecoder()
+        val decoder = Charsets.UTF_8.newDecoder()
             .onMalformedInput(CodingErrorAction.REPORT)
             .onUnmappableCharacter(CodingErrorAction.REPORT)
         decoder.decode(ByteBuffer.wrap(bytes)).toString()

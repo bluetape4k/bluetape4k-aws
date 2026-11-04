@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.sns
 
+import io.bluetape4k.support.toUtf8Bytes
 import java.io.Serializable
 import java.net.URI
 import java.util.concurrent.CancellationException
@@ -143,7 +144,7 @@ object SnsHttpEnvelopePolicy {
         if (json.isBlank()) {
             fail(SnsHttpEnvelopeRejectionReason.BODY_REQUIRED, "SNS HTTP message body must not be blank.")
         }
-        if (json.toByteArray(Charsets.UTF_8).size > maxMessageBytes) {
+        if (json.toUtf8Bytes().size > maxMessageBytes) {
             fail(SnsHttpEnvelopeRejectionReason.BODY_TOO_LARGE, "SNS HTTP message exceeds maxMessageBytes.")
         }
 
@@ -213,7 +214,8 @@ private fun SnsHttpEnvelope.validateTypeContract(): SnsHttpEnvelope {
         }
 
         SnsHttpEnvelopeType.SUBSCRIPTION_CONFIRMATION,
-        SnsHttpEnvelopeType.UNSUBSCRIBE_CONFIRMATION -> {
+        SnsHttpEnvelopeType.UNSUBSCRIBE_CONFIRMATION,
+            -> {
             if (token.isNullOrBlank()) {
                 fail(
                     SnsHttpEnvelopeRejectionReason.TYPE_CONTRACT,

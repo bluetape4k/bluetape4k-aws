@@ -1,8 +1,8 @@
 package io.bluetape4k.aws.spring.appconfig
 
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotContain
-import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug

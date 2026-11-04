@@ -1,7 +1,7 @@
 package io.bluetape4k.aws.spring.kms
 
 import io.bluetape4k.javatimes.minutes
-import io.bluetape4k.support.requireGt
+import io.bluetape4k.javatimes.requirePositiveDuration
 import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.requirePositiveNumber
 import org.springframework.boot.context.properties.ConfigurationProperties
@@ -64,7 +64,7 @@ data class KmsProperties(
     ): Serializable {
         init {
             maxSize.requirePositiveNumber { "bluetape4k.aws.kms.data-key-cache.max-size must be greater than 0." }
-            ttl.requireGt(Duration.ZERO) { "bluetape4k.aws.kms.data-key-cache.ttl must be greater than zero." }
+            ttl.requirePositiveDuration("ttl") { "bluetape4k.aws.kms.data-key-cache.ttl must be greater than zero." }
         }
 
         companion object {

@@ -92,7 +92,7 @@ internal class SnsBatchExecutionGuard(
     internal suspend fun closeAndDrain() = withContext(NonCancellable) {
         mutex.withLock {
             when (lifecycle) {
-                Lifecycle.OPEN -> lifecycle = Lifecycle.CLOSING
+                Lifecycle.OPEN   -> lifecycle = Lifecycle.CLOSING
                 Lifecycle.CLOSING -> Unit
                 Lifecycle.CLOSED -> return@withContext
             }

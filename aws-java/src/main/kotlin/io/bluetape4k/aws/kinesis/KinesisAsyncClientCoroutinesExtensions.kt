@@ -8,6 +8,7 @@ import software.amazon.awssdk.services.kinesis.model.DeleteStreamResponse
 import software.amazon.awssdk.services.kinesis.model.DescribeStreamResponse
 import software.amazon.awssdk.services.kinesis.model.GetRecordsResponse
 import software.amazon.awssdk.services.kinesis.model.GetShardIteratorResponse
+import software.amazon.awssdk.services.kinesis.model.ListShardsResponse
 import software.amazon.awssdk.services.kinesis.model.PutRecordResponse
 import software.amazon.awssdk.services.kinesis.model.PutRecordsRequestEntry
 import software.amazon.awssdk.services.kinesis.model.PutRecordsResponse
@@ -22,7 +23,7 @@ import software.amazon.awssdk.services.kinesis.model.ShardIteratorType
  * val response = kinesisAsyncClient.createStream("my-stream", shardCount = 1)
  * ```
  */
-suspend fun KinesisAsyncClient.createStream(
+suspend inline fun KinesisAsyncClient.createStream(
     streamName: String,
     shardCount: Int = 1,
 ): CreateStreamResponse =
@@ -41,12 +42,20 @@ suspend fun KinesisAsyncClient.createStream(
  * )
  * ```
  */
-suspend fun KinesisAsyncClient.putRecord(
+suspend inline fun KinesisAsyncClient.putRecord(
     streamName: String,
     partitionKey: String,
     data: SdkBytes,
 ): PutRecordResponse =
     putRecordAsync(streamName, partitionKey, data).await()
+
+suspend inline fun KinesisAsyncClient.putRecord(
+    streamName: String,
+    partitionKey: String,
+    explicitHashKey: String,
+    data: SdkBytes,
+): PutRecordResponse =
+    putRecordAsync(streamName, partitionKey, explicitHashKey, data).await()
 
 /**
  * Kinesis 스트림에 복수의 레코드를 코루틴으로 배치 전송합니다.
@@ -57,7 +66,7 @@ suspend fun KinesisAsyncClient.putRecord(
  * val response = kinesisAsyncClient.putRecords("my-stream", entries)
  * ```
  */
-suspend fun KinesisAsyncClient.putRecords(
+suspend inline fun KinesisAsyncClient.putRecords(
     streamName: String,
     entries: List<PutRecordsRequestEntry>,
 ): PutRecordsResponse =
@@ -76,7 +85,7 @@ suspend fun KinesisAsyncClient.putRecords(
  * )
  * ```
  */
-suspend fun KinesisAsyncClient.getShardIterator(
+suspend inline fun KinesisAsyncClient.getShardIterator(
     streamName: String,
     shardId: String,
     type: ShardIteratorType = ShardIteratorType.TRIM_HORIZON,
@@ -92,7 +101,7 @@ suspend fun KinesisAsyncClient.getShardIterator(
  * val response = kinesisAsyncClient.getRecords(shardIterator, limit = 100)
  * ```
  */
-suspend fun KinesisAsyncClient.getRecords(
+suspend inline fun KinesisAsyncClient.getRecords(
     shardIterator: String,
     limit: Int = 100,
 ): GetRecordsResponse =
@@ -107,7 +116,7 @@ suspend fun KinesisAsyncClient.getRecords(
  * val response = kinesisAsyncClient.describeStream("my-stream")
  * ```
  */
-suspend fun KinesisAsyncClient.describeStream(
+suspend inline fun KinesisAsyncClient.describeStream(
     streamName: String,
 ): DescribeStreamResponse =
     describeStreamAsync(streamName).await()
@@ -121,7 +130,12 @@ suspend fun KinesisAsyncClient.describeStream(
  * val response = kinesisAsyncClient.deleteStream("my-stream")
  * ```
  */
-suspend fun KinesisAsyncClient.deleteStream(
+suspend inline fun KinesisAsyncClient.deleteStream(
     streamName: String,
 ): DeleteStreamResponse =
     deleteStreamAsync(streamName).await()
+
+suspend inline fun KinesisAsyncClient.listShards(
+    streamName: String,
+): ListShardsResponse =
+    listShardsAsync(streamName).await()

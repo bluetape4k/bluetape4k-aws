@@ -14,6 +14,20 @@ import java.io.Serializable
 
 class KmsEncryptedFieldCodecTest {
 
+    private companion object: KLogging() {
+        val secretAnnotation: KmsEncrypted =
+            SecretFixture::class.java.getDeclaredField("secret").getAnnotation(KmsEncrypted::class.java)
+
+        val defaultKeyAnnotation: KmsEncrypted =
+            SecretFixture::class.java.getDeclaredField("defaultKey").getAnnotation(KmsEncrypted::class.java)
+
+        val invalidContextAnnotation: KmsEncrypted =
+            SecretFixture::class.java.getDeclaredField("invalidContext").getAnnotation(KmsEncrypted::class.java)
+
+        val duplicateContextAnnotation: KmsEncrypted =
+            SecretFixture::class.java.getDeclaredField("duplicateContext").getAnnotation(KmsEncrypted::class.java)
+    }
+
     private val operations = RecordingKmsOperations()
     private val codec = KmsEncryptedFieldCodec(
         kmsOperations = operations,
@@ -133,20 +147,6 @@ class KmsEncryptedFieldCodecTest {
         companion object {
             private const val serialVersionUID: Long = 1L
         }
-    }
-
-    private companion object: KLogging() {
-        val secretAnnotation: KmsEncrypted =
-            SecretFixture::class.java.getDeclaredField("secret").getAnnotation(KmsEncrypted::class.java)
-
-        val defaultKeyAnnotation: KmsEncrypted =
-            SecretFixture::class.java.getDeclaredField("defaultKey").getAnnotation(KmsEncrypted::class.java)
-
-        val invalidContextAnnotation: KmsEncrypted =
-            SecretFixture::class.java.getDeclaredField("invalidContext").getAnnotation(KmsEncrypted::class.java)
-
-        val duplicateContextAnnotation: KmsEncrypted =
-            SecretFixture::class.java.getDeclaredField("duplicateContext").getAnnotation(KmsEncrypted::class.java)
     }
 
     private class RecordingKmsOperations: KmsOperations {

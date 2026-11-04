@@ -118,9 +118,9 @@ class SnsKtorTemplateTest {
 
         request.captured.phoneNumber shouldBeEqualTo "+15550100000"
         request.captured.messageAttributes?.get(SnsSmsRequest.SMS_TYPE_ATTRIBUTE)?.stringValue shouldBeEqualTo
-            "Transactional"
+                "Transactional"
         request.captured.messageAttributes?.get(SnsSmsRequest.SENDER_ID_ATTRIBUTE)?.stringValue shouldBeEqualTo
-            "Bluetape"
+                "Bluetape"
         request.captured.messageAttributes?.get("binary")?.binaryValue
             ?.contentEquals(byteArrayOf(4, 5)) shouldBeEqualTo true
     }

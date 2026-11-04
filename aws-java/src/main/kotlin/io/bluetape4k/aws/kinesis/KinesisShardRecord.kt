@@ -12,6 +12,7 @@ data class KinesisShardRecord(
     companion object {
         private const val serialVersionUID: Long = 1L
     }
+
     init {
         streamName.requireKinesisStreamName()
         shardId.requireKinesisIdentifier("shardId")

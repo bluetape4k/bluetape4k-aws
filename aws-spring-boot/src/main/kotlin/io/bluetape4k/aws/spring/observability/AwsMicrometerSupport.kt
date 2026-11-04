@@ -1,12 +1,12 @@
 package io.bluetape4k.aws.spring.observability
 
+import io.bluetape4k.javatimes.nanos
 import io.bluetape4k.logging.KLogging
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Tag
 import io.micrometer.core.instrument.Tags
 import io.micrometer.core.instrument.Timer
 import kotlinx.coroutines.CancellationException
-import java.time.Duration
 
 internal object AwsMicrometerSupport: KLogging() {
 
@@ -59,14 +59,14 @@ internal object AwsMicrometerSupport: KLogging() {
         Timer.builder(meterName)
             .tags(tags)
             .register(meterRegistry)
-            .record(Duration.ofNanos(System.nanoTime() - startedAt))
+            .record((System.nanoTime() - startedAt).nanos())
     }
 
     suspend inline fun <T> record(
         meterRegistry: MeterRegistry,
         meterName: String,
-        crossinline tagFactory: (String, Throwable?) -> Tags,
-        crossinline block: suspend () -> T,
+        tagFactory: (String, Throwable?) -> Tags,
+        block: suspend () -> T,
     ): T {
         val startedAt = System.nanoTime()
         return try {
@@ -85,8 +85,8 @@ internal object AwsMicrometerSupport: KLogging() {
     inline fun <T> record(
         meterRegistry: MeterRegistry,
         meterName: String,
-        crossinline tagFactory: (String, Throwable?) -> Tags,
-        crossinline block: () -> T,
+        tagFactory: (String, Throwable?) -> Tags,
+        block: () -> T,
     ): T {
         val startedAt = System.nanoTime()
         return try {

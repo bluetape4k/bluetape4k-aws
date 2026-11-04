@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.apache.endsWithIgnoreCase
+import io.bluetape4k.javatimes.minutes
 import io.bluetape4k.support.equalsIgnoreCase
 import io.bluetape4k.support.requireGe
 import io.bluetape4k.support.requireNotBlank
@@ -63,7 +64,7 @@ fun interface SqsQueueAttributesResolver {
 /** 성공한 queue attribute만 TTL 동안 보관하는 기본 resolver입니다. */
 class DefaultSqsQueueAttributesResolver(
     private val operations: SqsOperations,
-    private val cacheTtl: Duration = Duration.ofMinutes(1),
+    private val cacheTtl: Duration = 1.minutes(),
     private val nanoTime: () -> Long = System::nanoTime,
 ): SqsQueueAttributesResolver {
 

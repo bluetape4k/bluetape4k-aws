@@ -4,6 +4,7 @@ import io.bluetape4k.logging.KotlinLogging
 import io.bluetape4k.logging.error
 import io.bluetape4k.logging.warn
 import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.requireNotNull
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -200,7 +201,7 @@ private fun DynamoDbStreamsAsyncClient.consumeShard(
                 if (shardIterator == null) {
                     shardIterator = fetchShardIterator(streamArn, shardId, currentPosition)
                 }
-                val currentIterator = requireNotNull(shardIterator)
+                val currentIterator = shardIterator.requireNotNull("shardIterator")
                 val response = getRecords(
                     GetRecordsRequest.builder()
                         .shardIterator(currentIterator)
@@ -324,7 +325,7 @@ internal fun jitteredDynamoDbStreamsBackoff(
     } else {
         (initialMs shl shift).coerceAtMost(maxMs)
     }
-    return Random.Default.nextLong(0L, cappedMs + 1L).milliseconds
+    return Random.nextLong(0L, cappedMs + 1L).milliseconds
 }
 
 /** shard와 원본 Java SDK record를 함께 전달해 checkpoint key를 보존합니다. */

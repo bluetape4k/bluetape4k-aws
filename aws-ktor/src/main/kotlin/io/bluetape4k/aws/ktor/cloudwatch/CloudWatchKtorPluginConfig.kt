@@ -1,18 +1,18 @@
 package io.bluetape4k.aws.ktor.cloudwatch
 
-import aws.sdk.kotlin.services.cloudwatch.endpoints.DefaultCloudWatchEndpointProvider
-import aws.sdk.kotlin.services.cloudwatch.endpoints.CloudWatchEndpointProvider
-import io.bluetape4k.aws.ktor.AwsKotlinEndpointPolicyInterceptor
-import io.bluetape4k.aws.ktor.checkedAwsKotlinEndpointProvider
-import io.bluetape4k.aws.ktor.requireAwsKotlinEndpointProviderUnset
-import io.bluetape4k.ToStringBuilder
 import aws.sdk.kotlin.services.cloudwatch.CloudWatchClient
+import aws.sdk.kotlin.services.cloudwatch.endpoints.CloudWatchEndpointProvider
+import aws.sdk.kotlin.services.cloudwatch.endpoints.DefaultCloudWatchEndpointProvider
 import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
 import aws.smithy.kotlin.runtime.http.engine.HttpClientEngine
 import aws.smithy.kotlin.runtime.net.url.Url
+import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.aws.kotlin.cloudwatch.cloudWatchClientOf
+import io.bluetape4k.aws.ktor.AwsKotlinEndpointPolicyInterceptor
 import io.bluetape4k.aws.ktor.AwsKtorCloudWatchClientCustomizer
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
+import io.bluetape4k.aws.ktor.checkedAwsKotlinEndpointProvider
+import io.bluetape4k.aws.ktor.requireAwsKotlinEndpointProviderUnset
 
 /**
  * [CloudWatchKtorPlugin] 구성입니다.
@@ -99,7 +99,9 @@ class CloudWatchKtorPluginConfig {
                     provider = endpointProvider ?: DefaultCloudWatchEndpointProvider(),
                     region = { it.region },
                     allowInsecureLocalHttpEndpoint = defaults.allowInsecureLocalHttpEndpoint,
-                    create = { resolver -> CloudWatchEndpointProvider { parameters -> resolver(parameters) } },
+                    create = { resolver ->
+                        CloudWatchEndpointProvider { parameters -> resolver(parameters) }
+                    },
                 )
                 interceptors.add(
                     AwsKotlinEndpointPolicyInterceptor(

@@ -8,8 +8,7 @@
 ## 결정
 
 이 release-prep branch에서는 대응하는 projects snapshot 대신 안정 버전인
-`bluetape4k-bom` 1.9.2 개발선을 사용합니다. 이번 인계는 이미 출시된 projects BOM만
-승격하므로 Exposed BOM reference는 현재 개발선을 유지합니다.
+`bluetape4k-bom` 1.9.2 개발선을 사용합니다. 이번 인계는 이미 출시된 projects BOM만 승격하므로 Exposed BOM reference는 현재 개발선을 유지합니다.
 
 ## 결과
 

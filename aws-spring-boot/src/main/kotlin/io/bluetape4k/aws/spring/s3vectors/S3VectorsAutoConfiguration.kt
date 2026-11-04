@@ -60,8 +60,8 @@ class S3VectorsAutoConfiguration {
             )
             .apply {
                 httpClient.getIfAvailable()?.let { httpClient(it) }
+                applyGlobalCustomizers("s3vectors", globalCustomizers)
             }
-            .also { it.applyGlobalCustomizers("s3vectors", globalCustomizers) }
             .applyServiceCustomizers(serviceCustomizers)
             .build()
 

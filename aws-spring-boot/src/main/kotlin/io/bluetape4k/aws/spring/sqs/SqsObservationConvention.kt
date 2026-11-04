@@ -30,12 +30,14 @@ internal fun resolveSqsObservationConventions(
     userConventions: List<SqsObservationConvention>,
 ): Map<SqsObservationStage, SqsObservationConvention> {
     val conventions = defaultSqsObservationConventions().toMutableMap()
-    userConventions.groupBy(SqsObservationConvention::stage).forEach { (stage, candidates) ->
-        check(candidates.size == 1) {
-            "Only one SqsObservationConvention may be registered for stage $stage."
+    userConventions
+        .groupBy(SqsObservationConvention::stage)
+        .forEach { (stage, candidates) ->
+            check(candidates.size == 1) {
+                "Only one SqsObservationConvention may be registered for stage $stage."
+            }
+            conventions[stage] = candidates.single()
         }
-        conventions[stage] = candidates.single()
-    }
     return conventions.toMap()
 }
 
@@ -86,15 +88,15 @@ private class DefaultSqsObservationConvention(
 }
 
 private fun SqsAcknowledgementAction?.toTagValue(): String = when (this) {
-    null -> "none"
-    SqsAcknowledgementAction.ACK -> "ack"
+    null                          -> "none"
+    SqsAcknowledgementAction.ACK  -> "ack"
     SqsAcknowledgementAction.NACK -> "nack"
     SqsAcknowledgementAction.CHANGE_VISIBILITY -> "change_visibility"
 }
 
 private fun Int.toBatchSizeBucket(): String = when (this) {
-    0 -> "0"
-    1 -> "1"
+    0    -> "0"
+    1    -> "1"
     in MIN_GROUPED_BATCH_SIZE..MAX_SMALL_BATCH_SIZE -> "2-5"
     else -> "6-10"
 }

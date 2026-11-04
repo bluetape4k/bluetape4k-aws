@@ -1,15 +1,19 @@
 package io.bluetape4k.aws.sns
 
 import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBe
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeNull
-import org.junit.jupiter.api.Assertions.assertSame
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import java.net.URI
 import java.util.concurrent.CancellationException
 
 class SnsHttpEnvelopePolicyTest {
+
+    companion object: KLogging()
 
     @Test
     fun `본문 상한을 decode 전에 적용한다`() {
@@ -28,6 +32,8 @@ class SnsHttpEnvelopePolicyTest {
             }
         }
 
+        log.debug { "blank=$blank" }
+        log.debug { "oversized=$oversized" }
         blank.reason shouldBeEqualTo SnsHttpEnvelopeRejectionReason.BODY_REQUIRED
         oversized.reason shouldBeEqualTo SnsHttpEnvelopeRejectionReason.BODY_TOO_LARGE
         decodeCount shouldBeEqualTo 0
@@ -42,7 +48,7 @@ class SnsHttpEnvelopePolicyTest {
             decodeCount++
             notificationFields()
         }
-
+        log.debug { "envelope=$envelope" }
         envelope.type shouldBeEqualTo SnsHttpEnvelopeType.NOTIFICATION
         decodeCount shouldBeEqualTo 1
     }
@@ -57,6 +63,7 @@ class SnsHttpEnvelopePolicyTest {
             }
         }
 
+        log.debug { "error=$error" }
         error.reason shouldBeEqualTo SnsHttpEnvelopeRejectionReason.INVALID_JSON
         error.message.orEmpty() shouldBeEqualTo "SNS HTTP message JSON is invalid."
         error.message.orEmpty().contains(secret).shouldBeFalse()
@@ -72,19 +79,19 @@ class SnsHttpEnvelopePolicyTest {
             }
         }
 
-        assertSame(cancellation, actual)
+        actual shouldBe cancellation
     }
 
     @Test
     fun `notification envelope을 정규화한다`() {
         val envelope = SnsHttpEnvelopePolicy.validate(notificationFields())
 
+        log.debug { "envelope=$envelope" }
         envelope.type shouldBeEqualTo SnsHttpEnvelopeType.NOTIFICATION
         envelope.messageId shouldBeEqualTo "message-1"
         envelope.topicArn shouldBeEqualTo "arn:aws:sns:us-east-1:123456789012:orders"
         envelope.message shouldBeEqualTo "payload"
-        envelope.signingCertUrl shouldBeEqualTo
-                URI.create("https://sns.us-east-1.amazonaws.com/SimpleNotificationService.pem")
+        envelope.signingCertUrl shouldBeEqualTo URI.create("https://sns.us-east-1.amazonaws.com/SimpleNotificationService.pem")
         envelope.token.shouldBeNull()
         envelope.raw["MessageId"] shouldBeEqualTo "message-1"
     }
@@ -103,6 +110,7 @@ class SnsHttpEnvelopePolicyTest {
                 )
             )
 
+            log.debug { "envelope=$envelope" }
             envelope.type shouldBeEqualTo expectedType
             envelope.token shouldBeEqualTo "token-1"
         }
@@ -113,6 +121,7 @@ class SnsHttpEnvelopePolicyTest {
                     notificationFields() + mapOf("Type" to "SubscriptionConfirmation") - field
                 )
             }
+            log.debug { "error=$error" }
             error.reason shouldBeEqualTo SnsHttpEnvelopeRejectionReason.TYPE_CONTRACT
         }
     }
@@ -127,6 +136,7 @@ class SnsHttpEnvelopePolicyTest {
                 SnsHttpEnvelopePolicy.validate(notificationFields() + (field to value))
             }
 
+            log.debug { "error=$error" }
             error.reason shouldBeEqualTo SnsHttpEnvelopeRejectionReason.TYPE_CONTRACT
         }
     }
@@ -165,6 +175,7 @@ class SnsHttpEnvelopePolicyTest {
             val error = assertFailsWith<SnsHttpEnvelopeValidationException> {
                 SnsHttpEnvelopePolicy.validate(notificationFields() + ("TopicArn" to topicArn))
             }
+            log.debug { "error=$error" }
             error.reason shouldBeEqualTo SnsHttpEnvelopeRejectionReason.INVALID_TOPIC_ARN
         }
     }
@@ -188,6 +199,7 @@ class SnsHttpEnvelopePolicyTest {
                 SnsHttpEnvelopePolicy.validate(notificationFields() + ("SigningCertURL" to signingCertUrl))
             }
 
+            log.debug { "error=$error" }
             error.reason shouldBeEqualTo SnsHttpEnvelopeRejectionReason.INVALID_SIGNING_CERT_URI
             error.message.orEmpty().contains(signingCertUrl).shouldBeFalse()
         }
@@ -219,6 +231,7 @@ class SnsHttpEnvelopePolicyTest {
                 )
             )
 
+            log.debug { "envelope=$envelope" }
             envelope.topicArn.substringAfter(":sns:").substringBefore(':') shouldBeEqualTo expectedRegion
         }
     }

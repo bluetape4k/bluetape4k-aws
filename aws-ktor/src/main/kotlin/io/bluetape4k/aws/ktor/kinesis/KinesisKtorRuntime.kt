@@ -1,9 +1,9 @@
 package io.bluetape4k.aws.ktor.kinesis
 
+import aws.sdk.kotlin.services.kinesis.KinesisClient
 import io.bluetape4k.ktor.core.ApplicationResourceRegistry
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
-import aws.sdk.kotlin.services.kinesis.KinesisClient
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking

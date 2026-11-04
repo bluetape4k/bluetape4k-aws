@@ -103,7 +103,9 @@ class DynamoDbKtorRepository<T: Any, K: Any>(
                 this.tableName = this@DynamoDbKtorRepository.tableName
                 builder()
             }.collect { page ->
-                page.items.orEmpty().forEach { emit(reader.readDynamoItem(it)) }
+                page.items.orEmpty().forEach {
+                    emit(reader.readDynamoItem(it))
+                }
             }
         }
 
@@ -118,7 +120,9 @@ class DynamoDbKtorRepository<T: Any, K: Any>(
                 this.tableName = this@DynamoDbKtorRepository.tableName
                 builder()
             }.collect { page ->
-                page.items.orEmpty().forEach { emit(reader.readDynamoItem(it)) }
+                page.items.orEmpty().forEach {
+                    emit(reader.readDynamoItem(it))
+                }
             }
         }
 }

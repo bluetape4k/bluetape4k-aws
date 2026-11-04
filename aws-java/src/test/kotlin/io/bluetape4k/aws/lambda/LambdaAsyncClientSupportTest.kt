@@ -2,6 +2,8 @@ package io.bluetape4k.aws.lambda
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.aws.auth.staticCredentialsProviderOf
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.utils.ShutdownQueue
 import io.mockk.clearMocks
 import io.mockk.every
@@ -16,8 +18,6 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.lambda.LambdaAsyncClient
@@ -26,6 +26,8 @@ import java.net.URI
 import kotlin.time.Duration.Companion.milliseconds
 
 class LambdaAsyncClientSupportTest {
+
+    companion object: KLoggingChannel()
 
     private val builder = mockk<LambdaAsyncClientBuilder>(relaxed = true)
     private val client = mockk<LambdaAsyncClient>(relaxed = true)
@@ -39,7 +41,7 @@ class LambdaAsyncClientSupportTest {
     @Test
     fun `application async factory registers client and lets builder override explicit settings`() {
         val endpoint = URI("http://localhost:4566")
-        val credentials = StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test"))
+        val credentials = staticCredentialsProviderOf("test", "test")
 
         mockkStatic(LambdaAsyncClient::class)
         mockkObject(ShutdownQueue)

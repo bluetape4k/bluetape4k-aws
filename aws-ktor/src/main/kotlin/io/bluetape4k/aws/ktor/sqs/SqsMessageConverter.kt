@@ -33,13 +33,14 @@ object StringOrByteArraySqsMessageConverter: SqsMessageConverter {
     @Suppress("UNCHECKED_CAST")
     override fun <T: Any> convert(message: Message, targetType: KClass<T>): T {
         val body = message.body.orEmpty()
+
         val converted: Any = when (targetType) {
-            String::class -> body
+            String::class  -> body
             ByteArray::class -> body.encodeToByteArray()
             Message::class -> message
-            else -> throw IllegalArgumentException(
+            else           -> throw IllegalArgumentException(
                 "Unsupported SQS message target type: ${targetType.qualifiedName}. " +
-                    "Configure a custom SqsMessageConverter."
+                        "Configure a custom SqsMessageConverter."
             )
         }
         return converted as T

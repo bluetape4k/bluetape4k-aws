@@ -11,6 +11,7 @@ import io.bluetape4k.aws.spring.sns.annotation.handlers.NotificationRawMessage
 import io.bluetape4k.aws.spring.sns.annotation.handlers.NotificationSubject
 import io.bluetape4k.aws.spring.sns.handlers.NotificationStatus
 import io.bluetape4k.aws.spring.sqs.SnsMessageAttribute
+import io.bluetape4k.concurrent.await
 import io.bluetape4k.junit5.concurrency.MultithreadingTester
 import io.bluetape4k.logging.KLogging
 import io.mockk.clearMocks
@@ -36,8 +37,8 @@ import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionResponse
 import tools.jackson.databind.ObjectMapper
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CyclicBarrier
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.seconds
 
 class SnsWebFluxHttpEndpointTest {
 
@@ -220,7 +221,7 @@ class SnsWebFluxHttpEndpointTest {
             maxVerifierInFlight.updateAndGet { current -> maxOf(current, active) }
             try {
                 if (verifierParticipants.getAndIncrement() < VERIFIER_OVERLAP_PARTICIPANTS) {
-                    verifierBarrier.await(VERIFIER_BARRIER_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    verifierBarrier.await(VERIFIER_BARRIER_TIMEOUT_SECONDS.seconds)
                 }
                 SnsHttpMessageParser.parse(firstArg(), secondArg())
             } finally {

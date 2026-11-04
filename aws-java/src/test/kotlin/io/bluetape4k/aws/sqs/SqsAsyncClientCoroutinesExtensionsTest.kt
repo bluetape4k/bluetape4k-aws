@@ -20,11 +20,11 @@ class SqsAsyncClientCoroutinesExtensionsTest {
 
     companion object: KLoggingChannel()
 
-    private val client = mockk<SqsAsyncClient>()
+    private val asyncClient = mockk<SqsAsyncClient>()
 
     @BeforeEach
     fun beforeEach() {
-        clearMocks(client)
+        clearMocks(asyncClient)
     }
 
     @Test
@@ -33,10 +33,10 @@ class SqsAsyncClientCoroutinesExtensionsTest {
         val response = SendMessageResponse.builder().messageId("mid-1").build()
 
         every {
-            client.sendMessage(capture(requestSlot))
+            asyncClient.sendMessage(capture(requestSlot))
         } returns completableFutureOf(response)
 
-        val result = client.send(
+        val result = asyncClient.send(
             queueUrl = "https://sqs.ap-northeast-2.amazonaws.com/000000000000/test-queue",
             messageBody = "hello",
         )
@@ -44,6 +44,7 @@ class SqsAsyncClientCoroutinesExtensionsTest {
         result.messageId() shouldBeEqualTo "mid-1"
         requestSlot.captured.queueUrl() shouldBeEqualTo "https://sqs.ap-northeast-2.amazonaws.com/000000000000/test-queue"
         requestSlot.captured.messageBody() shouldBeEqualTo "hello"
-        verify(exactly = 1) { client.sendMessage(any<SendMessageRequest>()) }
+
+        verify(exactly = 1) { asyncClient.sendMessage(any<SendMessageRequest>()) }
     }
 }

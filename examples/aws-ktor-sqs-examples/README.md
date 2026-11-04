@@ -6,8 +6,7 @@ Ktor 3 examples for the `aws-ktor` SQS consumer plugin. The module installs
 `SqsConsumer`, publishes messages through AWS Kotlin `SqsClient`, records consumed messages in memory, and exposes queue management routes. The interesting part is the observable consumer contract: manual ack/nack, retry-once redelivery, interceptor events, and observer summaries are all visible through HTTP routes. It uses `bluetape4k-ktor-core` for shared route parameter validation and
 `bluetape4k-ktor-testing` for common Ktor response assertions.
 
-The `aws-ktor` API dependencies expose the Kotlin SQS client and models used by
-the plugin. The application chooses its Ktor engine and serialization setup.
+The `aws-ktor` API dependencies expose the Kotlin SQS client and models used by the plugin. The application chooses its Ktor engine and serialization setup.
 
 ## Architecture
 

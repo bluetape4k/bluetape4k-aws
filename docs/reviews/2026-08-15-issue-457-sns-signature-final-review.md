@@ -9,15 +9,15 @@
 
 ## 관점별 판정
 
-| 관점 | 확인 내용 | 판정 |
-| --- | --- | --- |
-| 성능 | parser와 expected TopicArn 비교가 SDK manager 호출보다 앞선다. manager 인증서 cache·네트워크는 SDK 경계에 위임하고 bean 생성 시 검증 호출은 없다. | PASS; timeout·cache hit/miss throughput은 P2 후속 |
-| 안정성 | SnsMessageManager 예외를 숨기지 않고, verifier close는 AtomicBoolean으로 한 번만 manager에 위임한다. Spring bean destroyMethod와 classpath/property backoff가 테스트된다. | PASS |
-| 보안 | parser가 payload/header/SigningCertURL을 먼저 검증하고 expected TopicArn mismatch는 manager 호출 전에 거부한다. SDK 검증 실패는 동일 cause로 fail-closed 전파하며 payload를 로그에 남기지 않는다. | PASS |
-| 운영 | compileOnly runtime dependency, 기본 enabled, verification.enabled=false opt-out 위험, Floci 서명 부재를 README 양쪽에 기록했다. | PASS |
-| 개발자/API | 기존 SnsHttpMessageParser API와 wire model은 유지하고 별도 verifier의 optional header/topic, region factory, AutoCloseable 계약을 추가했다. resolved manager version은 중앙 BOM에서 선택된다. | PASS |
-| 사용자/호출자 | README 예제가 parser 내부 선행을 포함하는 verifier를 handler보다 먼저 호출하며, 검증 성공 결과만 notification/confirmation에 사용한다. | PASS |
-| 통합/회귀 | 기존 SnsAutoConfiguration와 parser suite, global/SNS/verification/classpath/custom bean 조건을 함께 실행했다. | PASS |
+| 관점          | 확인 내용                                                                                                                                                                                         | 판정                                              |
+|---------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------|
+| 성능          | parser와 expected TopicArn 비교가 SDK manager 호출보다 앞선다. manager 인증서 cache·네트워크는 SDK 경계에 위임하고 bean 생성 시 검증 호출은 없다.                                                 | PASS; timeout·cache hit/miss throughput은 P2 후속 |
+| 안정성        | SnsMessageManager 예외를 숨기지 않고, verifier close는 AtomicBoolean으로 한 번만 manager에 위임한다. Spring bean destroyMethod와 classpath/property backoff가 테스트된다.                         | PASS                                              |
+| 보안          | parser가 payload/header/SigningCertURL을 먼저 검증하고 expected TopicArn mismatch는 manager 호출 전에 거부한다. SDK 검증 실패는 동일 cause로 fail-closed 전파하며 payload를 로그에 남기지 않는다. | PASS                                              |
+| 운영          | compileOnly runtime dependency, 기본 enabled, verification.enabled=false opt-out 위험, Floci 서명 부재를 README 양쪽에 기록했다.                                                                  | PASS                                              |
+| 개발자/API    | 기존 SnsHttpMessageParser API와 wire model은 유지하고 별도 verifier의 optional header/topic, region factory, AutoCloseable 계약을 추가했다. resolved manager version은 중앙 BOM에서 선택된다.     | PASS                                              |
+| 사용자/호출자 | README 예제가 parser 내부 선행을 포함하는 verifier를 handler보다 먼저 호출하며, 검증 성공 결과만 notification/confirmation에 사용한다.                                                            | PASS                                              |
+| 통합/회귀     | 기존 SnsAutoConfiguration와 parser suite, global/SNS/verification/classpath/custom bean 조건을 함께 실행했다.                                                                                     | PASS                                              |
 
 ## Fresh verification evidence
 

@@ -3,7 +3,7 @@ package io.bluetape4k.aws.spring.s3
 import software.amazon.awssdk.services.s3.model.PutObjectResponse
 
 /** converter로 값을 직렬화한 뒤 S3 provider 봉투로 암호화해 업로드합니다. */
-suspend fun <T: Any> S3ClientSideEncryptionOperations.uploadEncryptedObject(
+suspend inline fun <T: Any> S3ClientSideEncryptionOperations.uploadEncryptedObject(
     bucket: String,
     key: String,
     value: T,
@@ -28,7 +28,7 @@ suspend fun <T: Any> S3ClientSideEncryptionOperations.uploadEncryptedObject(
 }
 
 /** S3 provider 봉투를 복호화한 뒤 converter로 typed 값을 복원합니다. */
-suspend fun <T: Any> S3ClientSideEncryptionOperations.downloadEncryptedObject(
+suspend inline fun <T: Any> S3ClientSideEncryptionOperations.downloadEncryptedObject(
     bucket: String,
     key: String,
     targetType: Class<T>,

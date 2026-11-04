@@ -8,9 +8,11 @@ import io.bluetape4k.aws.eventbridge.model.putEventsRequestEntryOf
 import io.bluetape4k.aws.eventbridge.model.targetOf
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.eventbridge.EventBridgeClient
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest
@@ -25,6 +27,11 @@ class EventBridgeClientExtensionsTest: AbstractAwsTest() {
     companion object: KLogging()
 
     private val client = mockk<EventBridgeClient>()
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(client)
+    }
 
     @Test
     fun `putEvents delegates once and preserves raw partial failure response`() {

@@ -2,9 +2,12 @@ package io.bluetape4k.aws.spring.kinesis
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
 
 class KinesisRecordFlowOptionsTest {
+
+    companion object: KLogging()
 
     @Test
     fun `zero retry limits disable retries`() {

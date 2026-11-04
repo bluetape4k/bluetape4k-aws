@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.bedrock
 
 import io.bluetape4k.junit5.awaitility.untilSuspending
+import io.bluetape4k.logging.KLogging
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
@@ -12,7 +13,10 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
+import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
+import org.awaitility.kotlin.withPollDelay
+import org.awaitility.kotlin.withPollInterval
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient
 import software.amazon.awssdk.services.bedrockruntime.model.ContentBlockDelta
 import software.amazon.awssdk.services.bedrockruntime.model.ContentBlockDeltaEvent
@@ -21,7 +25,6 @@ import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamReques
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamResponseHandler
 import software.amazon.awssdk.services.bedrockruntime.model.ValidationException
 import java.lang.management.ManagementFactory
-import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
@@ -29,6 +32,8 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * 실제 AWS endpoint 없이 ConverseStream callback 경계를 측정하는 adapter입니다.
@@ -443,10 +448,9 @@ internal class BedrockRuntimePerformanceRuntimeAdapter {
             handler.onEventStream(publisher.publisher)
             if (index > 0) {
                 val previous = publishers[index - 1]
-                await.atMost(CLEANUP_TIMEOUT)
-                    .pollInterval(POLL_INTERVAL)
-                    .pollDelay(POLL_INTERVAL)
-                    .untilSuspending { previous.cancelCount == 1 }
+                await atMost CLEANUP_TIMEOUT withPollInterval POLL_INTERVAL withPollDelay POLL_INTERVAL untilSuspending {
+                    previous.cancelCount == 1
+                }
             }
         }
         val operationFailure = ValidationException.builder().message("operation").build()
@@ -507,12 +511,9 @@ internal class BedrockRuntimePerformanceRuntimeAdapter {
     }
 
     private suspend fun awaitDemand(publisher: TimedPublisher<ConverseStreamOutput>, expected: Int) {
-        await.atMost(CLEANUP_TIMEOUT)
-            .pollInterval(POLL_INTERVAL)
-            .pollDelay(POLL_INTERVAL)
-            .untilSuspending {
-                publisher.requests >= expected
-            }
+        await atMost CLEANUP_TIMEOUT withPollInterval POLL_INTERVAL withPollDelay POLL_INTERVAL untilSuspending {
+            publisher.requests >= expected
+        }
     }
 
     private fun contentDelta(text: String): ContentBlockDeltaEvent =
@@ -570,10 +571,9 @@ internal class BedrockRuntimePerformanceRuntimeAdapter {
 
         suspend fun awaitCleanup() {
             withContext(kotlinx.coroutines.NonCancellable) {
-                await.atMost(CLEANUP_TIMEOUT)
-                    .pollInterval(POLL_INTERVAL)
-                    .pollDelay(POLL_INTERVAL)
-                    .untilSuspending { cleanup.isCompleted }
+                await atMost CLEANUP_TIMEOUT withPollInterval POLL_INTERVAL withPollDelay POLL_INTERVAL untilSuspending {
+                    cleanup.isCompleted
+                }
             }
         }
 
@@ -625,9 +625,9 @@ internal class BedrockRuntimePerformanceRuntimeAdapter {
         }
     }
 
-    companion object {
-        private val CLEANUP_TIMEOUT = Duration.ofSeconds(5)
-        private val POLL_INTERVAL = Duration.ofMillis(1)
+    companion object: KLogging() {
+        private val CLEANUP_TIMEOUT = 5.seconds
+        private val POLL_INTERVAL = 1.milliseconds
         private const val DEFAULT_EVENT_COUNT: Int = 8
         private const val DEFAULT_FAILURE_VOLUME: Int = 2
         private const val DEFAULT_LONG_RUN_EVENT_COUNT: Int = 256

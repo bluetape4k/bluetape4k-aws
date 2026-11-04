@@ -2,6 +2,7 @@ package io.bluetape4k.aws.examples.ktor.s3
 
 import io.bluetape4k.aws.ktor.s3.S3KtorClient
 import io.bluetape4k.aws.ktor.s3.S3KtorListObjectsRequest
+import io.bluetape4k.javatimes.minutes
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
@@ -16,7 +17,6 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.put
 import io.ktor.server.routing.routing
 import io.ktor.utils.io.toByteArray
-import java.time.Duration
 
 /**
  * `S3KtorClient`를 Ktor server routing에 연결하는 예제 모듈입니다.
@@ -132,7 +132,7 @@ fun Route.s3DocumentRoutes(
     }
 
     get("/s3/presigned-get/{key...}") {
-        val presigned = s3.presignGetObject(bucket, call.s3KeyParameter(), Duration.ofMinutes(15))
+        val presigned = s3.presignGetObject(bucket, call.s3KeyParameter(), 15.minutes())
         call.respondText(
             text = """{"method":"${presigned.method}","url":${presigned.url.toString().jsonString()}}""",
             contentType = ContentType.Application.Json,
@@ -140,7 +140,7 @@ fun Route.s3DocumentRoutes(
     }
 
     get("/s3/presigned-put/{key...}") {
-        val presigned = s3.presignPutObject(bucket, call.s3KeyParameter(), Duration.ofMinutes(15))
+        val presigned = s3.presignPutObject(bucket, call.s3KeyParameter(), 15.minutes())
         call.respondText(
             text = """{"method":"${presigned.method}","url":${presigned.url.toString().jsonString()}}""",
             contentType = ContentType.Application.Json,

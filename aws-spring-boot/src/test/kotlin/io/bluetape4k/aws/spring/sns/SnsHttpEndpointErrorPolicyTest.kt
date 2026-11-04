@@ -48,6 +48,7 @@ class SnsHttpEndpointErrorPolicyTest: AbstractSnsTest() {
     fun `servlet body limit is classified consistently`() {
         SnsHttpEndpointErrorPolicy.classify(SnsHttpBodyLimitException(SnsHttpMessageLimits.MAX_READ_BYTES))
             .status shouldBeEqualTo 400
+
         SnsHttpEndpointErrorPolicy.classify(SnsHttpBodyLimitException(SnsHttpMessageLimits.MAX_READ_BYTES))
             .category shouldBeEqualTo "body-limit"
     }

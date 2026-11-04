@@ -1,5 +1,9 @@
 package io.bluetape4k.aws.spring.dynamodb
 
+import io.bluetape4k.aws.dynamodb.model.BatchGetItemEnhancedRequest
+import io.bluetape4k.aws.dynamodb.model.BatchWriteItemEnhancedRequest
+import io.bluetape4k.aws.dynamodb.model.TransactGetItemsEnhancedRequest
+import io.bluetape4k.aws.dynamodb.model.TransactWriteItemsEnhancedRequest
 import io.bluetape4k.aws.dynamodb.model.writeBatchOf
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.support.requireInRange
@@ -13,9 +17,7 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient
 import software.amazon.awssdk.enhanced.dynamodb.Key
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema
-import software.amazon.awssdk.enhanced.dynamodb.model.BatchGetItemEnhancedRequest
 import software.amazon.awssdk.enhanced.dynamodb.model.BatchGetResultPage
-import software.amazon.awssdk.enhanced.dynamodb.model.BatchWriteItemEnhancedRequest
 import software.amazon.awssdk.enhanced.dynamodb.model.BatchWriteResult
 import software.amazon.awssdk.enhanced.dynamodb.model.ReadBatch
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactGetItemsEnhancedRequest
@@ -136,9 +138,9 @@ class DynamoDbTemplate(
         val responses = items
             .chunked(chunkSize)
             .map { chunk ->
-                val request = BatchWriteItemEnhancedRequest.builder()
-                    .addWriteBatch(writeBatchOf(table, chunk, items.first().javaClass))
-                    .build()
+                val request = BatchWriteItemEnhancedRequest {
+                    addWriteBatch(writeBatchOf(table, chunk, items.first().javaClass))
+                }
                 enhancedClient.batchWriteItem(request).await()
             }
         val unprocessed = responses
@@ -170,9 +172,9 @@ class DynamoDbTemplate(
                     .mappedTableResource(table)
                     .apply { chunk.forEach { addGetItem(it) } }
                     .build()
-                val request = BatchGetItemEnhancedRequest.builder()
-                    .addReadBatch(readBatch)
-                    .build()
+                val request = BatchGetItemEnhancedRequest {
+                    addReadBatch(readBatch)
+                }
                 enhancedClient.batchGetItem(request).asFlow().toList()
             }
         val items = pages.flatMap { it.resultsForTable(table) }
@@ -194,7 +196,7 @@ class DynamoDbTemplate(
         builder: TransactWriteItemsEnhancedRequest.Builder.() -> Unit,
     ) {
         execute("transactWrite") {
-            val request = TransactWriteItemsEnhancedRequest.builder().apply(builder).build()
+            val request = TransactWriteItemsEnhancedRequest(builder)
             enhancedClient.transactWriteItems(request).await()
         }
     }
@@ -203,7 +205,7 @@ class DynamoDbTemplate(
     suspend fun transactGet(
         builder: TransactGetItemsEnhancedRequest.Builder.() -> Unit,
     ): List<Document> = execute("transactGet") {
-        val request = TransactGetItemsEnhancedRequest.builder().apply(builder).build()
+        val request = TransactGetItemsEnhancedRequest(builder)
         enhancedClient.transactGetItems(request).await()
     }
 

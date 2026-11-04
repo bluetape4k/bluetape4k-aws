@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.modulith
 
+import io.bluetape4k.aws.sns.model.messageAttributeValueOf
 import io.bluetape4k.aws.spring.sns.SnsOperations
 import io.bluetape4k.aws.spring.sns.SnsPublishRequest
 import io.bluetape4k.codec.encodeHexString
@@ -43,10 +44,7 @@ internal class AwsModulithSnsTargetPublisher(
 
 private fun Map<String, String>.toAwsMessageAttributes(): Map<String, MessageAttributeValue> =
     mapValues { (_, value) ->
-        MessageAttributeValue.builder()
-            .dataType("String")
-            .stringValue(value)
-            .build()
+        messageAttributeValueOf(value, "String")
     }
 
 private fun sha256(value: String): String =

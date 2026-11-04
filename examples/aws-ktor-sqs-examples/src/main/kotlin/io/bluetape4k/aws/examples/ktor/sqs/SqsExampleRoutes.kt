@@ -4,6 +4,8 @@ import aws.sdk.kotlin.services.sqs.SqsClient
 import aws.sdk.kotlin.services.sqs.getQueueAttributes
 import aws.sdk.kotlin.services.sqs.model.Message
 import aws.sdk.kotlin.services.sqs.model.QueueAttributeName
+import io.bluetape4k.aws.kotlin.sqs.createQueue
+import io.bluetape4k.aws.kotlin.sqs.deleteQueue
 import io.bluetape4k.aws.ktor.sqs.SqsConsumer
 import io.bluetape4k.aws.ktor.sqs.SqsConsumerInterceptor
 import io.bluetape4k.aws.ktor.sqs.SqsConsumerObservation
@@ -11,8 +13,6 @@ import io.bluetape4k.aws.ktor.sqs.SqsConversionFailurePolicy
 import io.bluetape4k.aws.ktor.sqs.SqsFixedFailureVisibilityStrategy
 import io.bluetape4k.aws.ktor.sqs.SqsMessageContext
 import io.bluetape4k.aws.ktor.sqs.sqsConsumer
-import io.bluetape4k.aws.kotlin.sqs.createQueue
-import io.bluetape4k.aws.kotlin.sqs.deleteQueue
 import io.bluetape4k.ktor.core.requiredPathParameter
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.jackson.jackson

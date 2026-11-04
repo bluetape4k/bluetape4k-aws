@@ -77,7 +77,7 @@ internal object AwsConfigDataSupport: KLogging() {
         val aws = binder.bindOrCreate<AwsProperties>("bluetape4k.aws")
 
         val backendProperties = when (backend) {
-            AwsConfigDataBackend.S3 ->
+            AwsConfigDataBackend.S3         ->
                 binder.bindOrCreate<S3ConfigProperties>("bluetape4k.aws.s3.config")
 
             AwsConfigDataBackend.PARAMETER_STORE ->
@@ -93,10 +93,10 @@ internal object AwsConfigDataSupport: KLogging() {
     }
 
     private fun backendEnabled(properties: Any): Boolean = when (properties) {
-        is S3ConfigProperties -> properties.enabled
+        is S3ConfigProperties  -> properties.enabled
         is ParameterStoreProperties -> properties.enabled
         is SecretsManagerProperties -> properties.enabled
         is AppConfigProperties -> properties.enabled
-        else -> error("Unsupported AWS ConfigData backend properties.")
+        else                   -> error("Unsupported AWS ConfigData backend properties.")
     }
 }

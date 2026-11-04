@@ -2,10 +2,10 @@ package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
-import java.time.Duration
 
 class SqsListenerFlowPoliciesTest {
 
@@ -37,7 +37,7 @@ class SqsListenerFlowPoliciesTest {
             SqsProperties.Listener(maxInFlight = 0)
         }
         assertFailsWith<IllegalArgumentException> {
-            SqsProperties.Listener(queueAttributeCacheTtl = Duration.ofSeconds(-1))
+            SqsProperties.Listener(queueAttributeCacheTtl = (-1).seconds())
         }
     }
 }

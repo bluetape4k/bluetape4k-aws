@@ -1,8 +1,12 @@
 package io.bluetape4k.aws.ktor.sqs
 
+import aws.sdk.kotlin.services.sqs.SqsClient
+import aws.sdk.kotlin.services.sqs.model.SendMessageRequest
+import aws.sdk.kotlin.services.sqs.model.SendMessageResponse
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.ktor.observability.KtorMetricContract
+import io.bluetape4k.javatimes.millis
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
@@ -10,13 +14,9 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.mockk
-import aws.sdk.kotlin.services.sqs.SqsClient
-import aws.sdk.kotlin.services.sqs.model.SendMessageRequest
-import aws.sdk.kotlin.services.sqs.model.SendMessageResponse
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import java.time.Duration
 import java.util.concurrent.ConcurrentLinkedQueue
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -41,7 +41,7 @@ class MicrometerSqsConsumerObserverTest {
                 operation = KtorSqsObservationOperations.RECEIVE,
                 outcome = KtorSqsObservationOutcomes.SUCCESS,
                 queueUrl = "https://sqs.ap-northeast-2.amazonaws.com/000000000000/orders",
-                duration = Duration.ofMillis(3),
+                duration = 3.millis(),
             )
         )
 

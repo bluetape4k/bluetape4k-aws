@@ -5,6 +5,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import okio.withLock
 import org.springframework.boot.autoconfigure.condition.ConditionOutcome
 import org.springframework.boot.autoconfigure.condition.SpringBootCondition
 import org.springframework.context.SmartLifecycle
@@ -13,6 +14,7 @@ import org.springframework.context.annotation.Conditional
 import org.springframework.core.env.getProperty
 import org.springframework.core.type.AnnotatedTypeMetadata
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.locks.ReentrantLock
 import kotlin.time.Duration.Companion.seconds
 import java.time.Duration as JavaDuration
 
@@ -25,7 +27,7 @@ class SqsExtendedClientLifecycle(
     @Volatile
     private var running: Boolean = true
     private val callbackDelivered = AtomicBoolean(false)
-    private val stopLock = Any()
+    private val stopLock = ReentrantLock()
 
     override fun getPhase(): Int = PHASE
 
@@ -34,7 +36,7 @@ class SqsExtendedClientLifecycle(
     override fun isRunning(): Boolean = running
 
     override fun start() {
-        synchronized(stopLock) {
+        stopLock.withLock {
             running = true
         }
     }
@@ -48,7 +50,7 @@ class SqsExtendedClientLifecycle(
     }
 
     private fun stopInternal(callback: Runnable?) {
-        synchronized(stopLock) {
+        stopLock.withLock {
             if (!running) {
                 deliverCallback(callback)
                 return
@@ -110,9 +112,9 @@ class SqsExtendedLifecycleBudgetCondition: SpringBootCondition() {
         return when {
             raw.startsWith("PT") -> JavaDuration.parse(raw).seconds
             raw.endsWith("ms") -> raw.removeSuffix("ms").toDouble().div(MILLIS_PER_SECOND).toLong()
-            raw.endsWith("s") -> raw.removeSuffix("s").toDouble().toLong()
-            raw.endsWith("m") -> raw.removeSuffix("m").toDouble().times(SECONDS_PER_MINUTE).toLong()
-            else -> raw.toLongOrNull()?.div(MILLIS_PER_SECOND.toLong()) ?: DEFAULT_PHASE_SECONDS
+            raw.endsWith("s")  -> raw.removeSuffix("s").toDouble().toLong()
+            raw.endsWith("m")  -> raw.removeSuffix("m").toDouble().times(SECONDS_PER_MINUTE).toLong()
+            else               -> raw.toLongOrNull()?.div(MILLIS_PER_SECOND.toLong()) ?: DEFAULT_PHASE_SECONDS
         }
     }
 

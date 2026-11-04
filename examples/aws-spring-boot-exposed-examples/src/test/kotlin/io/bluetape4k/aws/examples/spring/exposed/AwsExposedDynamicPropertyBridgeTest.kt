@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.examples.spring.exposed
 
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.logging.KLogging
 import io.bluetape4k.testcontainers.PropertyExportingServer
 import io.bluetape4k.testcontainers.spring.registerDynamicProperties
 import org.junit.jupiter.api.AfterEach
@@ -15,6 +16,8 @@ import java.util.function.Supplier
  * 비변경을 고정합니다. AWS 전용 placeholder 해석은 Spring Boot 통합 테스트에서 검증합니다.
  */
 class AwsExposedDynamicPropertyBridgeTest {
+
+    companion object: KLogging()
 
     private val systemPropertyKey = "testcontainers.postgresql.jdbc-url"
 

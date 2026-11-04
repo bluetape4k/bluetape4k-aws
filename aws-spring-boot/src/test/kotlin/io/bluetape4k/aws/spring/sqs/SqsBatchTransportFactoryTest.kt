@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.sqs
 
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.invoking
 import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
@@ -13,20 +14,24 @@ import io.bluetape4k.assertions.shouldStartWith
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.concurrent.await
 import io.bluetape4k.concurrent.awaitTermination
+import io.bluetape4k.javatimes.millis
+import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import okio.withLock
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.batchmanager.SqsAsyncBatchManager
-import java.time.Duration
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.locks.ReentrantLock
 import kotlin.time.Duration.Companion.seconds
 
 class SqsBatchTransportFactoryTest {
@@ -70,8 +75,10 @@ class SqsBatchTransportFactoryTest {
         capturedScheduler.get() shouldBeSameInstanceAs scheduler
         resources.closeManager()
         resources.shutdownExecutorNow()
+
         verify(exactly = 1) { manager.close() }
         verify(exactly = 0) { client.close() }
+
         scheduler.shutdownNowCount shouldBeEqualTo 1
     }
 
@@ -97,6 +104,7 @@ class SqsBatchTransportFactoryTest {
         error.toString() shouldNotContain secret
         scheduler.shutdownNowCount shouldBeEqualTo 1
         scheduler.isShutdown.shouldBeTrue()
+
         verify(exactly = 0) { client.close() }
     }
 
@@ -118,9 +126,10 @@ class SqsBatchTransportFactoryTest {
                 )
             } shouldThrow SqsBatchStartupException::class
 
-            error.cleanupComponents shouldBeEqualTo listOf(SqsBatchCleanupComponent.EXECUTOR)
+            error.cleanupComponents.single() shouldBeEqualTo SqsBatchCleanupComponent.EXECUTOR
             Thread.currentThread().isInterrupted.shouldBeTrue()
             scheduler.shutdownNowCount shouldBeEqualTo 1
+
             verify(exactly = 0) { client.close() }
         } finally {
             Thread.interrupted()
@@ -131,7 +140,7 @@ class SqsBatchTransportFactoryTest {
     fun `scheduler creation failure becomes one safe manager startup exception`() {
         val secret = "scheduler-${Base58.randomString(16)}"
 
-        val error = invoking {
+        val error = assertFailsWith<SqsBatchStartupException> {
             SqsBatchTransportFactory.create(
                 properties = batchProperties(),
                 client = client,
@@ -139,22 +148,23 @@ class SqsBatchTransportFactoryTest {
                 managerFactory = { _, _, _ -> error("must not create manager") },
                 transportFactory = { error("must not create transport") },
             )
-        } shouldThrow SqsBatchStartupException::class
+        }
 
         error.startupComponent shouldBeEqualTo SqsBatchStartupComponent.MANAGER
         error.cleanupComponents.shouldBeEmpty()
         error.cause.shouldBeNull()
         error.suppressed.shouldBeEmpty()
         error.toString() shouldNotContain secret
+
         verify(exactly = 0) { client.close() }
     }
 
     @Test
     fun `transport assembly failure closes manager then scheduler and preserves one safe exception`() {
         val events = mutableListOf<String>()
-        val startupSecret = "startup-${Base58.randomString(16)}"
-        val managerCleanupSecret = "manager-cleanup-${Base58.randomString(16)}"
-        val executorCleanupSecret = "executor-cleanup-${Base58.randomString(16)}"
+        val startupSecret = "startup-${Base58.randomString(12)}"
+        val managerCleanupSecret = "manager-cleanup-${Base58.randomString(12)}"
+        val executorCleanupSecret = "executor-cleanup-${Base58.randomString(12)}"
 
         every { manager.close() } answers {
             events += "manager"
@@ -177,8 +187,10 @@ class SqsBatchTransportFactoryTest {
             )
         } shouldThrow SqsBatchStartupException::class
 
-        error shouldBeSameInstanceAs safe
         events shouldBeEqualTo listOf("manager", "executor")
+
+        log.debug { "error=$error" }
+        error shouldBeSameInstanceAs safe
         error.cleanupComponents shouldBeEqualTo
                 listOf(SqsBatchCleanupComponent.MANAGER, SqsBatchCleanupComponent.EXECUTOR)
         error.cause.shouldBeNull()
@@ -186,8 +198,10 @@ class SqsBatchTransportFactoryTest {
         error.toString() shouldNotContain startupSecret
         error.toString() shouldNotContain managerCleanupSecret
         error.toString() shouldNotContain executorCleanupSecret
+
         verify(exactly = 1) { manager.close() }
         verify(exactly = 0) { client.close() }
+
         scheduler.shutdownNowCount shouldBeEqualTo 1
     }
 
@@ -229,10 +243,10 @@ class SqsBatchTransportFactoryTest {
     private fun batchProperties(): SqsBatchProperties = SqsBatchProperties(
         enabled = true,
         maxBatchSize = 4,
-        flushInterval = Duration.ofMillis(50),
+        flushInterval = 50.millis(),
         maxInFlightEntries = 8,
         schedulerThreads = 2,
-        shutdownTimeout = Duration.ofSeconds(2),
+        shutdownTimeout = 2.seconds(),
     )
 }
 
@@ -263,7 +277,9 @@ private class ManagerIsolatingClassLoader(
     private val source: ClassLoader,
 ): ClassLoader(source) {
 
-    override fun loadClass(name: String, resolve: Boolean): Class<*> = synchronized(getClassLoadingLock(name)) {
+    private val lock = ReentrantLock()
+
+    override fun loadClass(name: String, resolve: Boolean): Class<*> = lock.withLock {
         if (name == MANAGER_SDK_CLASS) {
             throw ClassNotFoundException(name)
         }

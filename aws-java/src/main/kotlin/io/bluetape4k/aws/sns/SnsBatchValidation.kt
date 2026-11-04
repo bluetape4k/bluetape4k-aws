@@ -6,8 +6,7 @@ import software.amazon.awssdk.services.sns.model.PublishBatchRequestEntry
 
 private const val SNS_BATCH_MAX_SIZE: Int = 10
 
-@PublishedApi
-internal fun validatePublishBatchRequest(
+fun validatePublishBatchRequest(
     topicArn: String,
     entries: List<PublishBatchRequestEntry>,
 ) {
@@ -23,7 +22,6 @@ internal fun validatePublishBatchRequest(
     require(ids.size == ids.toSet().size) { "entries must have distinct ids." }
 }
 
-@PublishedApi
-internal fun PublishBatchRequest.validatePublishBatchRequest() {
+fun PublishBatchRequest.validatePublishBatchRequest() {
     validatePublishBatchRequest(topicArn(), publishBatchRequestEntries())
 }

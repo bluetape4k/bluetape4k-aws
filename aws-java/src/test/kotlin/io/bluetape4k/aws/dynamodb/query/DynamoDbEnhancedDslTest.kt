@@ -3,7 +3,6 @@ package io.bluetape4k.aws.dynamodb.query
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldNotBeEmpty
-import io.bluetape4k.aws.AbstractAwsTest
 import io.bluetape4k.aws.dynamodb.AbstractDynamodbTest
 import io.bluetape4k.aws.dynamodb.examples.food.model.FoodDocument
 import io.bluetape4k.aws.dynamodb.examples.food.model.FoodState

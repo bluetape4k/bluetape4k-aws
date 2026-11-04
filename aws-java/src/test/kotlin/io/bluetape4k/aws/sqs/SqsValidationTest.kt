@@ -1,11 +1,13 @@
 package io.bluetape4k.aws.sqs
 
 import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.aws.sqs.model.changeMessageVisibilityBatchRequestEntryOf
+import io.bluetape4k.aws.sqs.model.deleteMessageBatchRequestEntryOf
 import io.bluetape4k.aws.sqs.model.receiveMessageRequestOf
 import io.bluetape4k.aws.sqs.model.sendMessageBatchRequestEntryOf
 import io.bluetape4k.aws.sqs.model.sendMessageRequestOf
 import io.bluetape4k.logging.KLogging
-import io.mockk.clearAllMocks
+import io.mockk.clearMocks
 import io.mockk.mockk
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -24,7 +26,7 @@ class SqsValidationTest: AbstractSqsTest() {
 
     @BeforeEach
     fun beforeEach() {
-        clearAllMocks()
+        clearMocks(sync, async)
     }
 
     @Test
@@ -196,18 +198,15 @@ class SqsValidationTest: AbstractSqsTest() {
 
     private fun tooManyVisibilityEntries(): List<ChangeMessageVisibilityBatchRequestEntry> =
         List(11) { index ->
-            ChangeMessageVisibilityBatchRequestEntry.builder()
-                .id("visibility-$index")
-                .receiptHandle("receipt-$index")
-                .visibilityTimeout(30)
-                .build()
+            changeMessageVisibilityBatchRequestEntryOf(
+                "visibility-$index",
+                "receipt-$index",
+                30
+            )
         }
 
     private fun tooManyDeleteEntries(): List<DeleteMessageBatchRequestEntry> =
         List(11) { index ->
-            DeleteMessageBatchRequestEntry.builder()
-                .id("delete-$index")
-                .receiptHandle("receipt-$index")
-                .build()
+            deleteMessageBatchRequestEntryOf("delete-$index", "receipt-$index")
         }
 }

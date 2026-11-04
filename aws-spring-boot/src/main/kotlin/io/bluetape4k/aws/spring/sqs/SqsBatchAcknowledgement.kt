@@ -8,6 +8,8 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import okio.withLock
+import java.util.concurrent.locks.ReentrantLock
 
 /**
  * 하나의 ReceiveMessage 응답에 대한 전체·부분 acknowledgement API입니다.
@@ -93,7 +95,7 @@ internal class DefaultSqsBatchAcknowledgement(
     }
 
     private val mutex = Mutex()
-    private val snapshotLock = Any()
+    private val snapshotLock = ReentrantLock()
     private val items: List<Item>
     private val byReceiptHandle: Map<String, Item>
 
@@ -116,14 +118,14 @@ internal class DefaultSqsBatchAcknowledgement(
     }
 
     override val pending: List<SqsReceivedMessage>
-        get() = synchronized(snapshotLock) {
+        get() = snapshotLock.withLock {
             items.filter { it.state != ItemState.ACKED && it.state != ItemState.DEFERRED }
                 .map { it.message }
                 .toList()
         }
 
     override val completed: Boolean
-        get() = synchronized(snapshotLock) {
+        get() = snapshotLock.withLock {
             items.all { it.state == ItemState.ACKED || it.state == ItemState.DEFERRED }
         }
 
@@ -465,7 +467,7 @@ internal class DefaultSqsBatchAcknowledgement(
         val runnable = mutableListOf<Item>()
         requested.forEach { item ->
             when (item.state) {
-                ItemState.PENDING -> {
+                ItemState.PENDING   -> {
                     val predecessor = fifoPredecessor(item)
                     if (operation == SqsBatchAcknowledgementOperation.ACKNOWLEDGE && predecessor != null) {
                         preFailures += failure(item, "fifo_predecessor_pending")
@@ -491,7 +493,7 @@ internal class DefaultSqsBatchAcknowledgement(
         }
 
         val deferred = CompletableDeferred<Unit>()
-        synchronized(snapshotLock) {
+        snapshotLock.withLock {
             runnable.forEach {
                 it.state = ItemState.IN_FLIGHT
                 it.inFlight = deferred
@@ -528,7 +530,7 @@ internal class DefaultSqsBatchAcknowledgement(
             }
             SqsBatchAcknowledgementOperation.NACK,
             SqsBatchAcknowledgementOperation.CHANGE_VISIBILITY,
-                -> {
+                                                         -> {
                 val timeout = requireNotNull(timeoutSeconds)
                 val requests = runnable.map {
                     SqsChangeVisibilityRequest(it.message.messageId, it.message.receiptHandle, timeout)
@@ -542,7 +544,7 @@ internal class DefaultSqsBatchAcknowledgement(
                         item.message.messageId in successIds -> item to Outcome(true)
                         item.message.messageId in failureById ->
                             item to Outcome(false, failure(item, failureById.getValue(item.message.messageId)))
-                        else -> error("validated visibility response did not contain ${item.message.messageId}")
+                        else                                 -> error("validated visibility response did not contain ${item.message.messageId}")
                     }
                 }
             }
@@ -554,7 +556,7 @@ internal class DefaultSqsBatchAcknowledgement(
             when {
                 item.message.messageId in preSuccess -> item.message.messageId
                 externalById[item.message.messageId]?.second?.success == true -> item.message.messageId
-                else -> null
+                else                                 -> null
             }
         }
         val failures = requested.mapNotNull { item ->
@@ -572,12 +574,12 @@ internal class DefaultSqsBatchAcknowledgement(
     ) {
         val successIds = result.successfulMessageIds.toSet()
         mutex.withLock {
-            synchronized(snapshotLock) {
+            snapshotLock.withLock {
                 runnable.forEach { item ->
                     if (item.message.messageId in successIds) {
                         item.state = when (operation) {
                             SqsBatchAcknowledgementOperation.ACKNOWLEDGE -> ItemState.ACKED
-                            SqsBatchAcknowledgementOperation.NACK -> ItemState.DEFERRED
+                            SqsBatchAcknowledgementOperation.NACK        -> ItemState.DEFERRED
                             SqsBatchAcknowledgementOperation.CHANGE_VISIBILITY -> ItemState.PENDING
                         }
                         if (operation != SqsBatchAcknowledgementOperation.CHANGE_VISIBILITY) {
@@ -600,7 +602,7 @@ internal class DefaultSqsBatchAcknowledgement(
 
     private suspend fun rollbackState(runnable: List<Item>) {
         mutex.withLock {
-            synchronized(snapshotLock) {
+            snapshotLock.withLock {
                 runnable.forEach {
                     it.state = ItemState.PENDING
                     it.inFlight = null
@@ -650,7 +652,7 @@ internal class DefaultSqsBatchAcknowledgement(
         val status = when {
             failures.isEmpty() -> SqsBatchAcknowledgementStatus.SUCCESS
             successfulIds.isEmpty() -> SqsBatchAcknowledgementStatus.FAILURE
-            else -> SqsBatchAcknowledgementStatus.PARTIAL_FAILURE
+            else               -> SqsBatchAcknowledgementStatus.PARTIAL_FAILURE
         }
         return SqsBatchAcknowledgementResult(operation, status, successfulIds.toList(), failures.toList())
     }
@@ -666,7 +668,7 @@ internal class DefaultSqsBatchAcknowledgement(
 
     private fun SqsBatchAcknowledgementOperation.toAcknowledgementAction(): SqsAcknowledgementAction = when (this) {
         SqsBatchAcknowledgementOperation.ACKNOWLEDGE -> SqsAcknowledgementAction.ACK
-        SqsBatchAcknowledgementOperation.NACK -> SqsAcknowledgementAction.NACK
+        SqsBatchAcknowledgementOperation.NACK        -> SqsAcknowledgementAction.NACK
         SqsBatchAcknowledgementOperation.CHANGE_VISIBILITY -> SqsAcknowledgementAction.CHANGE_VISIBILITY
     }
 

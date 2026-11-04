@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.ktor.imds
 
 import aws.sdk.kotlin.runtime.config.imds.EndpointMode
+import io.bluetape4k.javatimes.millis
 import java.io.IOException
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -8,8 +9,7 @@ import java.net.URI
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
-import java.util.Locale
-import java.util.Properties
+import java.util.*
 
 internal data class ImdsResolvedProfile(
     val profileName: String,
@@ -75,7 +75,7 @@ internal class ImdsProfileResolver(
     private fun expandHome(value: String): Path = when {
         value == "~" -> userHome
         value.startsWith("~/") -> userHome.resolve(value.substring(2))
-        else -> Path.of(value)
+        else         -> Path.of(value)
     }
 
     private fun readProfile(path: Path, profileName: String, configFile: Boolean): Map<String, String> {
@@ -152,7 +152,7 @@ internal class ImdsProfileResolver(
         if (millis <= 0L) {
             throw IllegalStateException("$TIMEOUT_KEY must be at least one millisecond.")
         }
-        return Duration.ofMillis(millis)
+        return millis.millis()
     }
 
     private fun String?.nonBlank(): String? = this?.trim()?.takeIf(String::isNotEmpty)

@@ -11,6 +11,7 @@ import io.bluetape4k.assertions.shouldContentEqual
 import io.bluetape4k.assertions.shouldNotBe
 import io.bluetape4k.jackson3.Jackson
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.lambda.model.InvokeResponse
@@ -73,6 +74,7 @@ class LambdaPayloadCodecTest {
 
         val result = response.toLambdaInvocationResult(LambdaPayloadCodecs.utf8)
 
+        log.debug { "result=$result" }
         result.response shouldBeSameInstanceAs response
         result.statusCode shouldBeEqualTo 200
         result.functionError shouldBeEqualTo "Handled"
@@ -101,8 +103,10 @@ class LambdaPayloadCodecTest {
             .payload(SdkBytes.fromByteArray(ByteArray(0)))
             .build()
             .toLambdaInvocationResult(LambdaPayloadCodecs.bytes)
+
         val emptyPayload = empty.payload ?: error("empty payload was lost")
         emptyPayload.size shouldBeEqualTo 0
+
         val emptyValue = empty.value ?: error("empty value was lost")
         emptyValue.size shouldBeEqualTo 0
     }

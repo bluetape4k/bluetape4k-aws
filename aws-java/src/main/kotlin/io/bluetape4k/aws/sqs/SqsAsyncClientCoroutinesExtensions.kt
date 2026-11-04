@@ -25,7 +25,7 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse
  * // queueUrl.startsWith("http") == true
  * ```
  */
-suspend fun SqsAsyncClient.createQueue(queueName: String): String =
+suspend inline fun SqsAsyncClient.createQueue(queueName: String): String =
     createQueueAsync(queueName).await()
 
 /**
@@ -36,7 +36,7 @@ suspend fun SqsAsyncClient.createQueue(queueName: String): String =
  * // response.queueUrls().isNotEmpty() == true
  * ```
  */
-suspend fun SqsAsyncClient.listQueuesSuspend(
+suspend inline fun SqsAsyncClient.listQueuesSuspend(
     prefix: String? = null,
     nextToken: String? = null,
     maxResults: Int? = null,
@@ -51,7 +51,7 @@ suspend fun SqsAsyncClient.listQueuesSuspend(
  * // response.queueUrl().isNotEmpty() == true
  * ```
  */
-suspend fun SqsAsyncClient.getQueueUrl(
+suspend inline fun SqsAsyncClient.getQueueUrl(
     queueName: String,
     queueOwnerAWSAccountId: String? = null,
 ): GetQueueUrlResponse =
@@ -65,7 +65,7 @@ suspend fun SqsAsyncClient.getQueueUrl(
  * // response.messageId().isNotEmpty() == true
  * ```
  */
-suspend fun SqsAsyncClient.send(
+suspend inline fun SqsAsyncClient.send(
     queueUrl: String,
     messageBody: String,
     delaySeconds: Int? = null,
@@ -80,7 +80,7 @@ suspend fun SqsAsyncClient.send(
  * // response.successful().size == 2
  * ```
  */
-suspend fun SqsAsyncClient.sendBatch(
+suspend inline fun SqsAsyncClient.sendBatch(
     queueUrl: String,
     vararg entries: SendMessageBatchRequestEntry,
 ): SendMessageBatchResponse =
@@ -94,7 +94,7 @@ suspend fun SqsAsyncClient.sendBatch(
  * // response.successful().size == 2
  * ```
  */
-suspend fun SqsAsyncClient.sendBatch(
+suspend inline fun SqsAsyncClient.sendBatch(
     queueUrl: String,
     entries: Collection<SendMessageBatchRequestEntry>,
 ): SendMessageBatchResponse =
@@ -108,10 +108,10 @@ suspend fun SqsAsyncClient.sendBatch(
  * // response.messages().size <= 5
  * ```
  */
-suspend fun SqsAsyncClient.receiveMessages(
+suspend inline fun SqsAsyncClient.receiveMessages(
     queueUrl: String,
     maxResults: Int? = null,
-    builder: ReceiveMessageRequest.Builder.() -> Unit = {},
+    crossinline builder: ReceiveMessageRequest.Builder.() -> Unit = {},
 ): ReceiveMessageResponse =
     receiveMessagesAsync(queueUrl, maxResults, builder).await()
 
@@ -123,7 +123,7 @@ suspend fun SqsAsyncClient.receiveMessages(
  * // response.sdkHttpResponse().isSuccessful == true
  * ```
  */
-suspend fun SqsAsyncClient.changeMessageVisibility(
+suspend inline fun SqsAsyncClient.changeMessageVisibility(
     queueUrl: String,
     receiptHandle: String? = null,
     visibilityTimeout: Int? = null,
@@ -138,7 +138,7 @@ suspend fun SqsAsyncClient.changeMessageVisibility(
  * // response.successful().size == 2
  * ```
  */
-suspend fun SqsAsyncClient.changeMessageVisibilityBatch(
+suspend inline fun SqsAsyncClient.changeMessageVisibilityBatch(
     queueUrl: String,
     vararg entries: ChangeMessageVisibilityBatchRequestEntry,
 ): ChangeMessageVisibilityBatchResponse =
@@ -152,7 +152,7 @@ suspend fun SqsAsyncClient.changeMessageVisibilityBatch(
  * // response.successful().size == 2
  * ```
  */
-suspend fun SqsAsyncClient.changeMessageVisibilityBatch(
+suspend inline fun SqsAsyncClient.changeMessageVisibilityBatch(
     queueUrl: String,
     entries: Collection<ChangeMessageVisibilityBatchRequestEntry>,
 ): ChangeMessageVisibilityBatchResponse =
@@ -166,7 +166,7 @@ suspend fun SqsAsyncClient.changeMessageVisibilityBatch(
  * // response.sdkHttpResponse().isSuccessful == true
  * ```
  */
-suspend fun SqsAsyncClient.deleteMessage(
+suspend inline fun SqsAsyncClient.deleteMessage(
     queueUrl: String,
     receiptHandle: String? = null,
 ): DeleteMessageResponse =
@@ -180,7 +180,7 @@ suspend fun SqsAsyncClient.deleteMessage(
  * // response.successful().size == 2
  * ```
  */
-suspend fun SqsAsyncClient.deleteMessageBatch(
+suspend inline fun SqsAsyncClient.deleteMessageBatch(
     queueUrl: String,
     vararg entries: DeleteMessageBatchRequestEntry,
 ): DeleteMessageBatchResponse =
@@ -194,7 +194,7 @@ suspend fun SqsAsyncClient.deleteMessageBatch(
  * // response.successful().size == 2
  * ```
  */
-suspend fun SqsAsyncClient.deleteMessageBatch(
+suspend inline fun SqsAsyncClient.deleteMessageBatch(
     queueUrl: String,
     entries: Collection<DeleteMessageBatchRequestEntry>,
 ): DeleteMessageBatchResponse =
@@ -208,5 +208,5 @@ suspend fun SqsAsyncClient.deleteMessageBatch(
  * // response.sdkHttpResponse().isSuccessful == true
  * ```
  */
-suspend fun SqsAsyncClient.deleteQueue(queueUrl: String): DeleteQueueResponse =
+suspend inline fun SqsAsyncClient.deleteQueue(queueUrl: String): DeleteQueueResponse =
     deleteQueueAsync(queueUrl).await()

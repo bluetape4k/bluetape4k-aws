@@ -9,6 +9,7 @@ import io.bluetape4k.aws.spring.kms.KmsDataKey
 import io.bluetape4k.aws.spring.kms.KmsOperations
 import io.bluetape4k.concurrent.completableFutureOf
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.KLogging
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
@@ -41,6 +42,8 @@ import javax.crypto.spec.SecretKeySpec
 import kotlin.reflect.KClass
 
 class S3KmsKeyLifetimeTest {
+
+    companion object: KLogging()
 
     private val client = mockk<S3AsyncClient>(relaxed = true)
 

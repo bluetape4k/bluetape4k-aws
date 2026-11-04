@@ -1,26 +1,22 @@
 package io.bluetape4k.aws.ktor.s3
 
 import aws.sdk.kotlin.runtime.auth.credentials.DefaultChainCredentialsProvider
+import aws.smithy.kotlin.runtime.auth.awscredentials.CloseableCredentialsProvider
+import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
 import aws.smithy.kotlin.runtime.auth.awssigning.AwsSignatureType
 import aws.smithy.kotlin.runtime.auth.awssigning.AwsSignedBodyHeader
 import aws.smithy.kotlin.runtime.auth.awssigning.AwsSigner
 import aws.smithy.kotlin.runtime.auth.awssigning.AwsSigningConfig
 import aws.smithy.kotlin.runtime.auth.awssigning.DefaultAwsSigner
 import aws.smithy.kotlin.runtime.auth.awssigning.HashSpecification
-import aws.smithy.kotlin.runtime.auth.awscredentials.CloseableCredentialsProvider
-import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
 import aws.smithy.kotlin.runtime.collections.emptyAttributes
-import aws.smithy.kotlin.runtime.http.HttpMethod as SmithyHttpMethod
-import aws.smithy.kotlin.runtime.http.request.HttpRequest as SmithyHttpRequest
 import aws.smithy.kotlin.runtime.http.request.headers
 import aws.smithy.kotlin.runtime.http.request.url
-import aws.smithy.kotlin.runtime.net.url.Url as SmithyUrl
-import aws.smithy.kotlin.runtime.time.Instant as SmithyInstant
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.AwsKtorHttpClientCustomizer
-import io.bluetape4k.aws.ktor.validateAwsKotlinServiceEndpoint
 import io.bluetape4k.aws.ktor.client.AwsSigV4AuthLocation
 import io.bluetape4k.aws.ktor.client.AwsSigV4Plugin
+import io.bluetape4k.aws.ktor.validateAwsKotlinServiceEndpoint
 import io.bluetape4k.javatimes.days
 import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.logging.coroutines.KLoggingChannel
@@ -58,11 +54,14 @@ import io.ktor.http.contentType
 import io.ktor.http.encodeURLPathPart
 import io.ktor.http.takeFrom
 import java.nio.charset.Charset
-import java.nio.charset.StandardCharsets
 import java.time.Clock
 import java.time.Duration
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration.Companion.milliseconds
+import aws.smithy.kotlin.runtime.http.HttpMethod as SmithyHttpMethod
+import aws.smithy.kotlin.runtime.http.request.HttpRequest as SmithyHttpRequest
+import aws.smithy.kotlin.runtime.net.url.Url as SmithyUrl
+import aws.smithy.kotlin.runtime.time.Instant as SmithyInstant
 
 private const val S3_SERVICE = "s3"
 private const val S3_METADATA_PREFIX = "x-amz-meta-"
@@ -446,7 +445,7 @@ class S3KtorClient(
     suspend fun getConfigObject(
         bucket: String,
         key: String,
-        charset: Charset = StandardCharsets.UTF_8,
+        charset: Charset = Charsets.UTF_8,
     ): S3KtorConfigObject {
         val response = getObject(bucket, key)
         return S3KtorConfigObject(
@@ -542,7 +541,7 @@ class S3KtorClient(
         return URLBuilder().applyS3Endpoint(bucket = bucket, key = key).build()
     }
 
-    private suspend fun presign(method: HttpMethod, url: Url, expires: Duration): S3KtorPresignedRequest {
+    private suspend inline fun presign(method: HttpMethod, url: Url, expires: Duration): S3KtorPresignedRequest {
         expires.requireGt(Duration.ZERO, "expires")
         expires.requireInRange(MIN_PRESIGN_EXPIRY, MAX_PRESIGN_EXPIRY, "expires")
 

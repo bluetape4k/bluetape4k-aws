@@ -9,6 +9,7 @@ import io.bluetape4k.aws.ktor.s3.S3KtorDataKey
 import io.bluetape4k.aws.ktor.s3.S3KtorDataKeyProvider
 import io.bluetape4k.aws.ktor.s3.S3KtorPresignedRequest
 import io.bluetape4k.aws.ktor.s3.s3KtorClientOf
+import io.bluetape4k.javatimes.minutes
 import io.ktor.http.Url
 import java.time.Clock
 import java.time.Duration
@@ -102,7 +103,7 @@ object S3KtorExamples {
         s3: S3KtorClient,
         bucket: String,
         key: String,
-        expires: Duration = Duration.ofMinutes(15),
+        expires: Duration = 15.minutes(),
     ): S3KtorPresignedRequest =
         s3.presignGetObject(bucket, key, expires)
 }

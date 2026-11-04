@@ -57,7 +57,7 @@ inline fun stsClientOf(
  *
  * @param block 설정된 [StsClient]를 전달받는 suspend block이다.
  */
-suspend fun <R> withStsClient(
+suspend inline fun <R> withStsClient(
     endpointUrl: Url? = null,
     region: String? = null,
     credentialsProvider: CredentialsProvider? = null,

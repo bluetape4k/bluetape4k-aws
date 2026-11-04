@@ -37,7 +37,7 @@ inline fun createAliasRequest(
  * // request.targetKeyId() == "key-id"
  * ```
  */
-fun createAliasRequestOf(
+inline fun createAliasRequestOf(
     aliasName: String,
     targetKeyId: String,
     builder: CreateAliasRequest.Builder.() -> Unit = {},

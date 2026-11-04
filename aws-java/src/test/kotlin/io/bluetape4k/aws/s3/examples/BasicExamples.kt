@@ -28,10 +28,7 @@ class BasicExamples: AbstractS3Test() {
     fun `모든 bucket 을 조회합니다`() {
         val response = s3Client.listBuckets(listBucketsRequestOf())
 
-        val buckets = response.buckets()
-        buckets.forEach { bucket ->
-            log.debug { "Bucket=${bucket.name()}" }
-        }
+        val buckets = response.buckets().onEach { log.debug { "Bucket: $it" } }
         buckets.shouldNotBeEmpty()
     }
 
@@ -52,10 +49,7 @@ class BasicExamples: AbstractS3Test() {
 
         val response = s3Client.listObjectsV2 { it.bucket(bucket) }
         val objects = response.contents()
-
-        objects.forEach {
-            log.debug { "key=${it.key()}, size=${it.size()}, owner=${it.owner()}" }
-        }
+            .onEach { log.debug { "key=${it.key()}, size=${it.size()}, owner=${it.owner()}" } }
         objects.map { it.key() }.sorted() shouldBeEqualTo keys
     }
 
@@ -74,10 +68,7 @@ class BasicExamples: AbstractS3Test() {
         // 삭제할 Object 들의 object identifier 로 [Delete] 를 구성한다
         val delete = deleteOf(objectIds)
         val response = s3Client.deleteObjects(deleteObjectsRequestOf(BUCKET_NAME, delete))
-        val deletedObjects = response.deleted()
-        deletedObjects.forEach {
-            log.debug { "Deleted object. key=${it.key()}" }
-        }
+        response.deleted().onEach { log.debug { "Deleted object. key=${it.key()}" } }
         response.deleted() shouldHaveSize objectSize
     }
 
@@ -88,10 +79,7 @@ class BasicExamples: AbstractS3Test() {
 
         val aclResponse = s3Client.getObjectAcl { it.bucket(BUCKET_NAME).key(key) }
         val grants = aclResponse.grants()
-
-        grants.forEach {
-            log.debug { "Gratee id=${it.grantee()}, permission=${it.permission()}" }
-        }
+            .onEach { log.debug { "Gratee id=${it.grantee()}, permission=${it.permission()}" } }
 
         grants.shouldNotBeEmpty()
         val grant = grants.first()

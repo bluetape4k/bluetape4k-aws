@@ -1,8 +1,8 @@
 package io.bluetape4k.aws.ktor.imds
 
 import io.bluetape4k.ToStringBuilder
+import io.bluetape4k.javatimes.requirePositiveDuration
 import io.bluetape4k.javatimes.seconds
-import io.bluetape4k.support.requireGt
 import io.bluetape4k.support.requireNotBlank
 import kotlinx.coroutines.withTimeout
 import java.time.Duration
@@ -12,10 +12,10 @@ import kotlin.time.toKotlinDuration
 internal class ImdsKtorTemplate(
     private val adapter: ImdsSmithyAdapter,
     private val requestTimeout: Duration = 1.seconds(),
-) : ImdsKtorOperations {
+): ImdsKtorOperations {
 
     init {
-        requestTimeout.requireGt(Duration.ZERO, "requestTimeout")
+        requestTimeout.requirePositiveDuration("requestTimeout")
     }
 
     override suspend fun get(path: String): String {

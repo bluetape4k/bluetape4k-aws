@@ -24,7 +24,7 @@ class ImdsCoroutinesTemplateTest {
 
     companion object: KLoggingChannel()
 
-    private val client = mockk<Ec2MetadataAsyncClient>()
+    private val client = mockk<Ec2MetadataAsyncClient>(relaxed = true)
 
     @BeforeEach
     fun resetMocks() {

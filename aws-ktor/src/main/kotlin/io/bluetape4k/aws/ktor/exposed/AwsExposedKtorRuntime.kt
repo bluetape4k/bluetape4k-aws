@@ -70,10 +70,10 @@ class AwsExposedKtorRuntime internal constructor(
             when (state.value) {
                 LifecycleState.STARTED -> return
                 LifecycleState.STARTING -> return
-                LifecycleState.NEW -> return
+                LifecycleState.NEW     -> return
                 LifecycleState.STOPPING,
                 LifecycleState.STOPPED,
-                    -> throw IllegalStateException("AwsExposedPlugin cannot be started after it has stopped.")
+                                       -> throw IllegalStateException("AwsExposedPlugin cannot be started after it has stopped.")
             }
         }
 
@@ -100,7 +100,7 @@ class AwsExposedKtorRuntime internal constructor(
      */
     suspend fun stop() {
         val closeable = when (state.value) {
-            LifecycleState.NEW -> {
+            LifecycleState.NEW     -> {
                 state.compareAndSet(LifecycleState.NEW, LifecycleState.STOPPED)
                 null
             }
@@ -114,7 +114,7 @@ class AwsExposedKtorRuntime internal constructor(
             }
             LifecycleState.STOPPING,
             LifecycleState.STOPPED,
-                -> null
+                                   -> null
         } ?: return
 
         try {

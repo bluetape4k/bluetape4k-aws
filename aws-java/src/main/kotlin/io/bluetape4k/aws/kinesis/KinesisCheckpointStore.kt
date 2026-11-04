@@ -3,6 +3,7 @@ package io.bluetape4k.aws.kinesis
 /** lease fencing token과 함께 durable checkpoint를 조건부 저장하는 SPI입니다. */
 interface KinesisCheckpointStore {
     suspend fun load(key: KinesisShardKey): KinesisCheckpoint?
+
     /** downstream emit 뒤에 호출하며 lease counter가 stale이면 실패해야 합니다. */
     suspend fun save(key: KinesisShardKey, checkpoint: KinesisCheckpoint, lease: KinesisLease)
 }

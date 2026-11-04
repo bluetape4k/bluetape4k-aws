@@ -5,6 +5,9 @@ import io.bluetape4k.assertions.shouldBeLessOrEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.concurrent.sequence
+import io.bluetape4k.javatimes.seconds
+import io.bluetape4k.logging.KLogging
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -30,7 +33,6 @@ import software.amazon.awssdk.services.sqs.model.SendMessageBatchResultEntry
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 import software.amazon.awssdk.services.sqs.model.SqsException
-import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.Delayed
@@ -39,6 +41,8 @@ import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 class SqsAsyncBatchManagerTransportTest {
+
+    companion object: KLogging()
 
     @Test
     fun `manager adapter preserves request fields and source future cancellation`() {
@@ -121,7 +125,9 @@ class SqsAsyncBatchManagerTransportTest {
     fun `real manager flushes on size and controlled interval without wall clock sleep`() {
         val client = mockk<SqsAsyncClient>()
         val captured = CopyOnWriteArrayList<SendMessageBatchRequest>()
-        every { client.sendMessageBatch(any<SendMessageBatchRequest>()) } answers {
+        every {
+            client.sendMessageBatch(any<SendMessageBatchRequest>())
+        } answers {
             firstArg<SendMessageBatchRequest>().let { request ->
                 captured += request
                 CompletableFuture.completedFuture(successfulSendResponse(request))
@@ -159,13 +165,17 @@ class SqsAsyncBatchManagerTransportTest {
         val client = mockk<SqsAsyncClient>()
         val sendBatches = CopyOnWriteArrayList<SendMessageBatchRequest>()
         val deleteBatches = CopyOnWriteArrayList<DeleteMessageBatchRequest>()
-        every { client.sendMessageBatch(any<SendMessageBatchRequest>()) } answers {
+        every {
+            client.sendMessageBatch(any<SendMessageBatchRequest>())
+        } answers {
             firstArg<SendMessageBatchRequest>().let { request ->
                 sendBatches += request
                 CompletableFuture.completedFuture(successfulSendResponse(request))
             }
         }
-        every { client.deleteMessageBatch(any<DeleteMessageBatchRequest>()) } answers {
+        every {
+            client.deleteMessageBatch(any<DeleteMessageBatchRequest>())
+        } answers {
             firstArg<DeleteMessageBatchRequest>().let { request ->
                 deleteBatches += request
                 CompletableFuture.completedFuture(successfulDeleteResponse(request))
@@ -175,10 +185,13 @@ class SqsAsyncBatchManagerTransportTest {
         val manager = manager(client, scheduler, maxBatchSize = 2)
         val transport = SqsAsyncBatchManagerTransport(manager)
 
-        val sameQueue = listOf("same-1", "same-2").map { prefix ->
-            async(Dispatchers.Default) { transport.send(sendEntry(prefix, queue = "queue-same")) }
-        }.awaitAll()
-        sameQueue.forEach { it.join() }
+        val sameQueue = listOf("same-1", "same-2")
+            .map { prefix ->
+                async(Dispatchers.Default) {
+                    transport.send(sendEntry(prefix, queue = "queue-same"))
+                }
+            }.awaitAll()
+        sameQueue.sequence().join()
 
         sendBatches shouldHaveSize 1
         sendBatches.single().entries() shouldHaveSize 2
@@ -200,7 +213,9 @@ class SqsAsyncBatchManagerTransportTest {
     @Test
     fun `real manager normalizes partial service and shared transport failures`() {
         val client = mockk<SqsAsyncClient>()
-        every { client.sendMessageBatch(any<SendMessageBatchRequest>()) } answers {
+        every {
+            client.sendMessageBatch(any<SendMessageBatchRequest>())
+        } answers {
             val request = firstArg<SendMessageBatchRequest>()
             CompletableFuture.completedFuture(
                 SendMessageBatchResponse.builder()
@@ -275,10 +290,10 @@ class SqsAsyncBatchManagerTransportTest {
         properties = SqsBatchProperties(
             enabled = true,
             maxBatchSize = maxBatchSize,
-            flushInterval = Duration.ofSeconds(30),
+            flushInterval = 30.seconds(),
             maxInFlightEntries = maxBatchSize * 2,
             schedulerThreads = 1,
-            shutdownTimeout = Duration.ofSeconds(30),
+            shutdownTimeout = 30.seconds(),
         ),
         client = client,
         executor = scheduler,

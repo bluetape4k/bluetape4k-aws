@@ -1,18 +1,18 @@
 package io.bluetape4k.aws.ktor.sns
 
+import aws.sdk.kotlin.services.sns.SnsClient
 import aws.sdk.kotlin.services.sns.endpoints.DefaultSnsEndpointProvider
 import aws.sdk.kotlin.services.sns.endpoints.SnsEndpointProvider
-import io.bluetape4k.aws.ktor.AwsKotlinEndpointPolicyInterceptor
-import io.bluetape4k.aws.ktor.checkedAwsKotlinEndpointProvider
-import io.bluetape4k.aws.ktor.requireAwsKotlinEndpointProviderUnset
-import aws.sdk.kotlin.services.sns.SnsClient
 import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
 import aws.smithy.kotlin.runtime.http.engine.HttpClientEngine
 import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.ToStringBuilder
+import io.bluetape4k.aws.kotlin.sns.snsClientOf
+import io.bluetape4k.aws.ktor.AwsKotlinEndpointPolicyInterceptor
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.AwsKtorSnsClientCustomizer
-import io.bluetape4k.aws.kotlin.sns.snsClientOf
+import io.bluetape4k.aws.ktor.checkedAwsKotlinEndpointProvider
+import io.bluetape4k.aws.ktor.requireAwsKotlinEndpointProviderUnset
 import java.io.Serializable
 
 /**

@@ -5,10 +5,10 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.AbstractAwsTest
 import io.bluetape4k.aws.bedrock.model.contentBlockOf
-import io.bluetape4k.aws.bedrock.model.converseRequestOf
 import io.bluetape4k.aws.bedrock.model.converseRequest
-import io.bluetape4k.aws.bedrock.model.converseStreamRequestOf
+import io.bluetape4k.aws.bedrock.model.converseRequestOf
 import io.bluetape4k.aws.bedrock.model.converseStreamRequest
+import io.bluetape4k.aws.bedrock.model.converseStreamRequestOf
 import io.bluetape4k.aws.bedrock.model.userMessageOf
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug

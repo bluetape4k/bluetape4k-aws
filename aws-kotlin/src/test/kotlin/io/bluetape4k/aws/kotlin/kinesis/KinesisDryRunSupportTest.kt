@@ -516,7 +516,7 @@ class KinesisDryRunSupportTest {
     fun `operation deadline rejects budgets above thirty seconds`() = runTest {
         @Suppress("UnusedExpression")
         assertFailsWith<IllegalArgumentException> {
-            withinKinesisOperationDeadline(timeout = 31.seconds) { "unreachable" }
+            withinKinesisOperationDeadline(timeout = 31.seconds) { /* "unreachable" */ }
         }
     }
 

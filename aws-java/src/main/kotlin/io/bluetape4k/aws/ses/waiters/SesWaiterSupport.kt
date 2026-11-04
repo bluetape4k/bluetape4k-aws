@@ -27,7 +27,7 @@ import software.amazon.awssdk.services.ses.waiters.SesWaiter
  * @param builder [SesWaiter.Builder] 초기화 람다
  * @return [sesWaiter] 인스턴스
  */
-fun sesWaiter(
+inline fun sesWaiter(
     builder: SesWaiter.Builder.() -> Unit,
 ): SesWaiter {
     return SesWaiter.builder().apply(builder).build()
@@ -48,12 +48,13 @@ fun sesWaiter(
  * @param configuration [WaiterOverrideConfiguration] 인스턴스
  * @return [SesWaiter] 인스턴스
  */
-fun sesWaiterOf(
+inline fun sesWaiterOf(
     client: SesClient,
     configuration: WaiterOverrideConfiguration = waiterOverrideConfigurationOf(),
     builder: SesWaiter.Builder.() -> Unit = {},
-): SesWaiter = sesWaiter {
-    client(client)
-    overrideConfiguration(configuration)
-    builder()
-}
+): SesWaiter =
+    sesWaiter {
+        client(client)
+        overrideConfiguration(configuration)
+        builder()
+    }

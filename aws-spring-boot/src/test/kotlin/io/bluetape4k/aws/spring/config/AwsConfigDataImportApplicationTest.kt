@@ -188,11 +188,14 @@ class AwsConfigDataImportApplicationTest {
         try {
             every { S3ConfigDataSdkAdapter.load(bootstrap, first) } returns mapOf("app.value" to "first")
             every { S3ConfigDataSdkAdapter.load(bootstrap, second) } returns mapOf("app.value" to "second")
+
             val loader = S3ConfigDataLoader(mockk(relaxed = true), bootstrap)
             val merged = linkedMapOf<String, Any>()
+
             listOf(first, second).forEach { resource ->
                 val data = loader.load(context, resource)!!
                 val source = data.propertySources.single().source as Map<String, Any>
+                log.debug { "source=$source" }
                 merged.putAll(source)
             }
 

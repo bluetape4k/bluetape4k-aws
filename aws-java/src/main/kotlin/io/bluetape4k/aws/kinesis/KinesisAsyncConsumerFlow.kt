@@ -136,7 +136,7 @@ private data class PendingRecord(
     val ack: CompletableDeferred<Unit>,
 )
 
-private suspend fun KinesisAsyncClient.discoverShardGraph(
+private suspend inline fun KinesisAsyncClient.discoverShardGraph(
     streamName: String,
     options: KinesisConsumerOptions,
     metrics: KinesisFlowMetrics,
@@ -175,7 +175,7 @@ private suspend fun KinesisAsyncClient.discoverShardGraph(
     "ThrowingExceptionFromFinally",
     "TooGenericExceptionCaught",
 )
-private suspend fun KinesisAsyncClient.consumeShard(
+private suspend inline fun KinesisAsyncClient.consumeShard(
     scope: CoroutineScope,
     streamName: String,
     streamIdentity: String,
@@ -433,7 +433,7 @@ private fun kotlinx.coroutines.CoroutineScope.launchHeartbeat(
     }
 }
 
-private suspend fun validateLease(
+private suspend inline fun validateLease(
     leaseStore: KinesisLeaseStore,
     options: KinesisConsumerOptions,
     currentLease: AtomicReference<KinesisLease>,
@@ -451,11 +451,11 @@ private suspend fun validateLease(
     return renewed
 }
 
-private suspend fun emitEvent(metrics: KinesisFlowMetrics, event: KinesisFlowEvent) {
+private suspend inline fun emitEvent(metrics: KinesisFlowMetrics, event: KinesisFlowEvent) {
     metrics.onEvent(event)
 }
 
-private suspend fun emitRetry(
+private suspend inline fun emitRetry(
     metrics: KinesisFlowMetrics,
     streamIdentity: String,
     shardId: String,
@@ -475,7 +475,7 @@ private suspend fun emitRetry(
     )
 }
 
-private suspend fun KinesisAsyncClient.fetchShardIterator(
+private suspend inline fun KinesisAsyncClient.fetchShardIterator(
     streamName: String,
     shardId: String,
     position: KinesisStartingPosition,
@@ -507,7 +507,7 @@ private suspend fun KinesisAsyncClient.fetchShardIterator(
 }
 
 @Suppress("CyclomaticComplexMethod", "NestedBlockDepth", "ThrowsCount")
-private suspend fun KinesisAsyncClient.discoverShards(
+private suspend inline fun KinesisAsyncClient.discoverShards(
     streamName: String,
     options: KinesisConsumerOptions,
     metrics: KinesisFlowMetrics,

@@ -2,6 +2,7 @@ package io.bluetape4k.aws.spring.sns
 
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
+import io.bluetape4k.support.requireEndsWith
 import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.requireNotNull
 import kotlinx.coroutines.CancellationException
@@ -109,7 +110,7 @@ class SnsCoroutinesTemplate private constructor(
         attributes: Map<String, String>,
     ): String {
         topicName.requireTopicName()
-        require(topicName.endsWith(".fifo")) {
+        topicName.requireEndsWith(".fifo") {
             "FIFO topic name must end with .fifo."
         }
 

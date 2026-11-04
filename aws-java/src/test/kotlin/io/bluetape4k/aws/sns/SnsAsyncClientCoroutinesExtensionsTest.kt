@@ -6,10 +6,13 @@ import io.bluetape4k.aws.sns.model.publishBatchRequestEntryOf
 import io.bluetape4k.aws.sns.model.publishBatchRequestOf
 import io.bluetape4k.concurrent.completableFutureOf
 import io.bluetape4k.junit5.coroutines.assertResourceCancelledOnCoroutineCancellation
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.sns.SnsAsyncClient
 import software.amazon.awssdk.services.sns.model.CreatePlatformEndpointRequest
@@ -22,22 +25,30 @@ import java.util.function.Consumer
 
 class SnsAsyncClientCoroutinesExtensionsTest {
 
+    companion object: KLoggingChannel()
+
+    private val asyncClient = mockk<SnsAsyncClient>()
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(asyncClient)
+    }
+
     @Test
     fun `createPlatformEndpoint는 createPlatformEndpoint 결과를 반환한다`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         lateinit var capturedConsumer: Consumer<CreatePlatformEndpointRequest.Builder>
         val response = CreatePlatformEndpointResponse.builder()
             .endpointArn("arn:aws:sns:ap-northeast-2:000000000000:endpoint/test")
             .build()
 
         every {
-            client.createPlatformEndpoint(any<Consumer<CreatePlatformEndpointRequest.Builder>>())
+            asyncClient.createPlatformEndpoint(any<Consumer<CreatePlatformEndpointRequest.Builder>>())
         } answers {
             capturedConsumer = firstArg()
             completableFutureOf(response)
         }
 
-        val result = client.createPlatformEndpoint(
+        val result = asyncClient.createPlatformEndpoint(
             token = "token-1",
             platformApplicationArn = "arn:aws:sns:ap-northeast-2:000000000000:app/test",
         )
@@ -50,28 +61,26 @@ class SnsAsyncClientCoroutinesExtensionsTest {
         capturedRequest.token() shouldBeEqualTo "token-1"
         capturedRequest.platformApplicationArn() shouldBeEqualTo "arn:aws:sns:ap-northeast-2:000000000000:app/test"
 
-        verify(exactly = 1) { client.createPlatformEndpoint(any<Consumer<CreatePlatformEndpointRequest.Builder>>()) }
+        verify(exactly = 1) { asyncClient.createPlatformEndpoint(any<Consumer<CreatePlatformEndpointRequest.Builder>>()) }
     }
 
     @Test
     fun `publishBatchAsync는 request를 전달하고 future를 반환한다`() {
-        val client = mockk<SnsAsyncClient>()
         val request = publishBatchRequestOf(
             topicArn = "arn:aws:sns:ap-northeast-2:000000000000:topic",
             entries = listOf(publishBatchRequestEntryOf("entry-1", "message-1")),
         )
         val response = PublishBatchResponse.builder().build()
         val future = CompletableFuture.completedFuture(response)
-        every { client.publishBatch(request) } returns future
+        every { asyncClient.publishBatch(request) } returns future
 
-        client.publishBatchAsync(request).join() shouldBeEqualTo response
+        asyncClient.publishBatchAsync(request).join() shouldBeEqualTo response
 
-        verify(exactly = 1) { client.publishBatch(request) }
+        verify(exactly = 1) { asyncClient.publishBatch(request) }
     }
 
     @Test
     fun `publishBatchSuspend는 원본 cancellation을 전달한다`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         val request = PublishBatchRequest.builder()
             .topicArn("arn:aws:sns:ap-northeast-2:000000000000:topic")
             .publishBatchRequestEntries(
@@ -79,32 +88,31 @@ class SnsAsyncClientCoroutinesExtensionsTest {
             )
             .build()
         val future = CompletableFuture<PublishBatchResponse>().also { it.cancel(false) }
-        every { client.publishBatch(request) } returns future
+        every { asyncClient.publishBatch(request) } returns future
 
         assertFailsWith<CancellationException> {
-            client.publishBatchSuspend(request)
+            asyncClient.publishBatchSuspend(request)
         }
     }
 
     @Test
     fun `publishBatchSuspend는 caller cancellation을 underlying future에 전달한다`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         val request = publishBatchRequestOf(
             topicArn = "arn:aws:sns:ap-northeast-2:000000000000:topic",
             entries = listOf(publishBatchRequestEntryOf("entry-1", "message-1")),
         )
         val future = CompletableFuture<PublishBatchResponse>()
-        every { client.publishBatch(request) } returns future
+        every { asyncClient.publishBatch(request) } returns future
 
         assertResourceCancelledOnCoroutineCancellation(
             beforeCancel = {
-                verify(exactly = 1) { client.publishBatch(request) }
+                verify(exactly = 1) { asyncClient.publishBatch(request) }
             },
             resourceCancelled = future::isCancelled,
         ) {
-            client.publishBatchSuspend(request)
+            asyncClient.publishBatchSuspend(request)
         }
 
-        verify(exactly = 1) { client.publishBatch(request) }
+        verify(exactly = 1) { asyncClient.publishBatch(request) }
     }
 }

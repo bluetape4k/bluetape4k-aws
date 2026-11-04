@@ -3,7 +3,7 @@ package io.bluetape4k.aws.s3tables
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.coroutines.support.log
-import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import io.bluetape4k.utils.ShutdownQueue
 import io.mockk.clearAllMocks
@@ -27,7 +27,7 @@ import software.amazon.awssdk.services.s3tables.S3TablesAsyncClientBuilder
 
 class S3TablesAsyncClientSupportTest {
 
-    companion object: KLogging()
+    companion object: KLoggingChannel()
 
     private val builder = mockk<S3TablesAsyncClientBuilder>(relaxed = true)
     private val client = mockk<S3TablesAsyncClient>(relaxed = true)

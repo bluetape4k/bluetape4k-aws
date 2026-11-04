@@ -6,11 +6,11 @@ import ch.qos.logback.core.read.ListAppender
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
-import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.concurrent.completableFutureOf
+import io.bluetape4k.javatimes.hours
 import io.bluetape4k.javatimes.minutes
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
@@ -32,7 +32,6 @@ import software.amazon.awssdk.services.sns.model.ListTopicsResponse
 import software.amazon.awssdk.services.sns.model.Topic
 import java.net.URI
 import java.time.Clock
-import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import java.util.concurrent.CompletableFuture
@@ -260,10 +259,10 @@ class SnsTopicArnResolverTest: AbstractSnsTest() {
             InMemorySnsTopicArnCache(maxSize = 0)
         }
         assertFailsWith<IllegalArgumentException> {
-            InMemorySnsTopicArnCache(ttl = Duration.ofHours(25))
+            InMemorySnsTopicArnCache(ttl = 25.hours())
         }
         assertFailsWith<IllegalArgumentException> {
-            SnsProperties.TopicArnCache(ttl = Duration.ofHours(25))
+            SnsProperties.TopicArnCache(ttl = 25.hours())
         }
     }
 
@@ -348,8 +347,9 @@ class SnsTopicArnResolverTest: AbstractSnsTest() {
             assertFailsWith<IllegalStateException> { resolver.resolve("orders") }
             val event = appender.list.single()
             val message = event.formattedMessage
+
             log.debug { "message=$message" }
-            message.startsWith("SNS topic ARN lookup failed (scopeHash=").shouldBeTrue()
+            message shouldContain "SNS topic ARN lookup failed (scopeHash="
             message shouldContain ", topicNameHash="
             message shouldContain ", exceptionType=IllegalStateException)"
             message shouldNotContain "orders"

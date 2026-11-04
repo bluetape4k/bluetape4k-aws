@@ -18,7 +18,7 @@ import io.bluetape4k.aws.kms.model.listAliasesRequestOf
 import io.bluetape4k.aws.kms.model.putKeyPolicyRequestOf
 import io.bluetape4k.aws.kms.model.revokeGrantRequestOf
 import io.bluetape4k.junit5.coroutines.runSuspendIO
-import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import io.bluetape4k.logging.info
 import kotlinx.coroutines.future.await
@@ -35,7 +35,7 @@ import software.amazon.awssdk.services.kms.model.KmsResponseMetadata
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class KmsAsyncClientTest: AbstractKmsTest() {
 
-    companion object: KLogging()
+    companion object: KLoggingChannel()
 
     private val keyDescription = "예제용 KMS 키에 대한 설명입니다 - By KmsAsyncClient"
     private lateinit var keyId: String
@@ -210,8 +210,7 @@ class KmsAsyncClientTest: AbstractKmsTest() {
 
         response.sdkHttpResponse().isSuccessful.shouldBeTrue()
 
-        val aliases = response.aliases()
-        aliases.forEach { log.debug { "alias=$it" } }
+        val aliases = response.aliases().onEach { log.debug { "alias=$it" } }
         aliases.shouldNotBeEmpty()
         aliases.map { it.aliasName() } shouldContain aliasName
     }
@@ -229,10 +228,7 @@ class KmsAsyncClientTest: AbstractKmsTest() {
         val response = asyncClient.listKeys { it.limit(15) }.await()
         response.sdkHttpResponse().isSuccessful.shouldBeTrue()
 
-        val keys = response.keys()
-        keys.forEach { key ->
-            log.debug { "key=$key" }
-        }
+        val keys = response.keys().onEach { log.debug { "key=$it" } }
         keys.map { it.keyId() } shouldContain keyId
     }
 

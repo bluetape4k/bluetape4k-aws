@@ -8,10 +8,10 @@ import aws.sdk.kotlin.services.kinesis.model.ExpiredIteratorException
 import aws.sdk.kotlin.services.kinesis.model.GetRecordsResponse
 import aws.sdk.kotlin.services.kinesis.model.GetShardIteratorResponse
 import aws.sdk.kotlin.services.kinesis.model.KinesisException
+import aws.sdk.kotlin.services.kinesis.model.ProvisionedThroughputExceededException
 import aws.sdk.kotlin.services.kinesis.model.PutRecordResponse
 import aws.sdk.kotlin.services.kinesis.model.PutRecordsRequestEntry
 import aws.sdk.kotlin.services.kinesis.model.PutRecordsResponse
-import aws.sdk.kotlin.services.kinesis.model.ProvisionedThroughputExceededException
 import aws.sdk.kotlin.services.kinesis.model.Record
 import aws.sdk.kotlin.services.kinesis.model.ShardIteratorType
 import aws.smithy.kotlin.runtime.http.response.HttpResponse
@@ -22,6 +22,7 @@ import io.bluetape4k.aws.kotlin.kinesis.getRecords
 import io.bluetape4k.aws.kotlin.kinesis.getShardIterator
 import io.bluetape4k.aws.kotlin.kinesis.putRecord
 import io.bluetape4k.aws.kotlin.kinesis.putRecords
+import io.bluetape4k.javatimes.millis
 import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.requireNotEmpty
 import io.bluetape4k.support.requirePositiveNumber
@@ -116,7 +117,7 @@ class KinesisKtorTemplate(
                 iteratorRetryCount = 0
                 throttleRetryCount = 0
 
-                val records = response.records.orEmpty()
+                val records = response.records
                 for (record in records) {
                     emit(record)
                     lastSeenSequenceNumber = record.sequenceNumber
@@ -170,10 +171,12 @@ class KinesisKtorTemplate(
                 when (position) {
                     is KinesisStartingPosition.AtSequenceNumber -> startingSequenceNumber = position.sequenceNumber
                     is KinesisStartingPosition.AfterSequenceNumber -> startingSequenceNumber = position.sequenceNumber
-                    is KinesisStartingPosition.AtTimestamp -> timestamp =
+                    is KinesisStartingPosition.AtTimestamp      -> timestamp =
                         SmithyInstant.fromEpochSeconds(position.timestamp.epochSecond, position.timestamp.nano)
+
                     KinesisStartingPosition.TrimHorizon,
-                    KinesisStartingPosition.Latest -> Unit
+                    KinesisStartingPosition.Latest,
+                                                                -> Unit
                 }
             },
         )
@@ -183,17 +186,17 @@ class KinesisKtorTemplate(
 
     private fun KinesisStartingPosition.shardIteratorType(): ShardIteratorType =
         when (this) {
-            KinesisStartingPosition.TrimHorizon -> ShardIteratorType.TrimHorizon
-            KinesisStartingPosition.Latest -> ShardIteratorType.Latest
+            KinesisStartingPosition.TrimHorizon         -> ShardIteratorType.TrimHorizon
+            KinesisStartingPosition.Latest              -> ShardIteratorType.Latest
             is KinesisStartingPosition.AtSequenceNumber -> ShardIteratorType.AtSequenceNumber
             is KinesisStartingPosition.AfterSequenceNumber -> ShardIteratorType.AfterSequenceNumber
-            is KinesisStartingPosition.AtTimestamp -> ShardIteratorType.AtTimestamp
+            is KinesisStartingPosition.AtTimestamp      -> ShardIteratorType.AtTimestamp
         }
 
     private fun KinesisException.isKinesisThrottlingException(): Boolean =
         this is ProvisionedThroughputExceededException ||
-            (sdkErrorMetadata.protocolResponse as? HttpResponse)?.status?.value == 429 ||
-            sdkErrorMetadata.errorCode in KINESIS_THROTTLING_ERROR_CODES
+                (sdkErrorMetadata.protocolResponse as? HttpResponse)?.status?.value == 429 ||
+                sdkErrorMetadata.errorCode in KINESIS_THROTTLING_ERROR_CODES
 
     private fun jitteredBackoff(attempt: Int, options: KinesisRecordFlowOptions): Duration {
         val maxMs = options.maxThrottleBackoff.toMillis()
@@ -207,11 +210,11 @@ class KinesisKtorTemplate(
             (initialMs shl shift).coerceAtMost(maxMs)
         }
         if (baseMs <= 0L || options.jitterRatio == 0.0) {
-            return Duration.ofMillis(baseMs)
+            return baseMs.millis()
         }
 
         val floor = (baseMs * (1.0 - options.jitterRatio)).toLong().coerceAtLeast(0L)
-        return Duration.ofMillis(Random.nextLong(floor, baseMs + 1))
+        return Random.nextLong(floor, baseMs + 1).millis()
     }
 
     private companion object {

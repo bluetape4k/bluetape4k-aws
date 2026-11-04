@@ -13,10 +13,10 @@ internal object AwsSpringBootTestEmulator {
 
     fun get(vararg services: String): AwsEmulatorServer {
         return when (val emulator = System.getProperty(EMULATOR_PROPERTY, "floci").trim().lowercase()) {
-            "floci" -> FlociServer.Launcher.floci
+            "floci"     -> FlociServer.Launcher.floci
             "localstack" -> LocalStackServer.Launcher.getLocalStack(*services)
             "ministack" -> MiniStackServer.Launcher.miniStack
-            else -> error("Unsupported AWS emulator: $emulator. Use floci, localstack, or ministack.")
+            else        -> error("Unsupported AWS emulator: $emulator. Use floci, localstack, or ministack.")
         }
     }
 }

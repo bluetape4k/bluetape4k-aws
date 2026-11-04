@@ -3,6 +3,7 @@ package io.bluetape4k.aws.spring.sqs
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.javatimes.millis
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
@@ -90,12 +91,12 @@ class SqsPropertiesTest {
         maxAttempts.message shouldContain "maxAttempts"
 
         val initialBackoff = assertFailsWith<IllegalArgumentException> {
-            SqsProperties.Retry(initialBackoff = Duration.ofMillis(-1))
+            SqsProperties.Retry(initialBackoff = (-1).millis())
         }
         initialBackoff.message shouldContain "initialBackoff"
 
         val maxBackoff = assertFailsWith<IllegalArgumentException> {
-            SqsProperties.Retry(maxBackoff = Duration.ofMillis(-1))
+            SqsProperties.Retry(maxBackoff = (-1).millis())
         }
         maxBackoff.message shouldContain "maxBackoff"
 

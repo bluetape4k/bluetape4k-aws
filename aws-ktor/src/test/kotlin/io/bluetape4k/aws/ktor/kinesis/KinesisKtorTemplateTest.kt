@@ -15,11 +15,11 @@ import aws.sdk.kotlin.services.kinesis.model.PutRecordsRequestEntry
 import aws.sdk.kotlin.services.kinesis.model.PutRecordsResponse
 import aws.sdk.kotlin.services.kinesis.model.Record
 import aws.sdk.kotlin.services.kinesis.model.ShardIteratorType
-import aws.smithy.kotlin.runtime.time.Instant as SmithyInstant
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.javatimes.millis
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.mockk.clearMocks
 import io.mockk.coEvery
@@ -36,6 +36,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.time.Duration
 import java.time.Instant
+import aws.smithy.kotlin.runtime.time.Instant as SmithyInstant
 
 class KinesisKtorTemplateTest {
 
@@ -158,7 +159,7 @@ class KinesisKtorTemplateTest {
             clearMocks(client)
             val request = slot<GetShardIteratorRequest>()
             coEvery { client.getShardIterator(capture(request)) } returns
-                GetShardIteratorResponse { shardIterator = "it" }
+                    GetShardIteratorResponse { shardIterator = "it" }
             coEvery { client.getRecords(any<GetRecordsRequest>()) } returns GetRecordsResponse {
                 records = emptyList()
             }
@@ -188,7 +189,7 @@ class KinesisKtorTemplateTest {
             data = "payload-1".encodeToByteArray()
         }
         coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-            GetShardIteratorResponse { shardIterator = "it-1" }
+                GetShardIteratorResponse { shardIterator = "it-1" }
         coEvery { client.getRecords(any<GetRecordsRequest>()) } returns GetRecordsResponse {
             records = listOf(record)
         }
@@ -210,7 +211,7 @@ class KinesisKtorTemplateTest {
         records.size shouldBeEqualTo 1
         records.single().sequenceNumber shouldBeEqualTo "seq-1"
         records.single().partitionKey shouldBeEqualTo "order-1"
-        records.single().data?.decodeToString() shouldBeEqualTo "payload-1"
+        records.single().data.decodeToString() shouldBeEqualTo "payload-1"
         coVerify(exactly = 1) { client.getShardIterator(any<GetShardIteratorRequest>()) }
         coVerify(exactly = 1) { client.getRecords(any<GetRecordsRequest>()) }
     }
@@ -218,7 +219,7 @@ class KinesisKtorTemplateTest {
     @Test
     fun `recordFlow can be collected twice and refetches iterator`() = runTest {
         coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-            GetShardIteratorResponse { shardIterator = "it" }
+                GetShardIteratorResponse { shardIterator = "it" }
         coEvery { client.getRecords(any<GetRecordsRequest>()) } returns GetRecordsResponse {
             records = emptyList()
         }
@@ -243,7 +244,7 @@ class KinesisKtorTemplateTest {
     fun `recordFlow propagates cancellation to pending Kotlin request`() = runTest {
         var requestCancelled = false
         coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-            GetShardIteratorResponse { shardIterator = "it" }
+                GetShardIteratorResponse { shardIterator = "it" }
         coEvery { client.getRecords(any<GetRecordsRequest>()) } coAnswers {
             try {
                 awaitCancellation()
@@ -330,7 +331,7 @@ class KinesisKtorTemplateTest {
     fun `recordFlow fails initial latest iterator expiry without silently skipping data`() = runTest {
         val expired = ExpiredIteratorException { message = "iterator expired" }
         coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-            GetShardIteratorResponse { shardIterator = "it-1" }
+                GetShardIteratorResponse { shardIterator = "it-1" }
         coEvery { client.getRecords(any<GetRecordsRequest>()) } throws expired
 
         val error = assertFailsWith<ExpiredIteratorException> {
@@ -355,7 +356,7 @@ class KinesisKtorTemplateTest {
         val requestTimes = mutableListOf<Long>()
         val throttled = ProvisionedThroughputExceededException { message = "throttled" }
         coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-            GetShardIteratorResponse { shardIterator = "it-1" }
+                GetShardIteratorResponse { shardIterator = "it-1" }
         coEvery { client.getRecords(any<GetRecordsRequest>()) } coAnswers {
             requestTimes += testScheduler.currentTime
             when (requestTimes.size) {
@@ -374,8 +375,8 @@ class KinesisKtorTemplateTest {
                         pollInterval = Duration.ZERO,
                         emptyBackoff = Duration.ZERO,
                         maxThrottleRetries = 1,
-                        initialThrottleBackoff = Duration.ofMillis(10),
-                        maxThrottleBackoff = Duration.ofMillis(100),
+                        initialThrottleBackoff = 10.millis(),
+                        maxThrottleBackoff = 100.millis(),
                         jitterRatio = 0.5,
                     ),
                 )
@@ -392,7 +393,7 @@ class KinesisKtorTemplateTest {
         val requestTimes = mutableListOf<Long>()
         val throttled = ProvisionedThroughputExceededException { message = "throttled" }
         coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-            GetShardIteratorResponse { shardIterator = "it-1" }
+                GetShardIteratorResponse { shardIterator = "it-1" }
         coEvery { client.getRecords(any<GetRecordsRequest>()) } coAnswers {
             requestTimes += testScheduler.currentTime
             throw throttled
@@ -408,8 +409,8 @@ class KinesisKtorTemplateTest {
                             pollInterval = Duration.ZERO,
                             emptyBackoff = Duration.ZERO,
                             maxThrottleRetries = 2,
-                            initialThrottleBackoff = Duration.ofMillis(10),
-                            maxThrottleBackoff = Duration.ofMillis(15),
+                            initialThrottleBackoff = 10.millis(),
+                            maxThrottleBackoff = 15.millis(),
                             jitterRatio = 0.5,
                         ),
                     )
@@ -427,7 +428,7 @@ class KinesisKtorTemplateTest {
     fun `recordFlow uses empty backoff and poll interval for the matching responses`() = runTest {
         val emptyResponseTimes = mutableListOf<Long>()
         coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-            GetShardIteratorResponse { shardIterator = "empty-it" }
+                GetShardIteratorResponse { shardIterator = "empty-it" }
         coEvery { client.getRecords(any<GetRecordsRequest>()) } coAnswers {
             emptyResponseTimes += testScheduler.currentTime
             if (emptyResponseTimes.size == 1) {
@@ -443,8 +444,8 @@ class KinesisKtorTemplateTest {
                     streamName = "orders",
                     shardId = "shardId-000000000000",
                     options = KinesisRecordFlowOptions(
-                        pollInterval = Duration.ofMillis(29),
-                        emptyBackoff = Duration.ofMillis(13),
+                        pollInterval = 29.millis(),
+                        emptyBackoff = 13.millis(),
                     ),
                 )
             )
@@ -461,7 +462,7 @@ class KinesisKtorTemplateTest {
             data = byteArrayOf()
         }
         coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-            GetShardIteratorResponse { shardIterator = "record-it" }
+                GetShardIteratorResponse { shardIterator = "record-it" }
         coEvery { client.getRecords(any<GetRecordsRequest>()) } coAnswers {
             recordResponseTimes += testScheduler.currentTime - recordResponseStartTime
             if (recordResponseTimes.size == 1) {
@@ -477,8 +478,8 @@ class KinesisKtorTemplateTest {
                     streamName = "orders",
                     shardId = "shardId-000000000000",
                     options = KinesisRecordFlowOptions(
-                        pollInterval = Duration.ofMillis(29),
-                        emptyBackoff = Duration.ofMillis(13),
+                        pollInterval = 29.millis(),
+                        emptyBackoff = 13.millis(),
                     ),
                 )
             )

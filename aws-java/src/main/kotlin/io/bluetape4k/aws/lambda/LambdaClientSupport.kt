@@ -25,7 +25,7 @@ inline fun lambdaClientOf(
     region: Region? = null,
     credentialsProvider: AwsCredentialsProvider? = null,
     httpClient: SdkHttpClient = SdkHttpClientProvider.defaultHttpClient,
-    noinline builder: LambdaClientBuilder.() -> Unit = {},
+    builder: LambdaClientBuilder.() -> Unit = {},
 ): LambdaClient = buildLambdaClient(endpoint, region, credentialsProvider, httpClient, builder)
     .apply { ShutdownQueue.register(this) }
 
@@ -50,7 +50,7 @@ inline fun <R> withLambdaClient(
 }
 
 @PublishedApi
-internal fun buildLambdaClient(
+internal inline fun buildLambdaClient(
     endpoint: URI?,
     region: Region?,
     credentialsProvider: AwsCredentialsProvider?,

@@ -1,20 +1,15 @@
 package io.bluetape4k.aws.ktor.client
 
+import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
 import aws.smithy.kotlin.runtime.auth.awssigning.AwsSignatureType
+import aws.smithy.kotlin.runtime.auth.awssigning.AwsSignedBodyHeader
 import aws.smithy.kotlin.runtime.auth.awssigning.AwsSigner
 import aws.smithy.kotlin.runtime.auth.awssigning.AwsSigningConfig
-import aws.smithy.kotlin.runtime.auth.awssigning.AwsSignedBodyHeader
-import aws.smithy.kotlin.runtime.auth.awssigning.DefaultAwsSigner
 import aws.smithy.kotlin.runtime.auth.awssigning.HashSpecification
-import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
 import aws.smithy.kotlin.runtime.collections.emptyAttributes
 import aws.smithy.kotlin.runtime.http.HttpBody
-import aws.smithy.kotlin.runtime.http.HttpMethod as SmithyHttpMethod
-import aws.smithy.kotlin.runtime.http.request.HttpRequest as SmithyHttpRequest
 import aws.smithy.kotlin.runtime.http.request.headers
 import aws.smithy.kotlin.runtime.http.request.url
-import aws.smithy.kotlin.runtime.net.url.Url as SmithyUrl
-import aws.smithy.kotlin.runtime.time.Instant as SmithyInstant
 import io.bluetape4k.aws.ktor.validateAwsKotlinServiceEndpoint
 import io.bluetape4k.support.requireNotBlank
 import io.ktor.client.plugins.api.Send
@@ -25,6 +20,10 @@ import io.ktor.http.Url
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.takeFrom
 import java.time.Clock
+import aws.smithy.kotlin.runtime.http.HttpMethod as SmithyHttpMethod
+import aws.smithy.kotlin.runtime.http.request.HttpRequest as SmithyHttpRequest
+import aws.smithy.kotlin.runtime.net.url.Url as SmithyUrl
+import aws.smithy.kotlin.runtime.time.Instant as SmithyInstant
 
 /**
  * Ktor `HttpClient` 요청에 AWS Signature Version 4 서명을 적용하는 플러그인입니다.
@@ -150,14 +149,14 @@ private suspend fun AwsSigV4Options.sign(request: HttpRequestBuilder) {
 
 private fun OutgoingContent.toSigningBody(payloadSigningEnabled: Boolean): HttpBody =
     when (this) {
-        is OutgoingContent.NoContent -> HttpBody.Empty
+        is OutgoingContent.NoContent      -> HttpBody.Empty
         is OutgoingContent.ByteArrayContent ->
             if (payloadSigningEnabled) HttpBody.fromBytes(bytes()) else HttpBody.Empty
         is OutgoingContent.ContentWrapper -> delegate().toSigningBody(payloadSigningEnabled)
-        else -> {
+        else                              -> {
             check(!payloadSigningEnabled) {
                 "AwsSigV4Plugin can sign only replayable ByteArrayContent payloads. " +
-                    "Set payloadSigningEnabled=false for streaming content."
+                        "Set payloadSigningEnabled=false for streaming content."
             }
             HttpBody.Empty
         }

@@ -12,7 +12,7 @@ import io.bluetape4k.io.exists
 import kotlinx.coroutines.flow.DEFAULT_CONCURRENCY
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.channelFlow
 import java.io.File
 import java.nio.file.Path
 import io.bluetape4k.coroutines.flow.collect as collectAsync
@@ -168,12 +168,13 @@ suspend inline fun S3Client.putFromPath(
 fun S3Client.putAll(
     concurrency: Int = DEFAULT_CONCURRENCY,
     vararg putRequests: PutObjectRequest,
-): Flow<PutObjectResponse> = flow {
-    val asyncFlow = putRequests
+): Flow<PutObjectResponse> = channelFlow {
+    putRequests
         .asFlow()
         .async { request ->
             putObject(request)
         }
-
-    asyncFlow.collectAsync(concurrency) { putResponse -> emit(putResponse) }
+        .collectAsync(concurrency) { putResponse ->
+            send(putResponse)
+        }
 }

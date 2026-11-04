@@ -3,10 +3,13 @@ package io.bluetape4k.aws.spring.s3
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
 import java.time.Instant
 
 class S3ObjectMetadataTest {
+
+    companion object: KLogging()
 
     @Test
     fun preservesNullableFieldsAndOpaqueETag() {

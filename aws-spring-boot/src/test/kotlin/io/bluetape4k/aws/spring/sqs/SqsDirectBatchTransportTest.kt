@@ -62,6 +62,7 @@ class SqsDirectBatchTransportTest {
             .dataType("String")
             .stringValue(Base58.randomString(16))
             .build()
+
         val entry = SqsBatchSendEntry(
             entryId = entryId("send"),
             request = SqsSendRequest(

@@ -8,6 +8,8 @@ import io.bluetape4k.assertions.shouldBeLessOrEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.javatimes.millis
+import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
 import kotlinx.coroutines.CompletableDeferred
@@ -22,7 +24,6 @@ import software.amazon.awssdk.awscore.exception.AwsErrorDetails
 import software.amazon.awssdk.core.exception.SdkClientException
 import software.amazon.awssdk.services.sqs.model.MessageAttributeValue
 import software.amazon.awssdk.services.sqs.model.SqsException
-import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CopyOnWriteArrayList
@@ -325,11 +326,11 @@ class SqsBatchCoordinatorTest {
         properties = SqsBatchProperties(
             enabled = false,
             maxBatchSize = 10,
-            flushInterval = Duration.ofMillis(50),
+            flushInterval = 50.millis(),
             maxEntriesPerCall = maxEntries,
             maxInFlightEntries = maxInFlight,
             schedulerThreads = 1,
-            shutdownTimeout = Duration.ofSeconds(1),
+            shutdownTimeout = 1.seconds(),
         ),
         hooks = hooks,
     )

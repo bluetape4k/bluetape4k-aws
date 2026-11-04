@@ -31,6 +31,7 @@ class S3VectorsAsyncClientCoroutinesExtensionsTest {
             .vectorBucketName("vectors")
             .indexName("semantic")
             .build()
+
         val response = QueryVectorsResponse.builder().build()
 
         every { client.queryVectors(request) } returns completableFutureOf(response)

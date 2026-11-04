@@ -7,12 +7,12 @@ import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.support.useSafe
 
 /** AWS Kotlin SDK DynamoDB Streams client를 생성합니다. */
-fun dynamoDbStreamsClientOf(
+inline fun dynamoDbStreamsClientOf(
     endpointUrl: Url? = null,
     region: String? = null,
     credentialsProvider: CredentialsProvider? = null,
     httpClient: HttpClientEngine? = null,
-    builder: DynamoDbStreamsClient.Config.Builder.() -> Unit = {},
+    crossinline builder: DynamoDbStreamsClient.Config.Builder.() -> Unit = {},
 ): DynamoDbStreamsClient = DynamoDbStreamsClient {
     endpointUrl?.let { this.endpointUrl = it }
     region?.let { this.region = it }
@@ -22,12 +22,12 @@ fun dynamoDbStreamsClientOf(
 }
 
 /** client를 생성해 [block]을 실행한 뒤 client와 내부 HTTP 자원을 닫습니다. */
-suspend fun <R> withDynamoDbStreamsClient(
+suspend inline fun <R> withDynamoDbStreamsClient(
     endpointUrl: Url? = null,
     region: String? = null,
     credentialsProvider: CredentialsProvider? = null,
     httpClient: HttpClientEngine? = null,
-    builder: DynamoDbStreamsClient.Config.Builder.() -> Unit = {},
+    crossinline builder: DynamoDbStreamsClient.Config.Builder.() -> Unit = {},
     block: suspend (DynamoDbStreamsClient) -> R,
 ): R =
     dynamoDbStreamsClientOf(

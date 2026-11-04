@@ -1,18 +1,19 @@
 package io.bluetape4k.aws.ktor.cloudwatch
 
-import aws.sdk.kotlin.services.cloudwatchlogs.endpoints.DefaultCloudWatchLogsEndpointProvider
-import aws.sdk.kotlin.services.cloudwatchlogs.endpoints.CloudWatchLogsEndpointProvider
-import io.bluetape4k.aws.ktor.AwsKotlinEndpointPolicyInterceptor
-import io.bluetape4k.aws.ktor.checkedAwsKotlinEndpointProvider
-import io.bluetape4k.aws.ktor.requireAwsKotlinEndpointProviderUnset
-import io.bluetape4k.ToStringBuilder
 import aws.sdk.kotlin.services.cloudwatchlogs.CloudWatchLogsClient
+import aws.sdk.kotlin.services.cloudwatchlogs.endpoints.CloudWatchLogsEndpointProvider
+import aws.sdk.kotlin.services.cloudwatchlogs.endpoints.DefaultCloudWatchLogsEndpointProvider
 import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
 import aws.smithy.kotlin.runtime.http.engine.HttpClientEngine
 import aws.smithy.kotlin.runtime.net.url.Url
+import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.aws.kotlin.cloudwatch.cloudWatchLogsClientOf
+import io.bluetape4k.aws.ktor.AwsKotlinEndpointPolicyInterceptor
 import io.bluetape4k.aws.ktor.AwsKtorCloudWatchLogsClientCustomizer
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
+import io.bluetape4k.aws.ktor.checkedAwsKotlinEndpointProvider
+import io.bluetape4k.aws.ktor.requireAwsKotlinEndpointProviderUnset
+import io.bluetape4k.javatimes.seconds
 import java.time.Duration
 
 /**
@@ -57,10 +58,10 @@ class CloudWatchLogsKtorPluginConfig {
     var batchSize: Int = CLOUDWATCH_LOGS_MAX_BATCH_SIZE
 
     /** 명시적으로 버퍼링한 로그 이벤트의 주기적 flush 간격입니다. */
-    var flushInterval: Duration = Duration.ofSeconds(5)
+    var flushInterval: Duration = 5.seconds()
 
     /** 종료 시 flush에 허용하는 최대 시간입니다. */
-    var shutdownFlushTimeout: Duration = Duration.ofSeconds(5)
+    var shutdownFlushTimeout: Duration = 5.seconds()
 
     /** 종료 flush timeout을 warning으로 처리할지 예외로 전파할지 선택합니다. */
     var shutdownPolicy: CloudWatchLogsShutdownPolicy = CloudWatchLogsShutdownPolicy.WarnAndContinue

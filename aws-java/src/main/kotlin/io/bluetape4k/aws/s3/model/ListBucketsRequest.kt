@@ -28,9 +28,10 @@ inline fun listBucketsRequest(
  * // result.overrideConfiguration().isPresent == true
  * ```
  */
-fun listBucketsRequestOf(
+inline fun listBucketsRequestOf(
     configrationBuilder: AwsRequestOverrideConfiguration.Builder.() -> Unit = {},
 ): ListBucketsRequest =
     listBucketsRequest {
-        overrideConfiguration(configrationBuilder)
+        val configuration = AwsRequestOverrideConfiguration.builder().apply(configrationBuilder).build()
+        overrideConfiguration(configuration)
     }

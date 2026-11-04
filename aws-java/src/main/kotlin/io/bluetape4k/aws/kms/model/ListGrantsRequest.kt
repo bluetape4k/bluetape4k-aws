@@ -38,21 +38,18 @@ inline fun listGrantsRequest(
  * // request.keyId() == "key-id"
  * ```
  */
-fun listGrantsRequestOf(
+inline fun listGrantsRequestOf(
     keyId: String,
     grantId: String? = null,
     marker: String? = null,
     limit: Int? = null,
     builder: ListGrantsRequest.Builder.() -> Unit = {},
-): ListGrantsRequest {
-    keyId.requireNotBlank("keyId")
-
-    return listGrantsRequest {
-        keyId(keyId)
+): ListGrantsRequest =
+    listGrantsRequest {
+        keyId(keyId.requireNotBlank("keyId"))
         grantId?.let { grantId(it) }
         marker?.let { marker(it) }
         limit?.let { limit(it) }
 
         builder()
     }
-}

@@ -204,10 +204,11 @@ class DynamoDbMetadataStore(
         } else {
             parts += "${DynamoDbCoordinationExpressions.EXPIRES_AT_ALIAS} = " +
                     DynamoDbCoordinationExpressions.OBSERVED_EXPIRES_AT_VALUE
-            if (old.ttlEpochSeconds == null) {
-                parts += "attribute_not_exists(${DynamoDbCoordinationExpressions.TTL_ALIAS})"
+
+            parts += if (old.ttlEpochSeconds == null) {
+                "attribute_not_exists(${DynamoDbCoordinationExpressions.TTL_ALIAS})"
             } else {
-                parts += "${DynamoDbCoordinationExpressions.TTL_ALIAS} = " +
+                "${DynamoDbCoordinationExpressions.TTL_ALIAS} = " +
                         DynamoDbCoordinationExpressions.OBSERVED_TTL
             }
             if (requireExpired) {

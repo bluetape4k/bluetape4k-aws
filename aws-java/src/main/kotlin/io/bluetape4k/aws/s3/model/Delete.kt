@@ -29,13 +29,15 @@ inline fun delete(
  * ```
  */
 @JvmName("deleteOfObjectsArray")
-fun deleteOf(
+inline fun deleteOf(
     vararg objectIds: ObjectIdentifier,
     quiet: Boolean = false,
+    builder: Delete.Builder.() -> Unit = {},
 ): Delete =
     delete {
         objects(objectIds.toList())
         quiet(quiet)
+        builder()
     }
 
 /**
@@ -49,11 +51,13 @@ fun deleteOf(
  * ```
  */
 @JvmName("deleteOfObjectsCollection")
-fun deleteOf(
+inline fun deleteOf(
     objectIds: Collection<ObjectIdentifier>,
     quiet: Boolean = false,
+    builder: Delete.Builder.() -> Unit = {},
 ): Delete =
     delete {
         objects(objectIds)
         quiet(quiet)
+        builder()
     }

@@ -39,6 +39,7 @@ class LockLeaseTest {
         }
     }
 
+    @Suppress("DEPRECATION")
     @Test
     fun `LockLease serialization readObject도 invariant를 다시 검증한다`() {
         val lease = LockLease(
@@ -52,8 +53,8 @@ class LockLeaseTest {
             physicalKey = "6:default4:LOCK6:orders",
             scopeId = "scope",
         )
-        val bytes = BinarySerializers.Jdk.serialize(lease)
-        val restored = BinarySerializers.Jdk.deserialize<LockLease>(bytes)
+        val bytes = BinarySerializers.JdkUnfiltered.serialize(lease)
+        val restored = BinarySerializers.JdkUnfiltered.deserialize<LockLease>(bytes)
 
         log.debug { "restored=$restored" }
         restored shouldBeEqualTo lease

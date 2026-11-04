@@ -11,7 +11,8 @@ import io.bluetape4k.aws.spring.test.AwsSpringBootTestEmulator
 import io.bluetape4k.coroutines.flow.extensions.log
 import io.bluetape4k.javatimes.millis
 import io.bluetape4k.junit5.coroutines.runSuspendIO
-import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
@@ -26,7 +27,7 @@ import kotlin.time.Duration.Companion.seconds
 
 class KinesisCoroutinesTemplateAwsEmulatorTest {
 
-    companion object: KLogging() {
+    companion object: KLoggingChannel() {
         private val awsEmulator by lazy {
             AwsSpringBootTestEmulator.get("kinesis")
         }
@@ -107,7 +108,7 @@ class KinesisCoroutinesTemplateAwsEmulatorTest {
     }
 
     private fun waitUntilActive(operations: KinesisOperations, streamName: String) {
-        log.debug("Waiting for Kinesis stream[$streamName] to be active...")
+        log.debug { "Waiting for Kinesis stream[$streamName] to be active..." }
         operations.client.waiter().waitUntilStreamExists { it.streamName(streamName) }
     }
 }

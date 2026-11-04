@@ -5,6 +5,7 @@ import io.bluetape4k.aws.spring.env.flattenJsonObject
 import io.bluetape4k.aws.spring.env.opaqueAwsDiagnosticIdentity
 import io.bluetape4k.aws.spring.env.textSecretProperty
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.warn
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient
 import software.amazon.awssdk.services.secretsmanager.model.ResourceNotFoundException
@@ -12,18 +13,17 @@ import software.amazon.awssdk.services.secretsmanager.model.ResourceNotFoundExce
 internal object SecretsManagerPropertySourceLoader: KLogging() {
 
     fun load(properties: SecretsManagerProperties): List<AwsLoadedPropertySource> =
-        buildClient(properties)
-            .use { client ->
-                properties.sources.mapNotNull { source ->
-                    loadSource(client, properties, source)?.let { values ->
-                        AwsLoadedPropertySource(
-                            name = source.propertySourceName,
-                            values = values,
-                            reload = { loadSingleSource(properties, source) },
-                        )
-                    }
+        buildClient(properties).use { client ->
+            properties.sources.mapNotNull { source ->
+                loadSource(client, properties, source)?.let { values ->
+                    AwsLoadedPropertySource(
+                        name = source.propertySourceName,
+                        values = values,
+                        reload = { loadSingleSource(properties, source) },
+                    )
                 }
             }
+        }
 
     private fun loadSingleSource(
         properties: SecretsManagerProperties,
@@ -75,11 +75,11 @@ internal object SecretsManagerPropertySourceLoader: KLogging() {
         error: RuntimeException,
     ): Map<String, Any>? {
         if (source.optional || !properties.failFast) {
-            log.warn(
+            log.warn {
                 "Skipping Secrets Manager source " +
                         "${opaqueAwsDiagnosticIdentity("secrets-manager", source.propertySourceName)} " +
-                        "(${error::class.java.simpleName}).",
-            )
+                        "(${error::class.java.simpleName})."
+            }
             return null
         }
         throw error

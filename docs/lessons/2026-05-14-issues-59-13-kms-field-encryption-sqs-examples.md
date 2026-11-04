@@ -1,16 +1,13 @@
 # Issues #59 및 #13 KMS 필드 암호화와 Spring SQS 예제
 
-날짜: 2026-05-14
-이슈:
+날짜: 2026-05-14 이슈:
 
 - https://github.com/bluetape4k/bluetape4k-aws/issues/59
 - https://github.com/bluetape4k/bluetape4k-aws/issues/13
 
 ## 배경
 
-Issue #59에서는 초기 KMS Spring Boot 지원에 이어 KMS 기반 필드 암호화를 요청했다.
-Issue #13에서는 Spring Boot SQS 사용 예제를 요청했다. 두 작업 모두 AWS 서비스 SDK
-의존성을 소비자가 제공하는 `compileOnly` surface로 유지한다는 저장소 규칙을 따라야 했다.
+Issue #59에서는 초기 KMS Spring Boot 지원에 이어 KMS 기반 필드 암호화를 요청했다. Issue #13에서는 Spring Boot SQS 사용 예제를 요청했다. 두 작업 모두 AWS 서비스 SDK 의존성을 소비자가 제공하는 `compileOnly` surface로 유지한다는 저장소 규칙을 따라야 했다.
 
 ## 결정 또는 발견
 
@@ -21,8 +18,7 @@ Issue #13에서는 Spring Boot SQS 사용 예제를 요청했다. 두 작업 모
 - 암호문은 `b4k-kms:v1:`과 Base64 URL encoding으로 versioning한다.
 - 첫 범위에서는 직접 선언한 Java 필드만 검증하도록 의도적으로 제한한다.
 
-#13에서는 sample controller를 `aws-spring-boot`에 넣지 않고 `examples/` 아래에 전용 예제
-모듈을 추가한다.
+#13에서는 sample controller를 `aws-spring-boot`에 넣지 않고 `examples/` 아래에 전용 예제 모듈을 추가한다.
 
 - Queue 생성/전송/수신 예제는 `SqsOperations`를 사용한다.
 - SNS fanout 및 DLQ 설정 예제는 SDK async client와 coroutine `await()`을 사용한다.
@@ -48,9 +44,6 @@ Claude 검토에서 게시 전에 P1/P2 위험 여러 개를 발견했다. 최�
 ## 향후 지침
 
 더 넓은 Kotlin property/reflection 및 persistence 수명 주기 계약을 설계할 때까지
-`@KmsEncrypted`는 필드에만 적용한다. Annotation 우선순위와 mapper 수명 주기 동작을
-검증하지 않고 상속 필드나 중첩 graph를 암묵적으로 순회하지 않는다.
+`@KmsEncrypted`는 필드에만 적용한다. Annotation 우선순위와 mapper 수명 주기 동작을 검증하지 않고 상속 필드나 중첩 graph를 암묵적으로 순회하지 않는다.
 
-Spring SQS/SNS 예제에서는 AWS SDK async 호출에 coroutine `await()`을 사용하고 생성하는
-IAM policy 범위를 좁게 유지한다. README snippet을 늘리기 전에 예제 모듈의 LocalStack
-테스트로 동작을 입증한다.
+Spring SQS/SNS 예제에서는 AWS SDK async 호출에 coroutine `await()`을 사용하고 생성하는 IAM policy 범위를 좁게 유지한다. README snippet을 늘리기 전에 예제 모듈의 LocalStack 테스트로 동작을 입증한다.

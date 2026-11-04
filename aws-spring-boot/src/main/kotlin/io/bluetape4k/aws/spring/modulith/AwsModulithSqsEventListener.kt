@@ -36,6 +36,6 @@ internal class AwsModulithSqsEventListener internal constructor(
     private fun sanitizeAcknowledgementFailure(failure: Throwable): Throwable = when (failure) {
         is CancellationException -> failure
         is Error -> failure
-        else -> AwsModulithAcknowledgementException()
+        else     -> AwsModulithAcknowledgementException()
     }
 }

@@ -1,5 +1,13 @@
 package io.bluetape4k.aws.examples.ktor.servicecoverage
 
+import aws.sdk.kotlin.services.cloudwatch.model.MetricDatum
+import aws.sdk.kotlin.services.cloudwatch.model.PutMetricDataResponse
+import aws.sdk.kotlin.services.cloudwatchlogs.model.InputLogEvent
+import aws.sdk.kotlin.services.cloudwatchlogs.model.PutLogEventsResponse
+import aws.sdk.kotlin.services.kinesis.model.PutRecordResponse
+import aws.sdk.kotlin.services.sesv2.model.SendEmailResponse
+import aws.sdk.kotlin.services.sns.model.PublishResponse
+import aws.sdk.kotlin.services.sts.model.GetCallerIdentityResponse
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.aws.ktor.cloudwatch.CloudWatchKtorOperations
 import io.bluetape4k.aws.ktor.cloudwatch.CloudWatchLogStream
@@ -32,14 +40,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
-import aws.sdk.kotlin.services.cloudwatch.model.MetricDatum
-import aws.sdk.kotlin.services.cloudwatch.model.PutMetricDataResponse
-import aws.sdk.kotlin.services.cloudwatchlogs.model.InputLogEvent
-import aws.sdk.kotlin.services.cloudwatchlogs.model.PutLogEventsResponse
-import aws.sdk.kotlin.services.kinesis.model.PutRecordResponse
-import aws.sdk.kotlin.services.sesv2.model.SendEmailResponse
-import aws.sdk.kotlin.services.sns.model.PublishResponse
-import aws.sdk.kotlin.services.sts.model.GetCallerIdentityResponse
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Execution(ExecutionMode.SAME_THREAD)

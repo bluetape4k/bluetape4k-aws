@@ -17,7 +17,7 @@ object NoopKinesisLeaseStore: KinesisLeaseStore {
     override suspend fun acquire(
         key: KinesisShardKey,
         ownerId: String,
-        leaseDuration: Duration
+        leaseDuration: Duration,
     ): KinesisLease =
         KinesisLease(
             key,
@@ -29,7 +29,7 @@ object NoopKinesisLeaseStore: KinesisLeaseStore {
 
     override suspend fun renew(
         lease: KinesisLease,
-        leaseDuration: Duration
+        leaseDuration: Duration,
     ): KinesisLease =
         lease.also {
             require(leaseDuration.isPositive()) { "leaseDuration must be positive" }

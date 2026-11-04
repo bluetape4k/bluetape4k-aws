@@ -78,7 +78,7 @@ internal data class WrappedDataKey(
         return when {
             nonce == null -> other.nonce == null
             other.nonce == null -> false
-            else -> nonce.contentEquals(other.nonce)
+            else          -> nonce.contentEquals(other.nonce)
         }
     }
 

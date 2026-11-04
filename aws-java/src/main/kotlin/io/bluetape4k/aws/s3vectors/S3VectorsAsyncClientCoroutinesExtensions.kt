@@ -22,7 +22,7 @@ import software.amazon.awssdk.services.s3vectors.model.QueryVectorsResponse
 /**
  * 코루틴 친화적인 `CompletableFuture.await()`로 벡터 버킷 목록을 조회합니다.
  */
-suspend fun S3VectorsAsyncClient.listVectorBucketsSuspend(
+suspend inline fun S3VectorsAsyncClient.listVectorBucketsSuspend(
     request: ListVectorBucketsRequest,
 ): ListVectorBucketsResponse =
     listVectorBuckets(request).await()
@@ -30,7 +30,7 @@ suspend fun S3VectorsAsyncClient.listVectorBucketsSuspend(
 /**
  * 코루틴 친화적인 `CompletableFuture.await()`로 벡터 버킷 속성을 반환합니다.
  */
-suspend fun S3VectorsAsyncClient.getVectorBucketSuspend(
+suspend inline fun S3VectorsAsyncClient.getVectorBucketSuspend(
     request: GetVectorBucketRequest,
 ): GetVectorBucketResponse =
     getVectorBucket(request).await()
@@ -38,7 +38,7 @@ suspend fun S3VectorsAsyncClient.getVectorBucketSuspend(
 /**
  * 코루틴 친화적인 `CompletableFuture.await()`로 벡터 인덱스 목록을 조회합니다.
  */
-suspend fun S3VectorsAsyncClient.listIndexesSuspend(
+suspend inline fun S3VectorsAsyncClient.listIndexesSuspend(
     request: ListIndexesRequest,
 ): ListIndexesResponse =
     listIndexes(request).await()
@@ -46,7 +46,7 @@ suspend fun S3VectorsAsyncClient.listIndexesSuspend(
 /**
  * 코루틴 친화적인 `CompletableFuture.await()`로 벡터 인덱스 속성을 반환합니다.
  */
-suspend fun S3VectorsAsyncClient.getIndexSuspend(
+suspend inline fun S3VectorsAsyncClient.getIndexSuspend(
     request: GetIndexRequest,
 ): GetIndexResponse =
     getIndex(request).await()
@@ -54,7 +54,7 @@ suspend fun S3VectorsAsyncClient.getIndexSuspend(
 /**
  * 코루틴 친화적인 `CompletableFuture.await()`로 인덱스에 벡터를 추가합니다.
  */
-suspend fun S3VectorsAsyncClient.putVectorsSuspend(
+suspend inline fun S3VectorsAsyncClient.putVectorsSuspend(
     request: PutVectorsRequest,
 ): PutVectorsResponse =
     putVectors(request).await()
@@ -62,7 +62,7 @@ suspend fun S3VectorsAsyncClient.putVectorsSuspend(
 /**
  * 코루틴 친화적인 `CompletableFuture.await()`로 인덱스의 벡터를 반환합니다.
  */
-suspend fun S3VectorsAsyncClient.getVectorsSuspend(
+suspend inline fun S3VectorsAsyncClient.getVectorsSuspend(
     request: GetVectorsRequest,
 ): GetVectorsResponse =
     getVectors(request).await()
@@ -70,7 +70,7 @@ suspend fun S3VectorsAsyncClient.getVectorsSuspend(
 /**
  * 코루틴 친화적인 `CompletableFuture.await()`로 인덱스의 벡터 목록을 조회합니다.
  */
-suspend fun S3VectorsAsyncClient.listVectorsSuspend(
+suspend inline fun S3VectorsAsyncClient.listVectorsSuspend(
     request: ListVectorsRequest,
 ): ListVectorsResponse =
     listVectors(request).await()
@@ -78,7 +78,7 @@ suspend fun S3VectorsAsyncClient.listVectorsSuspend(
 /**
  * 코루틴 친화적인 `CompletableFuture.await()`로 인덱스를 쿼리합니다.
  */
-suspend fun S3VectorsAsyncClient.queryVectorsSuspend(
+suspend inline fun S3VectorsAsyncClient.queryVectorsSuspend(
     request: QueryVectorsRequest,
 ): QueryVectorsResponse =
     queryVectors(request).await()

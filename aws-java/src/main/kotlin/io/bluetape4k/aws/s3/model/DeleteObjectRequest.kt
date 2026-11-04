@@ -84,13 +84,16 @@ inline fun deleteObjectsRequest(
  * // result.requestPayerAsString() == "requester"
  * ```
  */
-fun deleteObjectsRequestOf(
+inline fun deleteObjectsRequestOf(
     bucket: String,
     delete: Delete,
     requestPlayer: String? = null,
+    builder: DeleteObjectsRequest.Builder.() -> Unit = {},
 ): DeleteObjectsRequest =
     deleteObjectsRequest(bucket, delete) {
         requestPlayer?.let { requestPayer(it) }
+        builder()
+
     }
 
 /**

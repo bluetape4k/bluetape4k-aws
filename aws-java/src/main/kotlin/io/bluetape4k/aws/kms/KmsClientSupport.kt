@@ -54,11 +54,12 @@ inline fun kmsClientOf(
     credentialsProvider: AwsCredentialsProvider? = null,
     httpClient: SdkHttpClient = SdkHttpClientProvider.defaultHttpClient,
     builder: KmsClientBuilder.() -> Unit = {},
-): KmsClient = kmsClient {
-    endpointOverride?.let { endpointOverride(it) }
-    region?.let { region(it) }
-    credentialsProvider?.let { credentialsProvider(it) }
-    httpClient(httpClient)
+): KmsClient =
+    kmsClient {
+        endpointOverride?.let { endpointOverride(it) }
+        region?.let { region(it) }
+        credentialsProvider?.let { credentialsProvider(it) }
+        httpClient(httpClient)
 
-    builder()
-}
+        builder()
+    }

@@ -38,7 +38,8 @@ inline fun putRecordRequest(
 inline fun putRecordRequestOf(
     streamName: String,
     partitionKey: String,
-    data: SdkBytes,
+    explicitHashKey: String? = null,
+    data: SdkBytes? = null,
     builder: PutRecordRequest.Builder.() -> Unit = {},
 ): PutRecordRequest {
     streamName.requireNotBlank("streamName")
@@ -47,7 +48,9 @@ inline fun putRecordRequestOf(
     return putRecordRequest {
         streamName(streamName)
         partitionKey(partitionKey)
-        data(data)
+        explicitHashKey?.let { this.explicitHashKey(it) }
+        data?.let { this.data(it) }
+
         builder()
     }
 }

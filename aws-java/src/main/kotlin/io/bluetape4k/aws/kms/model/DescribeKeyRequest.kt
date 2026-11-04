@@ -37,7 +37,7 @@ inline fun describeKey(
  * // request.grantTokens().size == 1
  * ```
  */
-fun describeKeyOf(
+inline fun describeKeyOf(
     keyId: String,
     vararg grantTokens: String = emptyArray(),
     builder: DescribeKeyRequest.Builder.() -> Unit = {},

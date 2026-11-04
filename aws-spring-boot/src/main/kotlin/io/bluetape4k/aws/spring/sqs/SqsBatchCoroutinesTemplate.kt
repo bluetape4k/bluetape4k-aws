@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.spring.sqs
 
+import io.bluetape4k.concurrent.awaitTermination
+import io.bluetape4k.concurrent.get
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.warn
 import io.bluetape4k.support.checkNotNull
@@ -7,9 +9,9 @@ import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.time.Duration.Companion.nanoseconds
 
 /**
  * SQS 자동 배치 연산과 소유 자원의 종료 수명 주기를 제공합니다.
@@ -362,11 +364,11 @@ private object DefaultSqsBatchCloseRuntime: SqsBatchCloseRuntime {
     override fun nanoTime(): Long = System.nanoTime()
 
     override fun awaitCompletion(future: CompletableFuture<*>, timeoutNanos: Long) {
-        future.get(timeoutNanos, TimeUnit.NANOSECONDS)
+        future.get(timeoutNanos.nanoseconds)
     }
 
     override fun awaitTermination(executor: ExecutorService, timeoutNanos: Long): Boolean =
-        executor.awaitTermination(timeoutNanos, TimeUnit.NANOSECONDS)
+        executor.awaitTermination(timeoutNanos.nanoseconds)
 
     override fun newManagerCleanupThread(task: Runnable): Thread =
         Thread(task, "$SQS_BATCH_CLEANUP_THREAD_PREFIX${SQS_BATCH_CLEANUP_THREAD_SEQUENCE.incrementAndGet()}")

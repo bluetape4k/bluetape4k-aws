@@ -1,15 +1,16 @@
 package io.bluetape4k.aws.ktor.imds
 
-import aws.smithy.kotlin.runtime.http.engine.CloseableHttpClientEngine
-import aws.smithy.kotlin.runtime.http.HttpException
 import aws.sdk.kotlin.runtime.config.imds.EndpointMode
+import aws.smithy.kotlin.runtime.http.HttpException
+import aws.smithy.kotlin.runtime.http.engine.CloseableHttpClientEngine
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
-import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldBeTrue
-import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.javatimes.millis
 import io.bluetape4k.logging.KLogging
 import io.ktor.server.application.install
 import io.ktor.server.testing.testApplication
@@ -19,8 +20,8 @@ import io.mockk.mockk
 import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.net.URI
 import java.net.Proxy
+import java.net.URI
 import java.time.Duration
 
 class ImdsKtorPluginTest {
@@ -139,7 +140,7 @@ class ImdsKtorPluginTest {
     fun `remote insecure endpoint is rejected unless it is AWS default endpoint`() {
         val error = assertFailsWith<IllegalArgumentException> {
             ImdsEndpointPolicy.resolve(
-                endpoint = URI("http://metadata.example/") ,
+                endpoint = URI("http://metadata.example/"),
                 endpointMode = EndpointMode.IPv4,
                 allowInsecureLocalHttpEndpoint = false,
             )
@@ -147,9 +148,9 @@ class ImdsKtorPluginTest {
 
         error.message shouldContain "HTTPS"
         ImdsEndpointPolicy.resolve(null, EndpointMode.IPv4, false).toString() shouldBeEqualTo
-            "http://169.254.169.254"
+                "http://169.254.169.254"
         ImdsEndpointPolicy.resolve(null, EndpointMode.IPv6, false).toString() shouldBeEqualTo
-            "http://[fd00:ec2::254]"
+                "http://[fd00:ec2::254]"
     }
 
     @Test
@@ -164,7 +165,7 @@ class ImdsKtorPluginTest {
 
     @Test
     fun `plugin owned engine disables retries proxies and redirects`() {
-        val engine = ImdsHttpClientFactory.createEngine(Duration.ofMillis(1500)) as ImdsOwnedHttpClientEngine
+        val engine = ImdsHttpClientFactory.createEngine(1500.millis()) as ImdsOwnedHttpClientEngine
         try {
             engine.client.retryOnConnectionFailure.shouldBeFalse()
             engine.client.proxy shouldBeEqualTo Proxy.NO_PROXY
@@ -200,7 +201,7 @@ class ImdsKtorPluginTest {
     @Test
     fun `full jitter uses capped exponential bounds and never returns zero`() {
         (0..8).map(ImdsRetryPolicy::backoffCapMillis) shouldBeEqualTo
-            listOf(200L, 400L, 800L, 1_600L, 3_200L, 6_400L, 12_800L, 20_000L, 20_000L)
+                listOf(200L, 400L, 800L, 1_600L, 3_200L, 6_400L, 12_800L, 20_000L, 20_000L)
 
         ImdsRetryPolicy.fullJitterMillis(0) { lower, _ -> lower } shouldBeEqualTo 1L
         ImdsRetryPolicy.fullJitterMillis(0) { _, exclusiveUpper -> exclusiveUpper - 1 } shouldBeEqualTo 200L

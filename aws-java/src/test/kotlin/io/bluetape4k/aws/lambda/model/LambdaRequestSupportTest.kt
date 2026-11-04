@@ -9,7 +9,6 @@ import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.lambda.model.InvocationType
 import software.amazon.awssdk.services.lambda.model.LogType
-import io.bluetape4k.aws.lambda.model.invokeRequest
 
 class LambdaRequestSupportTest {
 
@@ -55,6 +54,7 @@ class LambdaRequestSupportTest {
 
         val empty = invokeRequestOf("orders", payload = ByteArray(0)).payload()
             ?: error("empty payload was omitted")
+
         empty.asByteArray().shouldBeEmpty()
     }
 

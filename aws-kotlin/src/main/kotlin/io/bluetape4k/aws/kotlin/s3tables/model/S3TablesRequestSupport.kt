@@ -16,11 +16,12 @@ import aws.sdk.kotlin.services.s3tables.model.ListTableBucketsRequest
 import aws.sdk.kotlin.services.s3tables.model.ListTablesRequest
 import aws.sdk.kotlin.services.s3tables.model.OpenTableFormat
 import aws.sdk.kotlin.services.s3tables.model.TableBucketType
+import io.bluetape4k.support.requireNotBlank
 
 /** table bucket 생성 요청을 구성합니다. */
-fun createTableBucketRequestOf(
+inline fun createTableBucketRequestOf(
     name: String,
-    builder: CreateTableBucketRequest.Builder.() -> Unit = {},
+    crossinline builder: CreateTableBucketRequest.Builder.() -> Unit = {},
 ): CreateTableBucketRequest =
     CreateTableBucketRequest {
         this.name = name
@@ -30,43 +31,49 @@ fun createTableBucketRequestOf(
     }
 
 /** table bucket 목록 조회 요청을 구성합니다. */
-fun listTableBucketsRequestOf(
+inline fun listTableBucketsRequestOf(
     prefix: String? = null,
     continuationToken: String? = null,
     maxBuckets: Int? = null,
     type: TableBucketType? = null,
-    builder: ListTableBucketsRequest.Builder.() -> Unit = {},
-): ListTableBucketsRequest = ListTableBucketsRequest {
-    this.prefix = prefix
-    this.continuationToken = continuationToken
-    this.maxBuckets = maxBuckets
-    this.type = type
-    builder()
-}.also { it.validateList(it.maxBuckets, "maxBuckets") }
+    crossinline builder: ListTableBucketsRequest.Builder.() -> Unit = {},
+): ListTableBucketsRequest =
+    ListTableBucketsRequest {
+        this.prefix = prefix
+        this.continuationToken = continuationToken
+        this.maxBuckets = maxBuckets
+        this.type = type
+        builder()
+    }.also {
+        it.validateList(it.maxBuckets, "maxBuckets")
+    }
 
 /** table bucket ARN으로 조회 요청을 구성합니다. */
-fun getTableBucketRequestOf(
+inline fun getTableBucketRequestOf(
     tableBucketArn: String,
-    builder: GetTableBucketRequest.Builder.() -> Unit = {},
-): GetTableBucketRequest = GetTableBucketRequest {
-    this.tableBucketArn = tableBucketArn
-    builder()
-}.also { it.tableBucketArn.requireNotBlank("tableBucketArn") }
+    crossinline builder: GetTableBucketRequest.Builder.() -> Unit = {},
+): GetTableBucketRequest =
+    GetTableBucketRequest {
+        this.tableBucketArn = tableBucketArn
+        builder()
+    }.also {
+        it.tableBucketArn.requireNotBlank("tableBucketArn")
+    }
 
 /** table bucket ARN으로 삭제 요청을 구성합니다. */
-fun deleteTableBucketRequestOf(
+inline fun deleteTableBucketRequestOf(
     tableBucketArn: String,
-    builder: DeleteTableBucketRequest.Builder.() -> Unit = {},
+    crossinline builder: DeleteTableBucketRequest.Builder.() -> Unit = {},
 ): DeleteTableBucketRequest = DeleteTableBucketRequest {
     this.tableBucketArn = tableBucketArn
     builder()
 }.also { it.tableBucketArn.requireNotBlank("tableBucketArn") }
 
 /** table bucket에 namespace를 생성하는 요청을 구성합니다. */
-fun createNamespaceRequestOf(
+inline fun createNamespaceRequestOf(
     tableBucketArn: String,
     namespace: List<String>,
-    builder: CreateNamespaceRequest.Builder.() -> Unit = {},
+    crossinline builder: CreateNamespaceRequest.Builder.() -> Unit = {},
 ): CreateNamespaceRequest = CreateNamespaceRequest {
     this.tableBucketArn = tableBucketArn
     this.namespace = namespace
@@ -77,12 +84,12 @@ fun createNamespaceRequestOf(
 }
 
 /** namespace 목록 조회 요청을 구성합니다. */
-fun listNamespacesRequestOf(
+inline fun listNamespacesRequestOf(
     tableBucketArn: String,
     prefix: String? = null,
     continuationToken: String? = null,
     maxNamespaces: Int? = null,
-    builder: ListNamespacesRequest.Builder.() -> Unit = {},
+    crossinline builder: ListNamespacesRequest.Builder.() -> Unit = {},
 ): ListNamespacesRequest = ListNamespacesRequest {
     this.tableBucketArn = tableBucketArn
     this.prefix = prefix
@@ -95,10 +102,10 @@ fun listNamespacesRequestOf(
 }
 
 /** table bucket ARN과 namespace로 조회 요청을 구성합니다. */
-fun getNamespaceRequestOf(
+inline fun getNamespaceRequestOf(
     tableBucketArn: String,
     namespace: String,
-    builder: GetNamespaceRequest.Builder.() -> Unit = {},
+    crossinline builder: GetNamespaceRequest.Builder.() -> Unit = {},
 ): GetNamespaceRequest = GetNamespaceRequest {
     this.tableBucketArn = tableBucketArn
     this.namespace = namespace
@@ -109,10 +116,10 @@ fun getNamespaceRequestOf(
 }
 
 /** table bucket ARN과 namespace로 삭제 요청을 구성합니다. */
-fun deleteNamespaceRequestOf(
+inline fun deleteNamespaceRequestOf(
     tableBucketArn: String,
     namespace: String,
-    builder: DeleteNamespaceRequest.Builder.() -> Unit = {},
+    crossinline builder: DeleteNamespaceRequest.Builder.() -> Unit = {},
 ): DeleteNamespaceRequest = DeleteNamespaceRequest {
     this.tableBucketArn = tableBucketArn
     this.namespace = namespace
@@ -123,12 +130,12 @@ fun deleteNamespaceRequestOf(
 }
 
 /** namespace에 table을 생성하는 요청을 구성합니다. */
-fun createTableRequestOf(
+inline fun createTableRequestOf(
     tableBucketArn: String,
     namespace: String,
     name: String,
     format: OpenTableFormat = OpenTableFormat.Iceberg,
-    builder: CreateTableRequest.Builder.() -> Unit = {},
+    crossinline builder: CreateTableRequest.Builder.() -> Unit = {},
 ): CreateTableRequest = CreateTableRequest {
     this.tableBucketArn = tableBucketArn
     this.namespace = namespace
@@ -143,13 +150,13 @@ fun createTableRequestOf(
 }
 
 /** table 목록 조회 요청을 구성합니다. [namespace]는 선택적 필터입니다. */
-fun listTablesRequestOf(
+inline fun listTablesRequestOf(
     tableBucketArn: String,
     namespace: String? = null,
     prefix: String? = null,
     continuationToken: String? = null,
     maxTables: Int? = null,
-    builder: ListTablesRequest.Builder.() -> Unit = {},
+    crossinline builder: ListTablesRequest.Builder.() -> Unit = {},
 ): ListTablesRequest = ListTablesRequest {
     this.tableBucketArn = tableBucketArn
     this.namespace = namespace
@@ -164,12 +171,12 @@ fun listTablesRequestOf(
 }
 
 /** table ARN 또는 table bucket/namespace/name selector로 조회 요청을 구성합니다. */
-fun getTableRequestOf(
+inline fun getTableRequestOf(
     tableBucketArn: String? = null,
     namespace: String? = null,
     name: String? = null,
     tableArn: String? = null,
-    builder: GetTableRequest.Builder.() -> Unit = {},
+    crossinline builder: GetTableRequest.Builder.() -> Unit = {},
 ): GetTableRequest = GetTableRequest {
     this.tableBucketArn = tableBucketArn
     this.namespace = namespace
@@ -179,12 +186,12 @@ fun getTableRequestOf(
 }.also { it.requireTableLookup() }
 
 /** table bucket/namespace/name으로 삭제 요청을 구성합니다. */
-fun deleteTableRequestOf(
+inline fun deleteTableRequestOf(
     tableBucketArn: String,
     namespace: String,
     name: String,
     versionToken: String? = null,
-    builder: DeleteTableRequest.Builder.() -> Unit = {},
+    crossinline builder: DeleteTableRequest.Builder.() -> Unit = {},
 ): DeleteTableRequest = DeleteTableRequest {
     this.tableBucketArn = tableBucketArn
     this.namespace = namespace
@@ -197,40 +204,36 @@ fun deleteTableRequestOf(
     it.name.requireNotBlank("name")
 }
 
-private fun String?.requireNotBlank(field: String) {
-    require(!isNullOrBlank()) { "$field must not be blank" }
-}
-
-private fun String?.requireSelector(field: String) {
+fun String?.requireSelector(field: String) {
     require(this == null || !isNullOrBlank()) { "$field must not be blank when provided" }
 }
 
-private fun List<String>?.requireNamespace() {
+fun List<String>?.requireNamespace() {
     require(!isNullOrEmpty() && all(String::isNotBlank)) {
         "namespace must contain at least one non-blank segment"
     }
 }
 
-private fun ListTableBucketsRequest.validateList(value: Int?, field: String) {
+fun ListTableBucketsRequest.validateList(value: Int?, field: String) {
     validatePage(value, field)
     continuationToken?.requireNotBlank("continuationToken")
 }
 
-private fun ListNamespacesRequest.validateList(value: Int?, field: String) {
+fun ListNamespacesRequest.validateList(value: Int?, field: String) {
     validatePage(value, field)
     continuationToken?.requireNotBlank("continuationToken")
 }
 
-private fun ListTablesRequest.validateList(value: Int?, field: String) {
+fun ListTablesRequest.validateList(value: Int?, field: String) {
     validatePage(value, field)
     continuationToken?.requireNotBlank("continuationToken")
 }
 
-private fun validatePage(value: Int?, field: String) {
+fun validatePage(value: Int?, field: String) {
     require(value == null || value > 0) { "$field must be greater than zero" }
 }
 
-private fun GetTableRequest.requireTableLookup() {
+fun GetTableRequest.requireTableLookup() {
     tableArn.requireSelector("tableArn")
     tableBucketArn.requireSelector("tableBucketArn")
     namespace.requireSelector("namespace")

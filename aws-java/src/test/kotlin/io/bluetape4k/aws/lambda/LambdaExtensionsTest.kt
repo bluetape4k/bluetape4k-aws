@@ -3,6 +3,7 @@ package io.bluetape4k.aws.lambda
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.aws.core.toSdkBytes
@@ -48,7 +49,7 @@ class LambdaExtensionsTest {
         val stringResult = client.invokeString("orders", payload = "hello")
 
         bytesResult.response shouldBeSameInstanceAs expected
-        bytesResult.payload?.toList() shouldBeEqualTo listOf(111.toByte(), 107)
+        bytesResult.payload shouldBeEqualTo byteArrayOf(111, 107)
         stringResult.value shouldBeEqualTo "ok"
 
         verify(exactly = 2) {
@@ -71,6 +72,7 @@ class LambdaExtensionsTest {
             .functionError("Unhandled")
             .payload("failed".toSdkBytes())
             .build()
+
         every { client.invoke(any<InvokeRequest>()) } returnsMany listOf(success, failure)
 
         val successResult = client.invokeTyped("orders", "request", codec)
@@ -86,7 +88,9 @@ class LambdaExtensionsTest {
     @Test
     fun `function error is result data and transport error is unchanged`() {
         val transportError = IllegalStateException("transport")
-        every { client.invoke(any<InvokeRequest>()) } returnsMany listOf(
+        every {
+            client.invoke(any<InvokeRequest>())
+        } returnsMany listOf(
             InvokeResponse.builder().functionError("Handled").payload("error".toSdkBytes()).build(),
         ) andThenThrows transportError
 
@@ -94,7 +98,9 @@ class LambdaExtensionsTest {
         functionErrorResult.hasFunctionError.shouldBeTrue()
         functionErrorResult.value shouldBeEqualTo "error"
 
-        val actual = assertFailsWith<IllegalStateException> { client.invokeString("orders", payload = "request") }
+        val actual = assertFailsWith<IllegalStateException> {
+            client.invokeString("orders", payload = "request")
+        }
         actual shouldBeSameInstanceAs transportError
     }
 
@@ -108,18 +114,21 @@ class LambdaExtensionsTest {
         val absent = client.invokeBytes("orders")
         val empty = client.invokeBytes("orders")
 
-        absent.value shouldBeEqualTo null
-        absent.payload shouldBeEqualTo null
+        absent.value.shouldBeNull()
+        absent.payload.shouldBeNull()
+
         val emptyValue = empty.value ?: error("empty value was lost")
         emptyValue.size shouldBeEqualTo 0
+
         val emptyPayload = empty.payload ?: error("empty payload was lost")
         emptyPayload.size shouldBeEqualTo 0
     }
 
     @Test
     fun `invalid log tail raises decode error without fallback`() {
-        every { client.invoke(any<InvokeRequest>()) } returns
-                InvokeResponse.builder().logResult("not-base64").build()
+        every {
+            client.invoke(any<InvokeRequest>())
+        } returns InvokeResponse.builder().logResult("not-base64").build()
 
         assertFailsWith<IllegalArgumentException> {
             client.invokeString("orders")
@@ -130,12 +139,13 @@ class LambdaExtensionsTest {
     fun `async future maps response exactly once`() {
         val expected = InvokeResponse.builder().payload("accepted".toSdkBytes()).build()
         val sdkFuture = CompletableFuture.completedFuture(expected)
+
         every { asyncClient.invoke(any<InvokeRequest>()) } returns sdkFuture
 
         val result = asyncClient.invokeStringAsync("orders").get()
-
         result.response shouldBeSameInstanceAs expected
         result.value shouldBeEqualTo "accepted"
+
         verify(exactly = 1) { asyncClient.invoke(any<InvokeRequest>()) }
     }
 
@@ -176,6 +186,7 @@ class LambdaExtensionsTest {
     fun `await overload propagates CancellationException`() = runTest {
         val sdkFuture = CompletableFuture<InvokeResponse>()
         sdkFuture.completeExceptionally(CancellationException("cancelled"))
+
         every { asyncClient.invoke(any<InvokeRequest>()) } returns sdkFuture
 
         assertFailsWith<CancellationException> {

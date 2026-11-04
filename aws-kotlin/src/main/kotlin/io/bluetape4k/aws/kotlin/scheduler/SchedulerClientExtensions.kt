@@ -26,7 +26,7 @@ import io.bluetape4k.aws.kotlin.scheduler.model.listSchedulesRequestOf
 import io.bluetape4k.aws.kotlin.scheduler.model.updateScheduleRequestOf
 
 /** 스케줄을 생성하고 Scheduler 원본 응답을 반환합니다. */
-suspend fun SchedulerClient.createSchedule(
+suspend inline fun SchedulerClient.createSchedule(
     name: String,
     scheduleExpression: String,
     target: Target,
@@ -58,7 +58,7 @@ suspend fun SchedulerClient.createSchedule(
     )
 
 /** 명시적인 대체 요청으로 스케줄을 갱신합니다. */
-suspend fun SchedulerClient.updateSchedule(
+suspend inline fun SchedulerClient.updateSchedule(
     name: String,
     scheduleExpression: String,
     target: Target,
@@ -90,7 +90,7 @@ suspend fun SchedulerClient.updateSchedule(
     )
 
 /** 스케줄을 삭제합니다. */
-suspend fun SchedulerClient.deleteSchedule(
+suspend inline fun SchedulerClient.deleteSchedule(
     name: String,
     groupName: String? = null,
     clientToken: String? = null,
@@ -98,14 +98,14 @@ suspend fun SchedulerClient.deleteSchedule(
     deleteSchedule(deleteScheduleRequestOf(name, groupName, clientToken))
 
 /** 스케줄을 조회합니다. */
-suspend fun SchedulerClient.getSchedule(
+suspend inline fun SchedulerClient.getSchedule(
     name: String,
     groupName: String? = null,
 ): GetScheduleResponse =
     getSchedule(getScheduleRequestOf(name, groupName))
 
 /** 스케줄 목록을 조회합니다. */
-suspend fun SchedulerClient.listSchedules(
+suspend inline fun SchedulerClient.listSchedules(
     groupName: String? = null,
     namePrefix: String? = null,
     state: ScheduleState? = null,
@@ -115,25 +115,25 @@ suspend fun SchedulerClient.listSchedules(
     listSchedules(listSchedulesRequestOf(groupName, namePrefix, state, maxResults, nextToken))
 
 /** 스케줄 그룹을 생성합니다. */
-suspend fun SchedulerClient.createScheduleGroup(
+suspend inline fun SchedulerClient.createScheduleGroup(
     name: String,
     clientToken: String? = null,
 ): CreateScheduleGroupResponse =
     createScheduleGroup(createScheduleGroupRequestOf(name, clientToken))
 
 /** 스케줄 그룹을 삭제합니다. */
-suspend fun SchedulerClient.deleteScheduleGroup(
+suspend inline fun SchedulerClient.deleteScheduleGroup(
     name: String,
     clientToken: String? = null,
 ): DeleteScheduleGroupResponse =
     deleteScheduleGroup(deleteScheduleGroupRequestOf(name, clientToken))
 
 /** 스케줄 그룹을 조회합니다. */
-suspend fun SchedulerClient.getScheduleGroup(name: String): GetScheduleGroupResponse =
+suspend inline fun SchedulerClient.getScheduleGroup(name: String): GetScheduleGroupResponse =
     getScheduleGroup(getScheduleGroupRequestOf(name))
 
 /** 스케줄 그룹 목록을 조회합니다. */
-suspend fun SchedulerClient.listScheduleGroups(
+suspend inline fun SchedulerClient.listScheduleGroups(
     namePrefix: String? = null,
     maxResults: Int? = null,
     nextToken: String? = null,

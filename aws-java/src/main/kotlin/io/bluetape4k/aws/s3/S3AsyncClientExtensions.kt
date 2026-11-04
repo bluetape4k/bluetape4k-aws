@@ -5,7 +5,7 @@ import io.bluetape4k.aws.s3.model.getObjectRequest
 import io.bluetape4k.aws.s3.model.putObjectRequest
 import io.bluetape4k.aws.s3.model.toAsyncRequestBody
 import io.bluetape4k.concurrent.completableFutureOf
-import io.bluetape4k.logging.KotlinLogging
+import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.error
 import io.bluetape4k.logging.warn
 import io.bluetape4k.support.requireNotBlank
@@ -31,7 +31,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
 import java.util.concurrent.ExecutionException
 
-private val log = KotlinLogging.logger { }
+private object ObjectS3AsyncClientLogger: KLogging()
 
 /**
  * [bucketName]의 Bucket 이 존재하는지 알아봅니다.
@@ -55,7 +55,7 @@ fun S3AsyncClient.existsBucketAsync(bucketName: String): CompletableFuture<Boole
             when {
                 error == null -> true
                 error.isMissingBucketError() -> false
-                else -> throw error
+                else          -> throw error
             }
         }
 }
@@ -66,7 +66,7 @@ private fun Throwable.isMissingBucketError(): Boolean {
         is NoSuchBucketException -> true
         is S3Exception -> cause.statusCode() == 404 ||
                 cause.awsErrorDetails()?.errorCode() in setOf("NoSuchBucket", "NotFound")
-        else -> false
+        else           -> false
     }
 }
 
@@ -91,14 +91,15 @@ private fun Throwable.unwrapKnownWrapper(): Throwable {
  * // result.location().contains("demo-bucket")
  * ```
  */
-fun S3AsyncClient.createBucketAsync(
+inline fun S3AsyncClient.createBucketAsync(
     bucketName: String,
-    builder: CreateBucketConfiguration.Builder.() -> Unit = {},
+    crossinline builder: CreateBucketConfiguration.Builder.() -> Unit = {},
 ): CompletableFuture<CreateBucketResponse> {
     bucketName.requireNotBlank("bucketName")
 
     return createBucket {
-        it.bucket(bucketName).createBucketConfiguration(builder)
+        val configuration = CreateBucketConfiguration.builder().apply(builder).build()
+        it.bucket(bucketName).createBucketConfiguration(configuration)
     }
 }
 
@@ -369,7 +370,7 @@ fun S3AsyncClient.moveObjectAsync(
                 builder.bucket(srcBucketName).key(srcKey)
             }.handle { deleteResponse, error ->
                 error?.let {
-                    log.warn(it) {
+                    ObjectS3AsyncClientLogger.log.warn(it) {
                         "Failed to delete source object after copy. " +
                                 "Source: $srcBucketName/$srcKey, Dest: $destBucketName/$destKey"
                     }
@@ -408,21 +409,26 @@ fun S3AsyncClient.moveObjectAsync(
  * // result.isPartialSuccess == false
  * ```
  */
-fun S3AsyncClient.moveObjectAsync(
+inline fun S3AsyncClient.moveObjectAsync(
     copyRequestBuilder: CopyObjectRequest.Builder.() -> Unit,
-    deleteRequestBuilder: DeleteObjectRequest.Builder.() -> Unit,
-): CompletableFuture<MoveObjectResult> =
-    copyObject(copyRequestBuilder)
+    crossinline deleteRequestBuilder: DeleteObjectRequest.Builder.() -> Unit,
+): CompletableFuture<MoveObjectResult> {
+    val copyRequest = CopyObjectRequest.builder().apply(copyRequestBuilder).build()
+    return copyObject(copyRequest)
         .thenCompose { copyResponse ->
             if (copyResponse.copyObjectResult().eTag()?.isNotBlank() == true) {
-                deleteObject(deleteRequestBuilder).handle { deleteResponse, error ->
-                    error?.let { log.warn(it) { "Failed to delete source object after copy" } }
+                val deleteRequest = DeleteObjectRequest.builder().apply(deleteRequestBuilder).build()
+                deleteObject(deleteRequest).handle { deleteResponse, error ->
+                    error?.let {
+                        ObjectS3AsyncClientLogger.log.warn(it) { "Failed to delete source object after copy" }
+                    }
                     MoveObjectResult(copyResponse.copyObjectResult(), deleteResponse)
                 }
             } else {
                 completableFutureOf(MoveObjectResult(copyResponse.copyObjectResult()))
             }
         }
+}
 
 /**
  * [S3Object]를 원자적으로 Move 합니다.
@@ -451,13 +457,13 @@ fun S3AsyncClient.moveObjectAtomicAsync(
     moveObjectAsync(srcBucketName, srcKey, destBucketName, destKey).thenCompose { result ->
         if (result.isPartialSuccess) {
             // 복사는 성공했지만 삭제가 실패한 경우, 롤백 시도
-            log.warn {
+            ObjectS3AsyncClientLogger.log.warn {
                 "Move partially succeeded. Attempting rollback by deleting copied object. Dest: $destBucketName/$destKey"
             }
             deleteObject { it.bucket(destBucketName).key(destKey) }
                 .handle { _, rollbackError ->
                     rollbackError?.let {
-                        log.error(it) {
+                        ObjectS3AsyncClientLogger.log.error(it) {
                             "Rollback failed! Copied object may remain at destination. Dest: $destBucketName/$destKey"
                         }
                         throw IllegalStateException(

@@ -144,7 +144,10 @@ class S3OutputStreamTest {
 
             operations.uploadedBytes.size shouldBeEqualTo 0
             operations.uploadedFiles.size shouldBeEqualTo 0
-            Files.list(tempDirectory).use { stream -> stream.count() shouldBeEqualTo 0L }
+
+            Files.list(tempDirectory).use { stream ->
+                stream.count() shouldBeEqualTo 0L
+            }
 
             assertFailsWith<IllegalStateException> {
                 output.write(1)
@@ -252,7 +255,9 @@ class S3OutputStreamTest {
             thrown.shouldBeSameInstanceAs(primary)
             val temporary = Files.list(tempDirectory).use { it.findFirst().orElseThrow() }
             Files.exists(temporary).shouldBeTrue()
+
             val cleanup = thrown.suppressed.single() as S3TransferCleanupException
+            log.debug { "cleanup=$cleanup" }
             cleanup.operation shouldBeEqualTo S3TransferCleanupOperation.OUTPUT_STREAM_DISCARD
             cleanup.attemptFailureTypes shouldBeEqualTo listOf(java.nio.file.FileSystemException::class.qualifiedName)
             cleanup.message?.contains(temporary.toString()).shouldBeFalse()

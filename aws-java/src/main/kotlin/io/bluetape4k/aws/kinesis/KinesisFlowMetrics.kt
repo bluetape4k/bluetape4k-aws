@@ -1,7 +1,7 @@
 package io.bluetape4k.aws.kinesis
 
+import io.bluetape4k.support.toUtf8Bytes
 import java.io.Serializable
-import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 
 /**
@@ -141,7 +141,7 @@ class LambdaKinesisFlowMetrics(
 }
 
 internal fun redactedKinesisToken(value: String): String {
-    val digest = MessageDigest.getInstance("SHA-256").digest(value.toByteArray(StandardCharsets.UTF_8))
+    val digest = MessageDigest.getInstance("SHA-256").digest(value.toUtf8Bytes())
     return digest.joinToString("") { byte -> "%02x".format(byte) }.take(MAX_KINESIS_METRIC_TOKEN_LENGTH)
 }
 

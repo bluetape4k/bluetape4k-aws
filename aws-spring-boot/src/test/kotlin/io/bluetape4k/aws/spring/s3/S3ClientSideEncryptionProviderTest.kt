@@ -7,16 +7,17 @@ import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldContentEqual
-import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.assertions.shouldNotBeEqualTo
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.aws.spring.sqs.SqsExtendedPayloadReadException
 import io.bluetape4k.concurrent.completableFutureOf
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
 import io.bluetape4k.support.toUtf8Bytes
 import io.mockk.clearMocks
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -45,11 +46,11 @@ class S3ClientSideEncryptionProviderTest: AbstractS3Test() {
 
     companion object: KLogging()
 
-    private val client: S3AsyncClient = mockk<S3AsyncClient>(relaxed = true)
+    private val asyncClient: S3AsyncClient = mockk<S3AsyncClient>(relaxed = true)
 
     @BeforeEach
     fun beforeEach() {
-        clearMocks(client)
+        clearMocks(asyncClient)
     }
 
     @Test
@@ -107,9 +108,9 @@ class S3ClientSideEncryptionProviderTest: AbstractS3Test() {
         val withNonce = WrappedDataKey(byteArrayOf(1), byteArrayOf(2))
         val equivalent = WrappedDataKey(byteArrayOf(1), byteArrayOf(2))
 
-        (withoutNonce == withNonce) shouldBeEqualTo false
-        (withNonce == withoutNonce) shouldBeEqualTo false
-        (withNonce == equivalent) shouldBeEqualTo true
+        withoutNonce shouldNotBeEqualTo withNonce
+        withNonce shouldNotBeEqualTo withoutNonce
+        withNonce shouldBeEqualTo equivalent
         withNonce.hashCode() shouldBeEqualTo equivalent.hashCode()
     }
 
@@ -128,7 +129,7 @@ class S3ClientSideEncryptionProviderTest: AbstractS3Test() {
             metadata = mapOf("key" to "value"),
         )
 
-        (first == second) shouldBeEqualTo true
+        first shouldBeEqualTo second
         first.hashCode() shouldBeEqualTo second.hashCode()
     }
 
@@ -344,14 +345,11 @@ class S3ClientSideEncryptionProviderTest: AbstractS3Test() {
     @Test
     fun `provider template uploads ciphertext and exposes identity`() = runTest {
         every {
-            client.putObject(
-                any<Consumer<PutObjectRequest.Builder>>(),
-                any<AsyncRequestBody>(),
-            )
+            asyncClient.putObject(any<PutObjectRequest>(), any<AsyncRequestBody>())
         } returns completableFutureOf(PutObjectResponse.builder().build())
 
         val template = S3ClientSideEncryptionProviderTemplate(
-            s3AsyncClient = client,
+            s3AsyncClient = asyncClient,
             properties = S3Properties(
                 clientSideEncryption = S3Properties.ClientSideEncryption(
                     enabled = true,
@@ -368,11 +366,8 @@ class S3ClientSideEncryptionProviderTest: AbstractS3Test() {
         template.canonicalKeyIdentity shouldContain "orders-key"
         template.keyFingerprint.isNotBlank().shouldBeTrue()
 
-        verify(exactly = 1) {
-            client.putObject(
-                any<Consumer<PutObjectRequest.Builder>>(),
-                any<AsyncRequestBody>(),
-            )
+        coVerify(exactly = 1) {
+            asyncClient.putObject(any<PutObjectRequest>(), any<AsyncRequestBody>())
         }
         template.close()
     }
@@ -396,7 +391,7 @@ class S3ClientSideEncryptionProviderTest: AbstractS3Test() {
 
     @Test
     fun `provider template rejects operations after close`() = runTest {
-        val template = testProviderTemplate(client = client)
+        val template = testProviderTemplate(client = asyncClient)
         template.close()
 
         assertFailsWith<IllegalStateException> {
@@ -406,13 +401,13 @@ class S3ClientSideEncryptionProviderTest: AbstractS3Test() {
             template.downloadEncryptedBytesBounded("bucket", "key", emptyMap(), 1)
         }
         verify(exactly = 0) {
-            client.putObject(
+            asyncClient.putObject(
                 any<Consumer<PutObjectRequest.Builder>>(),
                 any<AsyncRequestBody>(),
             )
         }
         verify(exactly = 0) {
-            client.getObject(
+            asyncClient.getObject(
                 any<Consumer<GetObjectRequest.Builder>>(),
                 any<AsyncResponseTransformer<GetObjectResponse, *>>(),
             )
@@ -421,7 +416,7 @@ class S3ClientSideEncryptionProviderTest: AbstractS3Test() {
 
     @Test
     fun `bounded provider download accepts ciphertext at the exact limit`() = runTest {
-        val template = testProviderTemplate(client = client)
+        val template = testProviderTemplate(client = asyncClient)
         val plaintext = "bounded provider payload".encodeToByteArray()
         val envelope = template.newEncryptionEnvelope(plaintext)
         val response = GetObjectResponse.builder().metadata(envelope.metadata).build()
@@ -430,7 +425,7 @@ class S3ClientSideEncryptionProviderTest: AbstractS3Test() {
             SdkPublisher.fromIterable(listOf(ByteBuffer.wrap(envelope.ciphertext))),
         )
         every {
-            client.getObject(
+            asyncClient.getObject(
                 any<GetObjectRequest>(),
                 any<AsyncResponseTransformer<GetObjectResponse, ResponsePublisher<GetObjectResponse>>>(),
             )
@@ -450,7 +445,7 @@ class S3ClientSideEncryptionProviderTest: AbstractS3Test() {
 
     @Test
     fun `bounded provider download rejects ciphertext over limit`() = runTest {
-        val template = testProviderTemplate(client = client)
+        val template = testProviderTemplate(client = asyncClient)
         val envelope = template.newEncryptionEnvelope("too-large".encodeToByteArray())
         val response = GetObjectResponse.builder().metadata(envelope.metadata).build()
         val publisher = ResponsePublisher(
@@ -458,7 +453,7 @@ class S3ClientSideEncryptionProviderTest: AbstractS3Test() {
             SdkPublisher.fromIterable(listOf(ByteBuffer.wrap(envelope.ciphertext))),
         )
         every {
-            client.getObject(
+            asyncClient.getObject(
                 any<GetObjectRequest>(),
                 any<AsyncResponseTransformer<GetObjectResponse, ResponsePublisher<GetObjectResponse>>>(),
             )

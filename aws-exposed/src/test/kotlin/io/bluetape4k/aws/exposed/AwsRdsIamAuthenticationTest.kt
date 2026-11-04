@@ -6,6 +6,7 @@ import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.concurrent.await
+import io.bluetape4k.javatimes.minutes
 import io.bluetape4k.jdbc.datasource.RefreshingJdbcPasswordDataSource
 import io.bluetape4k.jdbc.datasource.RefreshingJdbcPasswordDataSourceConfig
 import io.bluetape4k.logging.KLogging
@@ -46,7 +47,7 @@ class AwsRdsIamAuthenticationTest {
                 region = "ap-northeast-2",
                 hostname = "rds.example.com",
                 port = 5432,
-                tokenTtl = Duration.ofMinutes(16),
+                tokenTtl = 16.minutes(),
             )
         }
         invalidTokenTtl.message shouldContain "tokenTtl"
@@ -118,7 +119,7 @@ class AwsRdsIamAuthenticationTest {
         )
 
         provider.currentPassword()?.reveal() shouldBeEqualTo "token-1"
-        clock.advance(Duration.ofMinutes(10))
+        clock.advance(10.minutes())
         provider.currentPassword()?.reveal() shouldBeEqualTo "token-1"
 
         counter.get() shouldBeEqualTo 1
@@ -143,7 +144,7 @@ class AwsRdsIamAuthenticationTest {
         )
 
         provider.currentPassword()?.reveal() shouldBeEqualTo "token-1"
-        clock.advance(Duration.ofMinutes(14))
+        clock.advance(14.minutes())
         provider.currentPassword()?.reveal() shouldBeEqualTo "token-2"
 
         counter.get() shouldBeEqualTo 2
@@ -159,7 +160,7 @@ class AwsRdsIamAuthenticationTest {
             clock = clock,
         )
         provider.currentPassword()?.reveal() shouldBeEqualTo "token-1"
-        clock.advance(Duration.ofMinutes(14))
+        clock.advance(14.minutes())
 
         val executor = Executors.newFixedThreadPool(8)
         val start = CountDownLatch(1)
@@ -275,7 +276,7 @@ class AwsRdsIamAuthenticationTest {
             region = "ap-northeast-2",
             hostname = "database-1.cluster-example.ap-northeast-2.rds.amazonaws.com",
             port = 5432,
-            refreshBeforeExpiry = Duration.ofMinutes(2),
+            refreshBeforeExpiry = 2.minutes(),
         )
 
     private class MutableClock(

@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.ktor.eventbridge
 
+import aws.sdk.kotlin.services.eventbridge.EventBridgeClient
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
@@ -18,7 +19,6 @@ import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import aws.sdk.kotlin.services.eventbridge.EventBridgeClient
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EventBridgeKtorPluginTest {

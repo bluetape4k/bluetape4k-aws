@@ -3,6 +3,7 @@ package io.bluetape4k.aws.spring.sqs
 import io.bluetape4k.aws.sqs.getQueueUrl
 import io.bluetape4k.aws.sqs.send
 import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.support.requireInRange
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
@@ -86,9 +87,9 @@ class SqsCoroutinesTemplate(
         waitTimeSeconds: Int,
         visibilityTimeoutSeconds: Int?,
     ): List<SqsReceivedMessage> {
-        require(maxMessages in 1..10) { "maxMessages must be between 1 and 10." }
-        require(waitTimeSeconds in 0..20) { "waitTimeSeconds must be between 0 and 20." }
-        visibilityTimeoutSeconds?.let { require(it in 0..43_200) { "visibilityTimeoutSeconds must be between 0 and 43200." } }
+        maxMessages.requireInRange(1, 10, "maxMessages")
+        waitTimeSeconds.requireInRange(0, 20, "waitTimeSeconds")
+        visibilityTimeoutSeconds?.requireInRange(0, 43_200, "visibilityTimeoutSeconds")
 
         val response = sqsAsyncClient.receiveMessage {
             it.queueUrl(queueUrl)
@@ -156,7 +157,7 @@ class SqsCoroutinesTemplate(
         receiptHandle: String,
         timeoutSeconds: Int,
     ): ChangeMessageVisibilityResponse {
-        require(timeoutSeconds in 0..43_200) { "timeoutSeconds must be between 0 and 43200." }
+        timeoutSeconds.requireInRange(0, 43_200, "timeoutSeconds")
 
         return sqsAsyncClient.changeMessageVisibility {
             it.queueUrl(queueUrl)

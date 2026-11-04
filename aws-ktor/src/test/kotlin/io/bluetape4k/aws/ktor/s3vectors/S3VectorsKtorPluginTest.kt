@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.ktor.s3vectors
 
+import aws.sdk.kotlin.services.s3vectors.S3VectorsClient
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
@@ -27,7 +28,6 @@ import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import aws.sdk.kotlin.services.s3vectors.S3VectorsClient
 import aws.smithy.kotlin.runtime.net.url.Url as SmithyUrl
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)

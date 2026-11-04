@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.examples.spring.dynamodb
 
+import io.bluetape4k.logging.KLogging
 import io.bluetape4k.testcontainers.aws.FlociServer
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -17,7 +18,7 @@ class DynamoDbServiceConnectionAotTest {
     @Test
     fun declarationIsAotVisible() = Unit
 
-    companion object {
+    companion object: KLogging() {
         @JvmField
         @Container
         @ServiceConnection(name = "dynamodb")

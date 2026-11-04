@@ -4,6 +4,7 @@ import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.AbstractAwsTest
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.bluetape4k.utils.ShutdownQueue
 import io.mockk.every
 import io.mockk.mockk
@@ -169,6 +170,7 @@ class BedrockRuntimeClientSupportTest: AbstractAwsTest() {
             endpointOverride(URI("http://example.com"))
         }.use { client ->
             client.serviceClientConfiguration().shouldNotBeNull()
+            log.debug { "service configuration=${client.serviceClientConfiguration()}" }
         }
 
         bedrockRuntimeAsyncClientOf(
@@ -179,6 +181,7 @@ class BedrockRuntimeClientSupportTest: AbstractAwsTest() {
             endpointOverride(URI("http://example.com"))
         }.use { client ->
             client.serviceClientConfiguration().shouldNotBeNull()
+            log.debug { "service configuration=${client.serviceClientConfiguration()}" }
         }
     }
 }

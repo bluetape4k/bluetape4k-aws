@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.spring.connection
 
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.support.requireContains
@@ -26,7 +27,7 @@ class AwsServiceConnectionTestApplication
 internal object AwsServiceConnectionTestFixtures {
 
     fun roundTrip(client: S3Client, emulator: AwsEmulatorServer): S3RoundTripReceipt {
-        val ownerToken = "owner-${Base58.randomString(10).lowercase()}"
+        val ownerToken = "owner-${Base58.randomString(12).lowercase()}"
         val bucket = "issue472-${ownerToken.replace('_', '-')}"
         val key = "$ownerToken/payload.txt"
         requireOwnedResource(ownerToken, bucket, key)
@@ -68,7 +69,7 @@ internal object AwsServiceConnectionTestFixtures {
                 }
             }
         }
-        return requireNotNull(receipt)
+        return receipt.shouldNotBeNull()
     }
 
     private fun requireOwnedResource(ownerToken: String, bucket: String, key: String) {

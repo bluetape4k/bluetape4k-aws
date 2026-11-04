@@ -128,27 +128,31 @@ class SesKtorTemplateTest {
     fun `attachment enum variants including unknown values survive mapping`() = runTest {
         val dispositions = AttachmentContentDisposition.values() + AttachmentContentDisposition.SdkUnknown("FUTURE")
         val encodings = AttachmentContentTransferEncoding.values() +
-            AttachmentContentTransferEncoding.SdkUnknown("FUTURE")
+                AttachmentContentTransferEncoding.SdkUnknown("FUTURE")
         val request = slot<SendEmailRequest>()
         coEvery { client.sendEmail(capture(request)) } returns SendEmailResponse { messageId = "enum-1" }
 
         for (disposition in dispositions) {
-            template(client).sendEmail(sampleEmail().copy(
-                attachments = listOf(SesEmailAttachment("a.txt", byteArrayOf(1), "text/plain", disposition))
-            ))
+            template(client).sendEmail(
+                sampleEmail().copy(
+                    attachments = listOf(SesEmailAttachment("a.txt", byteArrayOf(1), "text/plain", disposition))
+                )
+            )
             request.captured.content?.simple?.attachments?.single()?.contentDisposition shouldBeEqualTo disposition
         }
         for (encoding in encodings) {
-            template(client).sendEmail(sampleEmail().copy(
-                attachments = listOf(
-                    SesEmailAttachment(
-                        "a.txt",
-                        byteArrayOf(1),
-                        "text/plain",
-                        contentTransferEncoding = encoding,
+            template(client).sendEmail(
+                sampleEmail().copy(
+                    attachments = listOf(
+                        SesEmailAttachment(
+                            "a.txt",
+                            byteArrayOf(1),
+                            "text/plain",
+                            contentTransferEncoding = encoding,
+                        )
                     )
                 )
-            ))
+            )
             request.captured.content?.simple?.attachments?.single()?.contentTransferEncoding shouldBeEqualTo encoding
         }
     }

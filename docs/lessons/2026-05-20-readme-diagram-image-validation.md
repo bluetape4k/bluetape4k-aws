@@ -7,12 +7,9 @@ README Mermaid diagram을 생성한 PNG embed로 교체하고 생성한 SVG와 R
 
 ## 결정
 
-Architecture, class, sequence diagram에는 공통 pastel infographic renderer를 사용한다.
-Diagram text는 영문 전용으로 유지하고 README에는 PNG를 사용하며, 향후 재생성 또는
-검사를 위해 SVG도 보존한다.
+Architecture, class, sequence diagram에는 공통 pastel infographic renderer를 사용한다. Diagram text는 영문 전용으로 유지하고 README에는 PNG를 사용하며, 향후 재생성 또는 검사를 위해 SVG도 보존한다.
 
-Root README asset에서 module subtitle이 잘리지 않도록 rendering 전에 큰 diagram title을
-사용 가능한 너비에 맞춘다.
+Root README asset에서 module subtitle이 잘리지 않도록 rendering 전에 큰 diagram title을 사용 가능한 너비에 맞춘다.
 
 ## 결과
 
@@ -35,6 +32,4 @@ AWS README diagram 모음을 content 크기에 맞춘 canvas로 다시 생성했
 
 ## 향후 지침
 
-README diagram을 다시 생성할 때 PR을 만들기 전에 contact sheet를 검사한다. Architecture
-diagram은 content 기반 dimension을 사용하고, class diagram은 inheritance/use arrow가
-보여야 하며, sequence diagram을 고정 height에 맞추지 않는다.
+README diagram을 다시 생성할 때 PR을 만들기 전에 contact sheet를 검사한다. Architecture diagram은 content 기반 dimension을 사용하고, class diagram은 inheritance/use arrow가 보여야 하며, sequence diagram을 고정 height에 맞추지 않는다.

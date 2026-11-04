@@ -2,8 +2,7 @@
 
 ## 배경
 
-PR #62 이후 후속 정리에서 `aws-spring-boot/src/test/kotlin`에 남은 AssertJ 사용을
-제거하고 변경한 테스트를 `bluetape4k-assertions`에 맞췄다.
+PR #62 이후 후속 정리에서 `aws-spring-boot/src/test/kotlin`에 남은 AssertJ 사용을 제거하고 변경한 테스트를 `bluetape4k-assertions`에 맞췄다.
 
 - 범위: `aws-spring-boot/src/test/kotlin`
 - 변경한 파일: 9개
@@ -38,5 +37,4 @@ PR #62 이후 후속 정리에서 `aws-spring-boot/src/test/kotlin`에 남은 As
 
 ## 향후 보호 장치
 
-bluetape4k Kotlin 테스트를 변경할 때는 편의를 위해 assertion style을 섞어 두지 말고,
-변경한 assertion block을 즉시 `bluetape4k-assertions`로 옮긴다.
+bluetape4k Kotlin 테스트를 변경할 때는 편의를 위해 assertion style을 섞어 두지 말고, 변경한 assertion block을 즉시 `bluetape4k-assertions`로 옮긴다.

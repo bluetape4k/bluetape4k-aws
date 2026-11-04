@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.ktor.sns
 
+import aws.sdk.kotlin.services.sns.SnsClient
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
@@ -21,7 +22,6 @@ import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import aws.sdk.kotlin.services.sns.SnsClient
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SnsKtorPluginTest {

@@ -5,6 +5,8 @@ import java.io.Serializable
 import java.net.URI
 import java.nio.file.Path
 
+const val AWS_PREFIX = "bluetape4k.aws"
+
 /**
  * bluetape4k Spring Boot 자동 구성의 공유 AWS 기본값입니다.
  *
@@ -14,7 +16,7 @@ import java.nio.file.Path
  * Web Identity 자격 증명은 옵트인이므로 애플리케이션은 공통 자격 증명 Bean을 교체하지 않고
  * EKS/IRSA 방식 배포를 사용할 수 있습니다.
  */
-@ConfigurationProperties(prefix = "bluetape4k.aws")
+@ConfigurationProperties(prefix = AWS_PREFIX)
 data class AwsProperties(
     val enabled: Boolean = true,
     val region: String? = null,
@@ -24,7 +26,7 @@ data class AwsProperties(
 
     init {
         require(endpointOverride == null || !region.isNullOrBlank()) {
-            "bluetape4k.aws.region is required when endpoint-override is configured."
+            "$AWS_PREFIX.region is required when endpoint-override is configured."
         }
     }
 

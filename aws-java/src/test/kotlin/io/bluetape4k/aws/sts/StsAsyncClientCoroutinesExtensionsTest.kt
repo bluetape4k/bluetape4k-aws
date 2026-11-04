@@ -26,7 +26,7 @@ class StsAsyncClientCoroutinesExtensionsTest: AbstractStsTest() {
     @Test
     @Order(1)
     fun `코루틴으로 호출자 신원 조회`() = runSuspendIO {
-        val response = asyncClient.getCallerIdentityAsync().await()
+        val response = asyncClient.callerIdentity.await()
 
         log.debug { "userId=${response.userId()}, account=${response.account()}, arn=${response.arn()}" }
 

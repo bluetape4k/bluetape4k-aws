@@ -26,7 +26,7 @@ class SdkBytesSupportTest: AbstractAwsTest() {
         val bytes = byteArrayOf(1, 2, 3, 4)
         val sdkBytes = bytes.toSdkBytes()
 
-        sdkBytes.asByteArray().toList() shouldBeEqualTo bytes.toList()
+        sdkBytes.asByteArray() shouldBeEqualTo bytes
     }
 
     @Test
@@ -36,7 +36,7 @@ class SdkBytesSupportTest: AbstractAwsTest() {
 
         bytes[0] = 9
 
-        sdkBytes.asByteArray().toList() shouldBeEqualTo listOf(1.toByte(), 2.toByte(), 3.toByte(), 4.toByte())
+        sdkBytes.asByteArray() shouldBeEqualTo byteArrayOf(1, 2, 3, 4)
     }
 
     @Test
@@ -46,7 +46,7 @@ class SdkBytesSupportTest: AbstractAwsTest() {
 
         bytes[0] = 9
 
-        sdkBytes.asByteArrayUnsafe().toList() shouldBeEqualTo listOf(9.toByte(), 2.toByte(), 3.toByte(), 4.toByte())
+        sdkBytes.asByteArrayUnsafe() shouldBeEqualTo byteArrayOf(9, 2, 3, 4)
     }
 
     @RepeatedTest(REPEAT_SIZE)
@@ -70,7 +70,7 @@ class SdkBytesSupportTest: AbstractAwsTest() {
         val buffer = ByteBuffer.wrap(byteArrayOf(7, 8, 9))
         val sdkBytes = buffer.toSdkBytes()
 
-        sdkBytes.asByteArray().toList() shouldBeEqualTo listOf(7.toByte(), 8.toByte(), 9.toByte())
+        sdkBytes.asByteArray() shouldBeEqualTo byteArrayOf(7, 8, 9)
     }
 
     @Test
@@ -81,6 +81,6 @@ class SdkBytesSupportTest: AbstractAwsTest() {
         }
         val sdkBytes = buffer.toSdkBytes()
 
-        sdkBytes.asByteArray().toList() shouldBeEqualTo listOf(8.toByte(), 9.toByte())
+        sdkBytes.asByteArray() shouldBeEqualTo byteArrayOf(8, 9)
     }
 }

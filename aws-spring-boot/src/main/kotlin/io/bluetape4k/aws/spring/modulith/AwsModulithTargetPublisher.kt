@@ -46,9 +46,9 @@ private inline fun sanitizeAwsModulithFailure(
     fallback: () -> AwsModulithEventException,
 ): Throwable = when (error) {
     is CancellationException -> error
-    is Error -> error
+    is Error                 -> error
     is AwsModulithEventException -> error
-    else -> fallback()
+    else                     -> fallback()
 }
 
 private val AWS_MODULITH_DESTINATION_PATTERN = Regex("[A-Za-z0-9_-]+(?:\\.fifo)?")

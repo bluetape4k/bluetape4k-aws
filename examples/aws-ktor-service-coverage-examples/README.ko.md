@@ -30,11 +30,8 @@ application {
 }
 ```
 
-`ServiceCoverageExampleOptions`는 route에서 사용하는 CloudWatch namespace,
-CloudWatch Logs stream, Kinesis stream name, SNS topic ARN을 묶습니다. Operation은
-`aws-ktor`가 공개하는 AWS Kotlin service client와 model을 사용합니다. 운영
-애플리케이션은 주입할 client, endpoint override, credentials, Ktor engine과
-serialization 통합을 소유합니다.
+`ServiceCoverageExampleOptions`는 route에서 사용하는 CloudWatch namespace, CloudWatch Logs stream, Kinesis stream name, SNS topic ARN을 묶습니다. Operation은
+`aws-ktor`가 공개하는 AWS Kotlin service client와 model을 사용합니다. 운영 애플리케이션은 주입할 client, endpoint override, credentials, Ktor engine과 serialization 통합을 소유합니다.
 
 ## Emulator And Fallback Policy
 

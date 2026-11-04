@@ -1,7 +1,7 @@
 aws:
-    region: eu-west-1
-    accessKey: testAccessKey
-    secretKey: testSecretKey
-    dynamodb:
-        endpoint: http://localhost:4566
-        tablePrefix: local-
+  region: eu-west-1
+  accessKey: testAccessKey
+  secretKey: testSecretKey
+  dynamodb:
+    endpoint: http://localhost:4566
+    tablePrefix: local-

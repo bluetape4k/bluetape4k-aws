@@ -169,7 +169,7 @@ class AwsModulithPublicationCompletionIntegrationTest {
         override fun deleteCompletedPublicationsBefore(instant: Instant) {
             publications.removeIf {
                 it.completionDate
-                    .map { it.isBefore(instant) }
+                    .map { time -> time.isBefore(instant) }
                     .orElse(false)!!
             }
         }

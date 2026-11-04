@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.ktor.s3
 
+import io.bluetape4k.support.equalsIgnoreCase
 import io.bluetape4k.support.requireNotBlank
 import java.io.Serializable
 import java.security.SecureRandom
@@ -149,5 +150,6 @@ class S3KtorClientSideEncryption(
 }
 
 private fun Map<String, String>.requiredMetadata(name: String): String =
-    entries.firstOrNull { (key, _) -> key.equals(name, ignoreCase = true) }?.value
+    entries
+        .firstOrNull { (key, _) -> key.equalsIgnoreCase(name) }?.value
         ?: error("S3 encrypted object metadata '$name' is missing.")

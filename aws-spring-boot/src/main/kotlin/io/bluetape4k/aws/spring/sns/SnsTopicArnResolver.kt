@@ -1,7 +1,14 @@
 package io.bluetape4k.aws.spring.sns
 
 import io.bluetape4k.aws.spring.sns.InMemorySnsTopicArnCache.Entry
+import io.bluetape4k.javatimes.hours
+import io.bluetape4k.javatimes.minutes
+import io.bluetape4k.javatimes.requirePositiveDuration
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.warn
+import io.bluetape4k.support.requireLe
+import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.requirePositiveNumber
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.sync.Mutex
@@ -45,7 +52,7 @@ data class SnsTopicArnResolverScope(
                 "accountId must be a 12-digit AWS account ID."
             }
         }
-        require(cacheNamespace.isNotBlank()) { "cacheNamespace must not be blank." }
+        cacheNamespace.requireNotBlank("cacheNamespace")
     }
 
     override fun toString(): String =
@@ -69,7 +76,7 @@ data class SnsTopicArnCacheKey(
 ): java.io.Serializable {
 
     init {
-        require(topicName.isNotBlank()) { "topicName must not be blank." }
+        topicName.requireNotBlank("topicName")
     }
 
     override fun toString(): String =
@@ -90,7 +97,7 @@ sealed interface SnsTopicArnCacheEntry: java.io.Serializable {
         val topicArn: String,
     ): SnsTopicArnCacheEntry {
         init {
-            require(topicArn.isNotBlank()) { "topicArn must not be blank." }
+            topicArn.requireNotBlank("topicArn")
         }
 
         override fun toString(): String = "Resolved(topicArn=<redacted>)"
@@ -160,9 +167,9 @@ class InMemorySnsTopicArnCache(
     }
 
     init {
-        require(maxSize > 0) { "maxSize must be greater than 0." }
-        require(!ttl.isNegative && !ttl.isZero) { "ttl must be greater than zero." }
-        require(ttl <= MAX_TTL) { "ttl must not exceed 24 hours." }
+        maxSize.requirePositiveNumber("maxSize")
+        ttl.requirePositiveDuration("ttl")
+        ttl.requireLe(MAX_TTL, "ttl")
     }
 
     override fun get(key: SnsTopicArnCacheKey): SnsTopicArnCacheEntry? =
@@ -195,8 +202,8 @@ class InMemorySnsTopicArnCache(
     }
 
     companion object {
-        val DEFAULT_TTL: Duration = Duration.ofMinutes(5)
-        val MAX_TTL: Duration = Duration.ofHours(24)
+        val DEFAULT_TTL: Duration = 5.minutes()
+        val MAX_TTL: Duration = 24.hours()
         const val DEFAULT_MAX_SIZE: Int = 256
     }
 }
@@ -238,7 +245,7 @@ class SnsTopicArnResolver(
      */
     suspend fun resolve(topicReference: String): String? {
         val normalized = topicReference.trim()
-        require(normalized.isNotBlank()) { "topicReference must not be blank." }
+        normalized.requireNotBlank { "topicReference must not be blank." }
         if (normalized.startsWith("arn:")) {
             return validateExplicitArn(normalized)
         }
@@ -312,12 +319,9 @@ class SnsTopicArnResolver(
                             if (cause is CancellationException) {
                                 throw cause
                             }
-                            log.warn(
-                                "SNS topic ARN lookup failed (scopeHash={}, topicNameHash={}, exceptionType={})",
-                                scope.stableHash(),
-                                topicName.hashCode(),
-                                cause::class.java.simpleName,
-                            )
+                            log.warn {
+                                "SNS topic ARN lookup failed (scopeHash=${scope.stableHash()}, topicNameHash=${topicName.hashCode()}, exceptionType=${cause::class.java.simpleName})"
+                            }
                             flight.outcome = FlightOutcome.Failure(cause)
                             throw cause
                         }
@@ -336,11 +340,13 @@ class SnsTopicArnResolver(
             val response = snsAsyncClient.listTopics {
                 nextToken?.let(it::nextToken)
             }.await()
+
             response.topics().orEmpty()
                 .asSequence()
                 .mapNotNull { it.topicArn() }
                 .firstOrNull { it.endsWith(suffix) }
                 ?.let { return validateLookupArn(it, topicName) }
+
             nextToken = response.nextToken()
         } while (!nextToken.isNullOrBlank())
         return null

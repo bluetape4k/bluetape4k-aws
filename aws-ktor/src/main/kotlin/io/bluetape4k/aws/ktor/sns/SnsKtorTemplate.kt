@@ -5,9 +5,9 @@ import aws.sdk.kotlin.services.sns.model.ConfirmSubscriptionRequest
 import aws.sdk.kotlin.services.sns.model.ConfirmSubscriptionResponse
 import aws.sdk.kotlin.services.sns.model.CreateTopicRequest
 import aws.sdk.kotlin.services.sns.model.ListTopicsRequest
+import aws.sdk.kotlin.services.sns.model.MessageAttributeValue
 import aws.sdk.kotlin.services.sns.model.PublishRequest
 import aws.sdk.kotlin.services.sns.model.PublishResponse
-import aws.sdk.kotlin.services.sns.model.MessageAttributeValue
 import io.bluetape4k.support.requireNotBlank
 
 /**

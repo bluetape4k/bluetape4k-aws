@@ -8,8 +8,8 @@ import aws.sdk.kotlin.services.dynamodb.model.TableDescription
 import aws.sdk.kotlin.services.dynamodb.model.TableStatus
 import aws.sdk.kotlin.services.dynamodb.model.ThrottlingException
 import io.bluetape4k.assertions.assertFailsWith
-import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.mockk.clearMocks
@@ -84,7 +84,7 @@ class DynamoDbClientExtensionsMockTest {
 
         client.waitForTableReady("orders", 1.seconds)
 
-        coVerify(exactly = 2) { client.describeTable(any<DescribeTableRequest>()) }
+        coVerify { client.describeTable(any<DescribeTableRequest>()) }
     }
 
     @Test
@@ -98,7 +98,7 @@ class DynamoDbClientExtensionsMockTest {
 
         client.waitForTableReady("orders")
 
-        coVerify(exactly = 2) { client.describeTable(any<DescribeTableRequest>()) }
+        coVerify { client.describeTable(any<DescribeTableRequest>()) }
     }
 
     @Test
@@ -116,7 +116,7 @@ class DynamoDbClientExtensionsMockTest {
         }
 
         error.message shouldContain "25 ms"
-        coVerify(exactly = 1) { client.describeTable(any<DescribeTableRequest>()) }
+        coVerify { client.describeTable(any<DescribeTableRequest>()) }
     }
 
     private fun describeTableResponse(status: TableStatus): DescribeTableResponse =

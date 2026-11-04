@@ -11,6 +11,7 @@ import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.concurrent.await
 import io.bluetape4k.concurrent.futureOf
 import io.bluetape4k.concurrent.get
+import io.bluetape4k.coroutines.support.awaitUntil
 import io.bluetape4k.javatimes.millis
 import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.junit5.coroutines.runSuspendIO
@@ -309,6 +310,8 @@ class AwsModulithEventExternalizationTransportTest {
         transport.close()
 
         publisher.closed.get() shouldBeEqualTo 0
+
+        log.debug { "trasport metrics=${transport.metrics()}" }
         transport.metrics().acceptedCount shouldBeEqualTo 0
         transport.metrics().residentChildCount shouldBeEqualTo 0
     }
@@ -326,9 +329,9 @@ class AwsModulithEventExternalizationTransportTest {
         futureOf { transport.close() }.await()
 
         future.isCancelled.shouldBeTrue()
-        withTimeout(timeMillis = TEST_TIMEOUT_MILLIS) {
-            publisher.cancelled.await()
-        }
+        publisher.cancelled.awaitUntil(TEST_TIMEOUT_MILLIS.milliseconds)
+
+        log.debug { "trasport metrics=${transport.metrics()}" }
         transport.metrics().acceptedCount shouldBeEqualTo 0
         transport.metrics().residentChildCount shouldBeEqualTo 0
         publisher.closed.get() shouldBeEqualTo 0
@@ -344,9 +347,10 @@ class AwsModulithEventExternalizationTransportTest {
         val future = transport.externalize(EVENT, target("events"))
         publisher.started.await()
 
-        CompletableFuture.runAsync { transport.close() }.await()
+        futureOf { transport.close() }.await()
 
         future.isCancelled.shouldBeTrue()
+        log.debug { "trasport metrics=${transport.metrics()}" }
         transport.metrics().acceptedCount shouldBeEqualTo 1
         transport.metrics().residentChildCount shouldBeEqualTo 1
 

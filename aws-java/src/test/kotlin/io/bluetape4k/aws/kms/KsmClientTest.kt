@@ -152,10 +152,7 @@ class KsmClientTest: AbstractKmsTest() {
         }
         listResp.sdkHttpResponse().isSuccessful.shouldBeTrue()
 
-        val grants = listResp.grants()
-        grants.forEach { grant ->
-            log.debug { "Grantt id=${grant.grantId()}" }
-        }
+        val grants = listResp.grants().onEach { log.debug { "grant ${it.keyId()}" } }
         grants.shouldNotBeEmpty()
         grants.map { it.grantId() } shouldContain this.grantId
     }
@@ -208,8 +205,7 @@ class KsmClientTest: AbstractKmsTest() {
 
         response.sdkHttpResponse().isSuccessful.shouldBeTrue()
 
-        val aliases = response.aliases()
-        aliases.forEach { log.debug { "alias=$it" } }
+        val aliases = response.aliases().onEach { log.debug { "alias=$it" } }
         aliases.shouldNotBeEmpty()
         aliases.map { it.aliasName() } shouldContain aliasName
     }
@@ -227,13 +223,9 @@ class KsmClientTest: AbstractKmsTest() {
         val response = client.listKeys { it.limit(15) }
         response.sdkHttpResponse().isSuccessful.shouldBeTrue()
 
-        val keys = response.keys()
-        keys.forEach { key ->
-            log.debug { "key=$key" }
-        }
+        val keys = response.keys().onEach { log.debug { "key=$it" } }
         keys.map { it.keyId() } shouldContain keyId
     }
-
 
     @Test
     @Order(15)

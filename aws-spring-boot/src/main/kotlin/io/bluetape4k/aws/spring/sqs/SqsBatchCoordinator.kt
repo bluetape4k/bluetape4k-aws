@@ -1,6 +1,8 @@
 package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.info
+import io.bluetape4k.logging.warn
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
@@ -99,7 +101,7 @@ internal class SqsBatchCoordinator(
         return when (decision) {
             is CloseDecision.Owner -> {
                 closeSignal.complete(Unit)
-                log.info("SQS batch coordinator close started (acceptedCount=${decision.accepted.size}).")
+                log.info { "SQS batch coordinator close started (acceptedCount=${decision.accepted.size})." }
                 SqsBatchCloseClaim.Owner(decision.accepted, closeCompletion)
             }
             CloseDecision.Observer -> SqsBatchCloseClaim.Observer(closeCompletion)
@@ -109,7 +111,7 @@ internal class SqsBatchCoordinator(
     fun finishClose(outcome: SqsBatchCloseOutcome) {
         val complete = lifecycleLock.withLock {
             when (state) {
-                CoordinatorState.OPEN -> throw IllegalStateException("SQS batch close has not started.")
+                CoordinatorState.OPEN   -> throw IllegalStateException("SQS batch close has not started.")
                 CoordinatorState.CLOSING -> {
                     state = CoordinatorState.CLOSED
                     true
@@ -120,12 +122,12 @@ internal class SqsBatchCoordinator(
         if (complete) {
             closeCompletion.complete(outcome)
             when (outcome) {
-                SqsBatchCloseOutcome.Success -> log.info("SQS batch coordinator close completed.")
-                is SqsBatchCloseOutcome.Failure -> log.warn(
+                SqsBatchCloseOutcome.Success    -> log.info { "SQS batch coordinator close completed." }
+                is SqsBatchCloseOutcome.Failure -> log.warn {
                     "SQS batch coordinator close failed " +
                             "(components=${outcome.exception.components.joinToString(",")}, " +
-                            "failureCount=${outcome.exception.failureCount}).",
-                )
+                            "failureCount=${outcome.exception.failureCount})."
+                }
             }
         }
     }
@@ -349,7 +351,7 @@ internal class SqsBatchCoordinator(
     private fun entryIdOf(entry: Any?): String = when (entry) {
         is SqsBatchSendEntry -> entry.entryId
         is SqsBatchDeleteEntry -> entry.entryId
-        else -> error("Unsupported SQS batch entry type.")
+        else                 -> error("Unsupported SQS batch entry type.")
     }
 
     private inner class AcceptedEntry(

@@ -32,7 +32,7 @@ inline fun sfnAsyncClientOf(
     region: Region? = null,
     credentialsProvider: AwsCredentialsProvider? = null,
     httpClient: SdkAsyncHttpClient = SdkAsyncHttpClientProvider.defaultHttpClient,
-    noinline builder: SfnAsyncClientBuilder.() -> Unit = {},
+    builder: SfnAsyncClientBuilder.() -> Unit = {},
 ): SfnAsyncClient = buildSfnAsyncClient(endpoint, region, credentialsProvider, httpClient, builder)
     .apply { ShutdownQueue.register(this) }
 
@@ -57,19 +57,19 @@ suspend inline fun <R> withSfnAsyncClient(
     }
 }
 
-@PublishedApi
-internal fun buildSfnAsyncClient(
+inline fun buildSfnAsyncClient(
     endpoint: URI?,
     region: Region?,
     credentialsProvider: AwsCredentialsProvider?,
     httpClient: SdkAsyncHttpClient,
     builder: SfnAsyncClientBuilder.() -> Unit,
-): SfnAsyncClient = SfnAsyncClient.builder()
-    .apply {
-        endpoint?.let { endpointOverride(it) }
-        region?.let { region(it) }
-        credentialsProvider?.let { credentialsProvider(it) }
-        httpClient(httpClient)
-        builder()
-    }
-    .build()
+): SfnAsyncClient =
+    SfnAsyncClient.builder()
+        .apply {
+            endpoint?.let { endpointOverride(it) }
+            region?.let { region(it) }
+            credentialsProvider?.let { credentialsProvider(it) }
+            httpClient(httpClient)
+            builder()
+        }
+        .build()

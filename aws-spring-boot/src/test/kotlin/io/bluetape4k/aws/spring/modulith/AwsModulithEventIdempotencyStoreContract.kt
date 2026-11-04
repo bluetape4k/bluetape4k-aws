@@ -6,6 +6,7 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeGreaterThan
 import io.bluetape4k.assertions.shouldBeInstanceOf
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.javatimes.minutes
 import io.bluetape4k.javatimes.nanos
 import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.junit5.coroutines.SuspendedJobTester
@@ -23,6 +24,12 @@ import java.util.concurrent.ConcurrentLinkedQueue
 /** 모든 Modulith idempotency store 구현이 공유하는 lease/fencing 계약입니다. */
 abstract class AwsModulithEventIdempotencyStoreContract {
 
+    private companion object: KLogging() {
+        val EVENT_KEY = AwsModulithEventKey("order.placed", "evt-1")
+        val OTHER_KEY = AwsModulithEventKey("order.placed", "evt-2")
+        val LEASE_DURATION: Duration = 2.minutes()
+    }
+
     abstract fun createStore(): AwsModulithEventIdempotencyStore
 
     @Test
@@ -35,6 +42,7 @@ abstract class AwsModulithEventIdempotencyStoreContract {
                     outcomes += store.claim(EVENT_KEY, LEASE_DURATION)
                 }
                 .run()
+
             outcomes.count { it is AwsModulithClaimResult.Acquired } shouldBeEqualTo 1
             outcomes.count { it is AwsModulithClaimResult.InProgress } shouldBeEqualTo 63
         }
@@ -156,12 +164,6 @@ abstract class AwsModulithEventIdempotencyStoreContract {
         } finally {
             (store as? AutoCloseable)?.close()
         }
-    }
-
-    private companion object: KLogging() {
-        val EVENT_KEY = AwsModulithEventKey("order.placed", "evt-1")
-        val OTHER_KEY = AwsModulithEventKey("order.placed", "evt-2")
-        val LEASE_DURATION: Duration = Duration.ofMinutes(2)
     }
 }
 

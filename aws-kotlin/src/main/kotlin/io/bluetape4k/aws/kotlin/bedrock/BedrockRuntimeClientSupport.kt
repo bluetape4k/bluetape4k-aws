@@ -51,12 +51,12 @@ internal fun BedrockRuntimeClient.requireTrustedBedrockConfiguration(): BedrockR
  * 루프백 HTTP를 제외하면 HTTPS를 사용해야 합니다. 애플리케이션은 런타임에
  * `aws.sdk.kotlin:bedrockruntime`을 추가하고 반환된 클라이언트를 닫아야 합니다.
  */
-fun bedrockRuntimeClientOf(
+inline fun bedrockRuntimeClientOf(
     endpointUrl: Url? = null,
     region: String? = null,
     credentialsProvider: CredentialsProvider? = null,
     httpClient: HttpClientEngine? = null,
-    builder: BedrockRuntimeClient.Config.Builder.() -> Unit = {},
+    crossinline builder: BedrockRuntimeClient.Config.Builder.() -> Unit = {},
 ): BedrockRuntimeClient =
     BedrockRuntimeClient {
         builder()
@@ -72,12 +72,12 @@ fun bedrockRuntimeClientOf(
  * 모든 콜드 Flow 수집은 [block] 안에서 완료하세요. 이 범위를 벗어난 Flow는 범위가 닫힌 뒤
  * 클라이언트를 사용할 수 없습니다. 애플리케이션은 런타임에 `aws.sdk.kotlin:bedrockruntime`을 추가해야 합니다.
  */
-suspend fun <R> withBedrockRuntimeClient(
+suspend inline fun <R> withBedrockRuntimeClient(
     endpointUrl: Url? = null,
     region: String? = null,
     credentialsProvider: CredentialsProvider? = null,
     httpClient: HttpClientEngine? = null,
-    builder: BedrockRuntimeClient.Config.Builder.() -> Unit = {},
+    crossinline builder: BedrockRuntimeClient.Config.Builder.() -> Unit = {},
     block: suspend (BedrockRuntimeClient) -> R,
 ): R = withBedrockRuntimeClient(
     clientFactory = {
@@ -92,9 +92,10 @@ suspend fun <R> withBedrockRuntimeClient(
     block = block,
 )
 
-internal suspend inline fun <R> withBedrockRuntimeClient(
+suspend inline fun <R> withBedrockRuntimeClient(
     clientFactory: () -> BedrockRuntimeClient,
     block: suspend (BedrockRuntimeClient) -> R,
-): R = clientFactory().useSafe { client ->
-    block(client)
-}
+): R =
+    clientFactory().useSafe { client ->
+        block(client)
+    }

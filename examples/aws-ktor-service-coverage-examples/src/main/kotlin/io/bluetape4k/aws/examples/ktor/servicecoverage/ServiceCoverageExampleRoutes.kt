@@ -1,5 +1,8 @@
 package io.bluetape4k.aws.examples.ktor.servicecoverage
 
+import aws.sdk.kotlin.services.cloudwatch.model.MetricDatum
+import aws.sdk.kotlin.services.cloudwatch.model.StandardUnit
+import aws.sdk.kotlin.services.cloudwatchlogs.model.InputLogEvent
 import io.bluetape4k.aws.ktor.cloudwatch.CloudWatchKtorOperations
 import io.bluetape4k.aws.ktor.cloudwatch.CloudWatchKtorPlugin
 import io.bluetape4k.aws.ktor.cloudwatch.CloudWatchLogStream
@@ -35,9 +38,6 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
-import aws.sdk.kotlin.services.cloudwatch.model.MetricDatum
-import aws.sdk.kotlin.services.cloudwatch.model.StandardUnit
-import aws.sdk.kotlin.services.cloudwatchlogs.model.InputLogEvent
 import java.io.Serializable
 
 /**

@@ -11,6 +11,7 @@ import org.springframework.core.env.Environment
 
 class SqsObservationBinaryCompatibilityTest {
 
+    @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
     @Test
     fun `legacy listener descriptors and serialization identity remain available`() {
         SqsListenerAnnotationBeanPostProcessor::class.java.getDeclaredConstructor(

@@ -104,14 +104,14 @@ class MicrometerS3Operations(
             delegate.presignPut(bucket, key, duration, contentType)
         }
 
-    private suspend fun <T> record(operation: String, bucket: String, block: suspend () -> T): T =
+    private suspend inline fun <T> record(operation: String, bucket: String, block: suspend () -> T): T =
         AwsMicrometerSupport.record(
             meterRegistry,
             meterName, { outcome, exception -> tags(operation, outcome, bucket, exception) },
             block
         )
 
-    private fun <T> recordBlocking(operation: String, bucket: String, block: () -> T): T =
+    private inline fun <T> recordBlocking(operation: String, bucket: String, block: () -> T): T =
         AwsMicrometerSupport.record(
             meterRegistry,
             meterName,

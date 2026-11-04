@@ -1,11 +1,12 @@
 package io.bluetape4k.aws.ktor
 
+import aws.smithy.kotlin.runtime.http.engine.CloseableHttpClientEngine
 import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeTrue
-import io.bluetape4k.aws.ktor.imds.ImdsKtorPlugin
 import io.bluetape4k.aws.ktor.imds.ImdsHttpClientFactory
+import io.bluetape4k.aws.ktor.imds.ImdsKtorPlugin
 import io.bluetape4k.aws.ktor.sts.StsKtorRuntime
 import io.bluetape4k.concurrent.await
 import io.bluetape4k.concurrent.get
@@ -19,17 +20,15 @@ import io.ktor.server.testing.testApplication
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
-import io.mockk.mockkStatic
 import io.mockk.unmockkObject
 import io.mockk.verify
-import aws.sdk.kotlin.services.sts.StsClient as KotlinStsClient
-import aws.smithy.kotlin.runtime.http.engine.CloseableHttpClientEngine
 import org.junit.jupiter.api.Test
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration.Companion.seconds
+import aws.sdk.kotlin.services.sts.StsClient as KotlinStsClient
 
 class AwsKtorLifecycleEdgeCasesTest {
 

@@ -20,7 +20,7 @@ import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataResponse
  * )
  * ```
  */
-suspend fun CloudWatchAsyncClient.putMetricData(
+suspend inline fun CloudWatchAsyncClient.putMetricData(
     namespace: String,
     metricData: List<MetricDatum>,
 ): PutMetricDataResponse =
@@ -39,7 +39,7 @@ suspend fun CloudWatchAsyncClient.putMetricData(
  * )
  * ```
  */
-suspend fun CloudWatchAsyncClient.putMetricData(
+suspend inline fun CloudWatchAsyncClient.putMetricData(
     namespace: String,
     metricDatum: MetricDatum,
 ): PutMetricDataResponse =
@@ -56,7 +56,7 @@ suspend fun CloudWatchAsyncClient.putMetricData(
  * response.metrics().forEach { metric -> println(metric.metricName()) }
  * ```
  */
-suspend fun CloudWatchAsyncClient.listMetrics(
+suspend inline fun CloudWatchAsyncClient.listMetrics(
     namespace: String? = null,
     metricName: String? = null,
     dimensions: List<DimensionFilter>? = null,

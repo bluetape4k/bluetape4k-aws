@@ -2,9 +2,9 @@ package io.bluetape4k.aws.spring.appconfig
 
 import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.support.hashOf
-import io.bluetape4k.support.requireGe
 import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.requirePositiveNumber
+import io.bluetape4k.support.requireZeroOrPositiveNumber
 import java.io.Serializable
 
 /**
@@ -57,7 +57,7 @@ internal data class AppConfigDataResponse(
 ) {
     init {
         nextPollConfigurationToken.requireNotBlank { "AppConfig next poll configuration token must not be blank." }
-        nextPollIntervalSeconds?.requireGe(0) {
+        nextPollIntervalSeconds?.requireZeroOrPositiveNumber {
             "AppConfig next poll interval must not be negative when present."
         }
     }

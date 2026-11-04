@@ -6,9 +6,7 @@ release train의 dependency를 맞추기 위해 `bluetape4k-aws` `0.3.1`을 발�
 
 ## 결정
 
-commit에 기록한 `baseVersion`을 `0.4.0`으로 올리고 `snapshotVersion=`는 비워 둬
-release workflow가 snapshot qualifier를 명시적으로 주입하게 합니다.
-직접 참조하는 bluetape4k BOM은 다음 catalog train snapshot에 맞춥니다.
+commit에 기록한 `baseVersion`을 `0.4.0`으로 올리고 `snapshotVersion=`는 비워 둬 release workflow가 snapshot qualifier를 명시적으로 주입하게 합니다. 직접 참조하는 bluetape4k BOM은 다음 catalog train snapshot에 맞춥니다.
 `bluetape4k-bom:1.11.0-SNAPSHOT` and
 `bluetape4k-exposed-bom:1.11.0-SNAPSHOT`.
 

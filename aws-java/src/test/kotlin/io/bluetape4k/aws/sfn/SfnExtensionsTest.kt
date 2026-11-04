@@ -3,7 +3,9 @@ package io.bluetape4k.aws.sfn
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.concurrent.completableFutureOf
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
@@ -73,6 +75,7 @@ class SfnExtensionsTest {
             nextToken = "next-page",
         )
 
+        log.debug { "result=$result" }
         result shouldBeSameInstanceAs expected
         verify(exactly = 1) {
             client.listExecutions(match<ListExecutionsRequest> { request ->
@@ -94,8 +97,9 @@ class SfnExtensionsTest {
             }
         }
 
+        log.debug { "error=$error" }
         error.message shouldBeEqualTo
-            "listExecutionsByStateMachine must retain stateMachineArn=$STATE_MACHINE_ARN and must not set mapRunArn; " +
+                "listExecutionsByStateMachine must retain stateMachineArn=$STATE_MACHINE_ARN and must not set mapRunArn; " +
                 "actual stateMachineArn=null, mapRunArn=$MAP_RUN_ARN"
         verify(exactly = 0) { client.listExecutions(any<ListExecutionsRequest>()) }
     }
@@ -108,8 +112,9 @@ class SfnExtensionsTest {
             }
         }
 
+        log.debug { "error=$error" }
         error.message shouldBeEqualTo
-            "listExecutionsByStateMachine must retain stateMachineArn=$STATE_MACHINE_ARN and must not set mapRunArn; " +
+                "listExecutionsByStateMachine must retain stateMachineArn=$STATE_MACHINE_ARN and must not set mapRunArn; " +
                 "actual stateMachineArn=$STATE_MACHINE_ARN, mapRunArn=$MAP_RUN_ARN"
         verify(exactly = 0) { client.listExecutions(any<ListExecutionsRequest>()) }
     }
@@ -122,7 +127,7 @@ class SfnExtensionsTest {
                 statusFilter = ExecutionStatus.PENDING_REDRIVE,
             )
         }
-
+        log.debug { "error=$error" }
         error.message shouldBeEqualTo
                 "listExecutionsByStateMachine does not support PENDING_REDRIVE or redriveFilter; " +
                 "actual statusFilter=PENDING_REDRIVE, redriveFilter=null"
@@ -137,7 +142,7 @@ class SfnExtensionsTest {
                 stateMachineArn(STATE_MACHINE_ARN)
             }
         }
-
+        log.debug { "error=$error" }
         error.message shouldBeEqualTo
                 "listExecutionsByMapRun must retain mapRunArn=$MAP_RUN_ARN and must not set stateMachineArn; " +
                 "actual mapRunArn=null, stateMachineArn=$STATE_MACHINE_ARN, " +
@@ -152,7 +157,7 @@ class SfnExtensionsTest {
                 stateMachineArn(STATE_MACHINE_ARN)
             }
         }
-
+        log.debug { "error=$error" }
         error.message shouldBeEqualTo
                 "listExecutionsByMapRun must retain mapRunArn=$MAP_RUN_ARN and must not set stateMachineArn; " +
                 "actual mapRunArn=$MAP_RUN_ARN, stateMachineArn=$STATE_MACHINE_ARN, " +
@@ -163,8 +168,9 @@ class SfnExtensionsTest {
     @Test
     fun `async future preserves raw response`() {
         val expected = StartExecutionResponse.builder().executionArn(EXECUTION_ARN).build()
-        every { asyncClient.startExecution(any<StartExecutionRequest>()) } returns
-                CompletableFuture.completedFuture(expected)
+        every {
+            asyncClient.startExecution(any<StartExecutionRequest>())
+        } returns completableFutureOf(expected)
 
         val result = asyncClient.startExecutionAsync(STATE_MACHINE_ARN)
 
@@ -176,13 +182,15 @@ class SfnExtensionsTest {
     fun `async coroutine awaits response and propagates cancellation`() = runTest {
         val expected = DescribeExecutionResponse.builder().status(ExecutionStatus.RUNNING).build()
         every { asyncClient.describeExecution(any<DescribeExecutionRequest>()) } returns
-                CompletableFuture.completedFuture(expected)
+                completableFutureOf(expected)
 
         asyncClient.describeExecution(EXECUTION_ARN) shouldBeSameInstanceAs expected
 
         val cancelled = CompletableFuture<StartExecutionResponse>()
         cancelled.completeExceptionally(CancellationException("cancelled"))
-        every { asyncClient.startExecution(any<StartExecutionRequest>()) } returns cancelled
+        every {
+            asyncClient.startExecution(any<StartExecutionRequest>())
+        } returns cancelled
 
         assertFailsWith<CancellationException> {
             asyncClient.startExecution(STATE_MACHINE_ARN)

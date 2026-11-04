@@ -26,7 +26,6 @@ import org.springframework.boot.micrometer.metrics.autoconfigure.export.simple.S
 import org.springframework.boot.test.context.FilteredClassLoader
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient
-import java.util.function.Supplier
 
 class CloudWatchMeterRegistryAutoConfigurationTest {
 
@@ -74,7 +73,7 @@ class CloudWatchMeterRegistryAutoConfigurationTest {
     @Test
     fun `native registry backs off when user meter registry exists`() {
         contextRunner
-            .withBean(SimpleMeterRegistry::class.java, Supplier { SimpleMeterRegistry() })
+            .withBean(SimpleMeterRegistry::class.java, { SimpleMeterRegistry() })
             .run { context ->
                 context.getBeansOfType<CloudWatchMeterRegistry>().shouldBeEmpty()
                 context.getBeansOfType<MeterRegistry>() shouldHaveSize 1

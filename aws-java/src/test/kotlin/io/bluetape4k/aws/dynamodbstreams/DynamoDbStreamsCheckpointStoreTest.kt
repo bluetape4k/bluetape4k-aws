@@ -3,13 +3,13 @@ package io.bluetape4k.aws.dynamodbstreams
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.aws.AbstractAwsTest
-import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 
 class DynamoDbStreamsCheckpointStoreTest: AbstractAwsTest() {
 
-    companion object: KLogging()
+    companion object: KLoggingChannel()
 
     @Test
     fun `in memory store isolates stream and shard keys`() = runTest {

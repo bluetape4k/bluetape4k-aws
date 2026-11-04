@@ -71,8 +71,8 @@ class DynamoDbAutoConfiguration {
             )
             .apply {
                 httpClient.getIfAvailable()?.let { httpClient(it) }
+                applyGlobalCustomizers("dynamodb", globalCustomizers)
             }
-            .also { it.applyGlobalCustomizers("dynamodb", globalCustomizers) }
             .applyServiceCustomizers(serviceCustomizers)
             .build()
 

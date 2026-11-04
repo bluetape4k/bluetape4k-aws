@@ -30,15 +30,16 @@ inline fun invokeRequestOf(
     invocationType: InvocationType = InvocationType.REQUEST_RESPONSE,
     logType: LogType = LogType.NONE,
     builder: InvokeRequest.Builder.() -> Unit = {},
-): InvokeRequest = InvokeRequest.builder()
-    .functionName(functionName)
-    .also { payload?.let { value -> it.payload(SdkBytes.fromByteArray(value)) } }
-    .also { qualifier?.let(it::qualifier) }
-    .invocationType(invocationType)
-    .logType(logType)
-    .apply(builder)
-    .build()
-    .also { it.validate() }
+): InvokeRequest =
+    InvokeRequest.builder()
+        .functionName(functionName)
+        .also { payload?.let { value -> it.payload(SdkBytes.fromByteArray(value)) } }
+        .also { qualifier?.let(it::qualifier) }
+        .invocationType(invocationType)
+        .logType(logType)
+        .apply(builder)
+        .build()
+        .also { it.validate() }
 
 @PublishedApi
 internal fun InvokeRequest.validate() {

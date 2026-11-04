@@ -115,7 +115,7 @@ class S3ResourcePatternResolverPerformanceTest {
         List(PAGE_COUNT) { pageIndex ->
             ListObjectsV2Response.builder()
                 .contents(
-                    (0 until KEYS_PER_PAGE).map { keyIndex ->
+                    List(KEYS_PER_PAGE) { keyIndex ->
                         val index = pageIndex * KEYS_PER_PAGE + keyIndex
                         S3Object.builder()
                             .key("config/key-${index.toString().padStart(6, '0')}.json")

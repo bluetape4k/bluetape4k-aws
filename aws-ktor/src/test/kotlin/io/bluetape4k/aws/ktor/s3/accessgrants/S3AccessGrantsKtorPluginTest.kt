@@ -1,12 +1,13 @@
 package io.bluetape4k.aws.ktor.s3.accessgrants
 
+import aws.sdk.kotlin.services.s3control.S3ControlClient
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldContain
-import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.aws.ktor.AwsKtorCore
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.AwsKtorS3ControlClientCustomizer
@@ -29,7 +30,6 @@ import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import aws.sdk.kotlin.services.s3control.S3ControlClient
 import aws.smithy.kotlin.runtime.net.url.Url as SmithyUrl
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -165,7 +165,7 @@ class S3AccessGrantsKtorPluginTest {
         val error = assertFailsWith<IllegalArgumentException> {
             S3AccessGrantsKtorPluginConfig()
                 .apply {
-                endpointOverride = SmithyUrl.parse("http://localhost:4566")
+                    endpointOverride = SmithyUrl.parse("http://localhost:4566")
                 }
                 .toRuntime()
         }

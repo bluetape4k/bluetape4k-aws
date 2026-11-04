@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.sqs
 
+import io.bluetape4k.javatimes.minutes
 import io.bluetape4k.support.requireGe
 import io.bluetape4k.support.requireInRange
 import io.bluetape4k.support.requireNotBlank
@@ -9,10 +10,12 @@ import java.io.Serializable
 import java.net.URI
 import java.time.Duration
 
+const val SQS_PREFIX = "bluetape4k.aws.sqs"
+
 /**
  * SQS 자동 설정 속성.
  */
-@ConfigurationProperties(prefix = "bluetape4k.aws.sqs")
+@ConfigurationProperties(prefix = SQS_PREFIX)
 data class SqsProperties(
     val enabled: Boolean = true,
     val region: String? = null,
@@ -20,6 +23,12 @@ data class SqsProperties(
     val listener: Listener = Listener(),
     val queues: Map<String, Queue> = emptyMap(),
 ): Serializable {
+
+    companion object {
+
+        private const val serialVersionUID: Long = -5777975012777169878L
+    }
+
     data class Listener(
         val enabled: Boolean = true,
         val autoStartup: Boolean = true,
@@ -36,10 +45,9 @@ data class SqsProperties(
         val stopTimeoutMillis: Long = 25_000,
         val backPressureMode: SqsBackPressureMode = SqsBackPressureMode.FIXED,
         val maxInFlight: Int = maxMessages * concurrency,
-        val fifoBatchGroupingStrategy: SqsFifoBatchGroupingStrategy =
-            SqsFifoBatchGroupingStrategy.GROUP_BY_MESSAGE_GROUP_ID,
+        val fifoBatchGroupingStrategy: SqsFifoBatchGroupingStrategy = SqsFifoBatchGroupingStrategy.GROUP_BY_MESSAGE_GROUP_ID,
         val queueAttributeNames: Set<QueueAttributeName> = emptySet(),
-        val queueAttributeCacheTtl: Duration = Duration.ofMinutes(1),
+        val queueAttributeCacheTtl: Duration = 1.minutes(),
         val queueNotFoundStrategy: SqsQueueNotFoundStrategy = SqsQueueNotFoundStrategy.FAIL_FAST,
         val retry: Retry = Retry(),
     ): Serializable {
@@ -77,7 +85,7 @@ data class SqsProperties(
             maxInFlight = maxMessages * concurrency,
             fifoBatchGroupingStrategy = SqsFifoBatchGroupingStrategy.GROUP_BY_MESSAGE_GROUP_ID,
             queueAttributeNames = emptySet(),
-            queueAttributeCacheTtl = Duration.ofMinutes(1),
+            queueAttributeCacheTtl = 1.minutes(),
             queueNotFoundStrategy = SqsQueueNotFoundStrategy.FAIL_FAST,
             retry = retry,
         )
@@ -148,9 +156,6 @@ data class SqsProperties(
         }
     }
 
-    companion object {
-        private const val serialVersionUID: Long = -5777975012777169878L
-    }
 }
 
 private fun requireVisibilityTimeout(value: Int, name: String) {

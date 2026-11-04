@@ -5,7 +5,6 @@ import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldHaveSize
-import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import io.micrometer.core.instrument.Counter
@@ -15,6 +14,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.slot
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.cloudwatch.model.MetricDatum
@@ -25,7 +25,7 @@ class CloudWatchMeterPublishingTemplateTest {
 
     companion object: KLoggingChannel()
 
-    private val operations = mockk<CloudWatchOperations>()
+    private val operations = mockk<CloudWatchOperations>(relaxed = true)
 
     @BeforeEach
     fun beforeEach() {
@@ -33,7 +33,7 @@ class CloudWatchMeterPublishingTemplateTest {
     }
 
     @Test
-    fun `publish selected Micrometer meter snapshots`() = runSuspendIO {
+    fun `publish selected Micrometer meter snapshots`() = runTest {
         val registry = SimpleMeterRegistry()
         Counter.builder("orders.processed")
             .tag("status", "ok")
@@ -44,6 +44,7 @@ class CloudWatchMeterPublishingTemplateTest {
             .increment(1.0)
 
         val metricDataSlot = slot<List<MetricDatum>>()
+
         coEvery {
             operations.putMetricData(capture(metricDataSlot))
         } returns listOf(PutMetricDataResponse.builder().build())
@@ -55,18 +56,20 @@ class CloudWatchMeterPublishingTemplateTest {
         log.debug { "response=${responses.single()}" }
 
         val metricData = metricDataSlot.captured
+
         log.debug { "metricData=$metricData" }
         metricData shouldHaveSize 1
-        metricData.single().metricName() shouldContain "orders.processed"
-        metricData.single().unit() shouldBeEqualTo StandardUnit.COUNT
-        metricData.single().dimensions().single().name() shouldBeEqualTo "status"
-        metricData.single().dimensions().single().value() shouldBeEqualTo "ok"
-
+        with(metricData.single()) {
+            metricName() shouldContain "orders.processed"
+            unit() shouldBeEqualTo StandardUnit.COUNT
+            dimensions().single().name() shouldBeEqualTo "status"
+            dimensions().single().value() shouldBeEqualTo "ok"
+        }
         coVerify(exactly = 1) { operations.putMetricData(any<List<MetricDatum>>()) }
     }
 
     @Test
-    fun `empty Micrometer selection does not publish to CloudWatch`() = runSuspendIO {
+    fun `empty Micrometer selection does not publish to CloudWatch`() = runTest {
         val registry = SimpleMeterRegistry()
         val publisher = CloudWatchMeterPublishingTemplate(registry, operations)
 
@@ -77,7 +80,7 @@ class CloudWatchMeterPublishingTemplateTest {
     }
 
     @Test
-    fun `meter exceeding CloudWatch dimension limit fails before publishing`() = runSuspendIO {
+    fun `meter exceeding CloudWatch dimension limit fails before publishing`() = runTest {
         val registry = SimpleMeterRegistry()
         val counterBuilder = Counter.builder("orders.over-tagged")
         repeat(31) { index ->

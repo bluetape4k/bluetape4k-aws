@@ -31,6 +31,7 @@ import tools.jackson.databind.json.JsonMapper
 import java.time.Clock
 import java.time.Duration
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.time.toKotlinDuration
 
 /** Public consumer가 정상적으로 완료할 수 있는 두 outcome입니다. */
 enum class AwsModulithConsumeOutcome {
@@ -174,7 +175,7 @@ class AwsModulithSqsEventConsumer internal constructor(
         validateDecodedKey(decoded)
 
         return when (val claim = claim(decoded.key)) {
-            AwsModulithClaimResult.Completed -> {
+            AwsModulithClaimResult.Completed   -> {
                 record(AwsModulithFailurePhase.CLAIM, AwsModulithMetricOutcome.DUPLICATE)
                 AwsModulithConsumeOutcome.COMPLETED_DUPLICATE
             }
@@ -208,7 +209,7 @@ class AwsModulithSqsEventConsumer internal constructor(
                         AwsModulithFailurePhase.DISPATCH,
                         AwsModulithMetricOutcome.SUCCESS,
                         AwsModulithDiagnosticCode.DISPATCH_ACK,
-                        Duration.ofNanos(System.nanoTime() - startedAt),
+                        (System.nanoTime() - startedAt).nanos(),
                     )
                 }
         } catch (failure: Throwable) {
@@ -297,7 +298,7 @@ class AwsModulithSqsEventConsumer internal constructor(
         val heartbeat = launch {
             try {
                 while (isActive) {
-                    delay(timeMillis = heartbeatInterval.toMillis())
+                    delay(heartbeatInterval.toKotlinDuration())
                     token.set(claimBoundary { store.renew(token.get(), properties.idempotency.leaseDuration) })
                 }
             } catch (cancellation: CancellationException) {
@@ -351,9 +352,9 @@ class AwsModulithSqsEventConsumer internal constructor(
     private fun sanitizeDispatchFailure(failure: Throwable): Throwable =
         when (failure) {
             is CancellationException -> failure
-            is Error -> failure
+            is Error                 -> failure
             is AwsModulithInboundLoopRiskException -> failure
-            else -> AwsModulithDispatchException()
+            else                     -> AwsModulithDispatchException()
         }
 
     private suspend fun <T> claimBoundary(block: suspend () -> T): T =
@@ -442,15 +443,15 @@ private object SnsNotificationPreflight {
                     JsonToken.PROPERTY_NAME -> {
                         val (name, value) = parser.readProperty(fields)
                         when (name) {
-                            "Type" -> type = value
+                            "Type"    -> type = value
                             "TopicArn" -> topicArn = value
                             "Message" -> message = value
-                            else -> Unit
+                            else      -> Unit
                         }
                     }
 
-                    JsonToken.END_OBJECT -> break
-                    else -> throw AwsModulithSourceException()
+                    JsonToken.END_OBJECT    -> break
+                    else                    -> throw AwsModulithSourceException()
                 }
             }
             if (parser.nextToken() != null || type != "Notification" || !fields.containsAll(SNS_REQUIRED_FIELDS)) {
@@ -511,16 +512,16 @@ private object SnsNotificationPreflight {
 private data class SnsNotificationFields(val topicArn: String, val message: String)
 
 private fun AwsModulithFailurePhase.defaultCode(): AwsModulithDiagnosticCode = when (this) {
-    AwsModulithFailurePhase.SOURCE -> AwsModulithDiagnosticCode.SOURCE
-    AwsModulithFailurePhase.DECODE -> AwsModulithDiagnosticCode.INBOUND
-    AwsModulithFailurePhase.CLAIM -> AwsModulithDiagnosticCode.CLAIM
+    AwsModulithFailurePhase.SOURCE        -> AwsModulithDiagnosticCode.SOURCE
+    AwsModulithFailurePhase.DECODE        -> AwsModulithDiagnosticCode.INBOUND
+    AwsModulithFailurePhase.CLAIM         -> AwsModulithDiagnosticCode.CLAIM
     AwsModulithFailurePhase.DISPATCH,
     AwsModulithFailurePhase.ACK,
     AwsModulithFailurePhase.CLEANUP,
-        -> AwsModulithDiagnosticCode.DISPATCH_ACK
+                                          -> AwsModulithDiagnosticCode.DISPATCH_ACK
     AwsModulithFailurePhase.CONFIGURATION -> AwsModulithDiagnosticCode.CONFIGURATION
     AwsModulithFailurePhase.SERIALIZATION -> AwsModulithDiagnosticCode.ENVELOPE
-    AwsModulithFailurePhase.LIFECYCLE -> AwsModulithDiagnosticCode.PRODUCER_LIFECYCLE
+    AwsModulithFailurePhase.LIFECYCLE     -> AwsModulithDiagnosticCode.PRODUCER_LIFECYCLE
     AwsModulithFailurePhase.RESOLUTION, AwsModulithFailurePhase.PUBLISH -> AwsModulithDiagnosticCode.AWS_PUBLISH
 }
 

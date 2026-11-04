@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.s3
 
+import io.bluetape4k.apache.startsWithIgnoreCase
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.requirePositiveNumber
@@ -65,7 +66,7 @@ internal class S3ResourceLocationParser {
         location: String,
         allowPatternQuestion: Boolean,
     ): S3Pattern {
-        require(location.startsWith(S3_SCHEME, ignoreCase = true)) {
+        require(location.startsWithIgnoreCase(S3_SCHEME)) {
             "S3 location must start with s3://."
         }
 
@@ -175,7 +176,7 @@ internal class S3ResourceLocationParser {
                     throw IllegalArgumentException("S3 pattern character classes are not supported.")
                 }
 
-                else -> {
+                else                               -> {
                     literal.append(item.value)
                     index++
                 }
@@ -271,14 +272,14 @@ private class AntS3PatternMatcher(
     private fun renderPattern(sentinels: SentinelPair): String = buildString {
         tokens.forEach { token ->
             when (token) {
-                is S3PatternToken.Literal -> append(
+                is S3PatternToken.Literal  -> append(
                     token.value
                         .replace("*", sentinels.star)
                         .replace("?", sentinels.question),
                 )
                 is S3PatternToken.Wildcard -> append(
                     when (token.kind) {
-                        S3WildcardKind.STAR -> "*"
+                        S3WildcardKind.STAR     -> "*"
                         S3WildcardKind.DOUBLE_STAR -> "**"
                         S3WildcardKind.QUESTION -> "?"
                     },

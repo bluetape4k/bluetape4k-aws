@@ -17,7 +17,7 @@ import software.amazon.awssdk.services.sts.model.GetSessionTokenResponse
  * // response.account().isNotBlank() == true
  * ```
  */
-suspend fun StsAsyncClient.getDefaultCallerIdentity(): GetCallerIdentityResponse =
+suspend inline fun StsAsyncClient.getDefaultCallerIdentity(): GetCallerIdentityResponse =
     getCallerIdentityAsync().await()
 
 /**
@@ -35,7 +35,7 @@ suspend fun StsAsyncClient.getDefaultCallerIdentity(): GetCallerIdentityResponse
  * // response.credentials().accessKeyId().isNotBlank() == true
  * ```
  */
-suspend fun StsAsyncClient.assumeRole(
+suspend inline fun StsAsyncClient.assumeRole(
     roleArn: String,
     sessionName: String,
     durationSeconds: Int = 3600,
@@ -54,7 +54,7 @@ suspend fun StsAsyncClient.assumeRole(
  * // response.credentials().accessKeyId().isNotBlank() == true
  * ```
  */
-suspend fun StsAsyncClient.getSessionToken(
+suspend inline fun StsAsyncClient.getSessionToken(
     durationSeconds: Int = 3600,
 ): GetSessionTokenResponse =
     getSessionTokenAsync(durationSeconds).await()

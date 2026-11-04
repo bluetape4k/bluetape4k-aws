@@ -38,6 +38,7 @@ import software.amazon.awssdk.services.dynamodb.model.SequenceNumberRange
 import software.amazon.awssdk.services.dynamodb.model.Stream
 import software.amazon.awssdk.services.dynamodb.model.StreamRecord
 import software.amazon.awssdk.services.dynamodb.model.StreamSpecification
+import software.amazon.awssdk.services.dynamodb.model.StreamViewType
 import software.amazon.awssdk.services.dynamodb.model.TagResourceRequest
 import software.amazon.awssdk.services.dynamodb.model.TransactGetItem
 import software.amazon.awssdk.services.dynamodb.model.TransactGetItemsRequest
@@ -241,6 +242,18 @@ inline fun StreamSpecification(
     builder: StreamSpecification.Builder.() -> Unit,
 ): StreamSpecification =
     StreamSpecification.builder().apply(builder).build()
+
+inline fun streamSpecificationOf(
+    streamEnabled: Boolean? = null,
+    streamViewType: StreamViewType? = null,
+    builder: StreamSpecification.Builder.() -> Unit = {},
+): StreamSpecification =
+    StreamSpecification {
+        streamEnabled?.let { streamEnabled(it) }
+        streamViewType?.let { streamViewType(it) }
+
+        builder()
+    }
 
 inline fun TagResourceRequest(
     builder: TagResourceRequest.Builder.() -> Unit,

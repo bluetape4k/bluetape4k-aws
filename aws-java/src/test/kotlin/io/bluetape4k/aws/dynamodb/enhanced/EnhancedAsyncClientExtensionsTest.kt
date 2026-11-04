@@ -2,6 +2,9 @@ package io.bluetape4k.aws.dynamodb.enhanced
 
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.aws.dynamodb.AbstractDynamodbTest
+import io.bluetape4k.aws.dynamodb.model.attributeDefinitionOf
+import io.bluetape4k.aws.dynamodb.model.keySchemaElementOf
+import io.bluetape4k.aws.dynamodb.model.provisionedThroughputOf
 import io.bluetape4k.idgenerators.uuid.Uuid
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
@@ -12,10 +15,7 @@ import org.junit.jupiter.api.Test
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
-import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition
-import software.amazon.awssdk.services.dynamodb.model.KeySchemaElement
 import software.amazon.awssdk.services.dynamodb.model.KeyType
-import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput
 import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType
 import java.io.Serializable
 
@@ -88,25 +88,13 @@ class EnhancedAsyncClientExtensionsTest: AbstractDynamodbTest() {
         createTable { builder ->
             builder.tableName(tableName)
             builder.attributeDefinitions(
-                AttributeDefinition
-                    .builder()
-                    .attributeName("id")
-                    .attributeType(ScalarAttributeType.S)
-                    .build(),
+                attributeDefinitionOf("id", ScalarAttributeType.S)
             )
             builder.keySchema(
-                KeySchemaElement
-                    .builder()
-                    .attributeName("id")
-                    .keyType(KeyType.HASH)
-                    .build(),
+                keySchemaElementOf("id", KeyType.HASH)
             )
             builder.provisionedThroughput(
-                ProvisionedThroughput
-                    .builder()
-                    .readCapacityUnits(5L)
-                    .writeCapacityUnits(5L)
-                    .build(),
+                provisionedThroughputOf(5L, 5L)
             )
         }.await()
     }

@@ -26,9 +26,9 @@ interface DynamoItemMapper<T: Any> {
  */
 fun <T: Any> Iterable<T>.buildWriteRequest(mapper: DynamoItemMapper<T>): List<WriteRequest> {
     return this.map {
-            val item = mapper.mapToDynamoItem(it)
-            WriteRequest.builder()
-                .putRequest { builder -> builder.item(item) }
-                .build()
-        }
+        val item = mapper.mapToDynamoItem(it)
+        WriteRequest.builder()
+            .putRequest { builder -> builder.item(item) }
+            .build()
+    }
 }

@@ -8,7 +8,6 @@ import io.bluetape4k.logging.KLogging
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.future.await
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
@@ -86,28 +85,29 @@ class SfnSmokeTest: AbstractSfnTest() {
                 endpoint = sfnEmulator.awsEndpoint,
                 region = sfnEmulator.region(),
                 credentialsProvider = sfnEmulator.credentialsProvider,
-            ) { client ->
-                val passMachine = client.createIssue313StateMachine(PASS_DEFINITION, "pass")
+            ) { asyncClient ->
+                val passMachine = asyncClient.createIssue313StateMachine(PASS_DEFINITION, "pass")
                     .also(stateMachines::add)
-                val executionArn = client.startExecution(
+                val executionArn = asyncClient.startExecution(
                     startExecutionRequestOf(passMachine, input = "{\"source\":\"issue-313\"}"),
                 ).await().executionArn().also(executions::add)
-                val responses = client.describeExecutionFlow(executionArn).toList()
+                val responses = asyncClient.describeExecutionFlow(executionArn).toList()
                 check(responses.lastOrNull()?.status() == ExecutionStatus.SUCCEEDED) {
                     "Step Functions pass execution did not succeed"
                 }
                 check(
-                    client.listExecutionsByStateMachine(passMachine).executions()
+                    asyncClient.listExecutionsByStateMachine(passMachine).executions()
                         .any { it.executionArn() == executionArn }) {
                     "Step Functions execution was not returned by ListExecutions"
                 }
 
-                val waitMachine = client.createIssue313StateMachine(WAIT_DEFINITION, "wait")
+                val waitMachine = asyncClient.createIssue313StateMachine(WAIT_DEFINITION, "wait")
                     .also(stateMachines::add)
-                val waitExecutionArn = client.startExecution(
+                val waitExecutionArn = asyncClient.startExecution(
                     startExecutionRequestOf(waitMachine, input = "{}"),
                 ).await().executionArn().also(executions::add)
-                client.stopExecution(stopExecutionRequestOf(waitExecutionArn)).await()
+
+                asyncClient.stopExecution(stopExecutionRequestOf(waitExecutionArn)).await()
             }
         }
     }
@@ -131,19 +131,19 @@ class SfnSmokeTest: AbstractSfnTest() {
                 endpoint = sfnEmulator.awsEndpoint,
                 region = sfnEmulator.region(),
                 credentialsProvider = sfnEmulator.credentialsProvider,
-            ) { client ->
+            ) { asyncClient ->
                 executions.forEach { executionArn ->
                     runCatching {
-                        val status = client.describeExecution(
+                        val status = asyncClient.describeExecution(
                             DescribeExecutionRequest.builder().executionArn(executionArn).build(),
                         ).await().status()
                         if (status == ExecutionStatus.RUNNING) {
-                            client.stopExecution(stopExecutionRequestOf(executionArn)).await()
+                            asyncClient.stopExecution(stopExecutionRequestOf(executionArn)).await()
                         }
                     }.onFailure { firstFailure = firstFailure ?: it }
                 }
                 stateMachines.forEach { stateMachineArn ->
-                    runCatching { client.deleteStateMachine { it.stateMachineArn(stateMachineArn) } }
+                    runCatching { asyncClient.deleteStateMachine { it.stateMachineArn(stateMachineArn) } }
                         .onFailure { firstFailure = firstFailure ?: it }
                 }
             }

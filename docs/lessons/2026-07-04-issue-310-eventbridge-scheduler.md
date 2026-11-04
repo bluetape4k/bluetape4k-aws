@@ -2,7 +2,7 @@
 
 ## 배경
 
-EventBridge 핵심 및 통합 작업을 반영한 뒤 마일스톤 `0.5.0`에는 EventBridge Scheduler 지원이 필요했다. Scheduler는 EventBridge event-bus 기능이 아니라 별도의 AWS 서비스 아티팩트(`scheduler`)이므로 구현에서 패키지와 의존성 경계를 명확히 유지해야 했다.
+EventBridge 핵심 및 통합 작업을 반영한 뒤 마일스톤 `0.5.0`에는 EventBridge Scheduler 지원이 필요했다. Scheduler는 EventBridge event-bus 기능이 아니라 별도의 AWS 서비스 아티팩트 (`scheduler`)이므로 구현에서 패키지와 의존성 경계를 명확히 유지해야 했다.
 
 ## 결정
 

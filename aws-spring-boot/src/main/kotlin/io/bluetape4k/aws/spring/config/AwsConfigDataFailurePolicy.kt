@@ -36,10 +36,10 @@ internal object AwsConfigDataFailurePolicy {
         ConfigData(listOf(MapPropertySource(resource.toString(), values)))
 
     private fun isNotFound(backend: AwsConfigDataBackend, error: RuntimeException): Boolean = when (backend) {
-        AwsConfigDataBackend.S3 -> when (error) {
+        AwsConfigDataBackend.S3         -> when (error) {
             is NoSuchBucketException, is NoSuchKeyException -> true
             is S3Exception -> error.statusCode() == NOT_FOUND_STATUS_CODE
-            else -> false
+            else           -> false
         }
 
         AwsConfigDataBackend.PARAMETER_STORE -> error is ParameterNotFoundException

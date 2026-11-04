@@ -55,9 +55,15 @@ class CloudWatchLogsKtorTemplate(
             return emptyList()
         }
 
-        return logEvents.chunked(batchSize).map { batch ->
-            cloudWatchLogsClient.putLogEvents(logStream.logGroupName, logStream.logStreamName, batch)
-        }
+        return logEvents
+            .chunked(batchSize)
+            .map { batch ->
+                cloudWatchLogsClient.putLogEvents(
+                    logStream.logGroupName,
+                    logStream.logStreamName,
+                    batch
+                )
+            }
     }
 
     override suspend fun describeLogGroups(logGroupNamePrefix: String?): DescribeLogGroupsResponse =

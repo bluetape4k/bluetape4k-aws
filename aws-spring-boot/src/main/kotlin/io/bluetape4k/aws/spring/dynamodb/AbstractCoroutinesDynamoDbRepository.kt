@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.spring.dynamodb
 
+import io.bluetape4k.aws.dynamodb.model.QueryEnhancedRequest
+import io.bluetape4k.aws.dynamodb.model.ScanEnhancedRequest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.future.await
@@ -65,10 +67,7 @@ abstract class AbstractCoroutinesDynamoDbRepository<T: Any, ID: Any>(
         table.updateItem(item).await()
 
     override fun scan(builder: ScanEnhancedRequest.Builder.() -> Unit): Flow<T> {
-        val request = ScanEnhancedRequest.builder()
-            .apply(builder)
-            .build()
-
+        val request = ScanEnhancedRequest(builder)
         return table.scan(request).toItemsFlow()
     }
 
@@ -76,11 +75,10 @@ abstract class AbstractCoroutinesDynamoDbRepository<T: Any, ID: Any>(
         queryConditional: QueryConditional,
         builder: QueryEnhancedRequest.Builder.() -> Unit,
     ): Flow<T> {
-        val request = QueryEnhancedRequest.builder()
-            .queryConditional(queryConditional)
-            .apply(builder)
-            .build()
-
+        val request = QueryEnhancedRequest {
+            queryConditional(queryConditional)
+            builder()
+        }
         return table.query(request).toItemsFlow()
     }
 
@@ -89,11 +87,10 @@ abstract class AbstractCoroutinesDynamoDbRepository<T: Any, ID: Any>(
         queryConditional: QueryConditional,
         builder: QueryEnhancedRequest.Builder.() -> Unit,
     ): Flow<T> {
-        val request = QueryEnhancedRequest.builder()
-            .queryConditional(queryConditional)
-            .apply(builder)
-            .build()
-
+        val request = QueryEnhancedRequest {
+            queryConditional(queryConditional)
+            builder()
+        }
         return table.index(indexName).query(request).toItemsFlow()
     }
 

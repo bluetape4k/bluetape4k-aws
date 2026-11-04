@@ -3,6 +3,7 @@ package io.bluetape4k.aws.spring.sqs
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import java.nio.file.Files
 import java.nio.file.Path
@@ -52,6 +53,7 @@ class SqsBatchPerformanceTest {
         }
 
         candidate.filter { it.batchSize == 10 }.forEach { sample ->
+            log.debug { "sample=$sample" }
             (sample.deleteBatchCalls <= 1 && sample.deleteCalls == 0 && sample.visibilityBatchCalls <= 1).shouldBeTrue()
         }
         writeArtifacts(baseline, candidate)

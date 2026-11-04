@@ -1,10 +1,10 @@
 package io.bluetape4k.aws.ktor.ses
 
+import aws.sdk.kotlin.services.sesv2.model.AttachmentContentDisposition
+import aws.sdk.kotlin.services.sesv2.model.AttachmentContentTransferEncoding
 import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.support.hashOf
 import io.bluetape4k.support.requireNotBlank
-import aws.sdk.kotlin.services.sesv2.model.AttachmentContentDisposition
-import aws.sdk.kotlin.services.sesv2.model.AttachmentContentTransferEncoding
 import java.io.Serializable
 import java.nio.charset.Charset
 

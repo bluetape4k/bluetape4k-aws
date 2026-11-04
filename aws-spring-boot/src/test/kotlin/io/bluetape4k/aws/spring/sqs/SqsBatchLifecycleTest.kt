@@ -12,7 +12,9 @@ import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.concurrent.awaitTermination
 import io.bluetape4k.concurrent.futureOf
+import io.bluetape4k.coroutines.support.log
 import io.bluetape4k.javatimes.millis
 import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.logging.KLogging
@@ -34,6 +36,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.time.Duration.Companion.nanoseconds
 
 class SqsBatchLifecycleTest {
 
@@ -67,15 +70,20 @@ class SqsBatchLifecycleTest {
             closeRuntime = runtime,
         )
         val entry = sendEntry("drain")
-        val operation = async { template.sendMany(listOf(entry)) }
+        val operation = async {
+            template.sendMany(listOf(entry))
+        }.log("SendMany")
+
         runCurrent()
         attached.join()
 
         val closeExecutor = Executors.newSingleThreadExecutor()
         try {
-            val closed = CompletableFuture.runAsync(template::close, closeExecutor)
+            val closed = futureOf(closeExecutor) { template.close() }
             runtime.firstAwaitEntered.join()
-            assertFailsWith<IllegalStateException> { template.sendMany(emptyList()) }
+            assertFailsWith<IllegalStateException> {
+                template.sendMany(emptyList())
+            }
             events.shouldBeEmpty()
 
             future.complete(sendSuccess(entry)).shouldBeTrue()
@@ -120,7 +128,10 @@ class SqsBatchLifecycleTest {
             properties = properties,
             closeRuntime = runtime,
         )
-        val operation = async { template.sendMany(listOf(entry)) }
+        val operation = async {
+            template.sendMany(listOf(entry))
+        }.log("SendMany")
+
         runCurrent()
         attached.join()
 
@@ -182,7 +193,7 @@ class SqsBatchLifecycleTest {
         )
         val operation = async {
             template.sendMany(listOf(sendEntry("timeout")))
-        }
+        }.log("SendMany")
         runCurrent()
         attached.join()
 
@@ -225,20 +236,27 @@ class SqsBatchLifecycleTest {
             closeRuntime = runtime,
         )
         val entry = sendEntry("observer")
-        val operation = async { template.sendMany(listOf(entry)) }
+        val operation = async {
+            template.sendMany(listOf(entry))
+        }.log("SendMany")
+
         runCurrent()
         attached.join()
 
         val closeExecutor = Executors.newFixedThreadPool(2)
         try {
             val owner = futureOf(closeExecutor) {
-                assertFailsWith<SqsBatchCloseException> { template.close() }
+                assertFailsWith<SqsBatchCloseException> {
+                    template.close()
+                }
             }
             runtime.firstAwaitEntered.join()
             val observerStarted = CountDownLatch(1)
             val observer = futureOf(closeExecutor) {
                 observerStarted.countDown()
-                assertFailsWith<SqsBatchCloseException> { template.close() }
+                assertFailsWith<SqsBatchCloseException> {
+                    template.close()
+                }
             }
             observerStarted.await()
             runtime.nanoTimeCount.get() shouldBeEqualTo 2
@@ -279,7 +297,9 @@ class SqsBatchLifecycleTest {
             val callers = List(4) {
                 futureOf(closeExecutor) {
                     start.await()
-                    assertFailsWith<SqsBatchCloseException> { template.close() }
+                    assertFailsWith<SqsBatchCloseException> {
+                        template.close()
+                    }
                 }
             }
 
@@ -513,8 +533,9 @@ class SqsBatchLifecycleTest {
             )
         }
 
-        failure shouldBeSameInstanceAs safe
         events shouldBeEqualTo listOf("manager", "executor-now")
+
+        failure shouldBeSameInstanceAs safe
         failure.cause.shouldBeNull()
         failure.suppressed.shouldBeEmpty()
         failure.toString() shouldNotContain startupSecret
@@ -654,7 +675,7 @@ private class RecordingCloseRuntime(
 
     override fun awaitTermination(executor: ExecutorService, timeoutNanos: Long): Boolean {
         terminationTimeouts += timeoutNanos
-        return executor.awaitTermination(timeoutNanos, TimeUnit.NANOSECONDS)
+        return executor.awaitTermination(timeoutNanos.nanoseconds)
     }
 
     override fun newManagerCleanupThread(task: Runnable): Thread {

@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.ktor.cloudwatch
 
+import aws.sdk.kotlin.services.cloudwatch.model.MetricDatum
+import aws.sdk.kotlin.services.cloudwatch.model.PutMetricDataResponse
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.junit5.coroutines.runSuspendIO
@@ -11,8 +13,6 @@ import io.mockk.mockk
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import aws.sdk.kotlin.services.cloudwatch.model.MetricDatum
-import aws.sdk.kotlin.services.cloudwatch.model.PutMetricDataResponse
 import java.util.concurrent.CancellationException
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)

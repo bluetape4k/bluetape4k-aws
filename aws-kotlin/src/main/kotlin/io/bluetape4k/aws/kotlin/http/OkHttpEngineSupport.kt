@@ -2,6 +2,7 @@ package io.bluetape4k.aws.kotlin.http
 
 import aws.smithy.kotlin.runtime.http.engine.okhttp.OkHttpEngine
 import aws.smithy.kotlin.runtime.http.engine.okhttp.OkHttpEngineConfig
+import io.bluetape4k.support.useSafe
 
 /**
  * [OkHttpEngineConfig]을 사용하여 [OkHttpEngine] 인스턴스를 생성합니다.
@@ -20,3 +21,18 @@ import aws.smithy.kotlin.runtime.http.engine.okhttp.OkHttpEngineConfig
  */
 fun okHttpEngineOf(config: OkHttpEngineConfig = OkHttpEngineConfig.Default): OkHttpEngine =
     OkHttpEngine(config)
+
+
+inline fun okHttpEngine(
+    crossinline block: OkHttpEngineConfig.Builder.() -> Unit = {},
+): OkHttpEngine =
+    OkHttpEngine { block() }
+
+
+inline fun <R> withOkHttpEngine(
+    config: OkHttpEngineConfig = OkHttpEngineConfig.Default,
+    crossinline block: (OkHttpEngine) -> R,
+): R =
+    okHttpEngineOf(config).useSafe { okHttpEngine ->
+        block(okHttpEngine)
+    }

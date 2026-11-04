@@ -49,6 +49,7 @@ class S3TransferManagerCoroutinesExtensionsTest: AbstractS3Test() {
 
         // Upload a file by S3TransferManager
         val completedUpload = s3TransferManager.uploadFile(BUCKET_NAME, key, file.toPath())
+        log.debug { "completed upload: $completedUpload" }
         completedUpload.response().eTag().shouldNotBeEmpty()
 
         // TempDir 에 파일을 다운로드 한다

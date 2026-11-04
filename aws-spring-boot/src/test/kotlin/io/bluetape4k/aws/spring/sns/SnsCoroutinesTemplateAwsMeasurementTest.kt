@@ -4,6 +4,7 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeLessOrEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import jdk.jfr.Recording
@@ -23,8 +24,8 @@ import java.lang.management.ManagementFactory
 import java.lang.management.MemoryPoolMXBean
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.seconds
 
 /** 승인된 계정의 AWS SNS batch 경로를 측정하고 민감한 입력 없이 증거를 남깁니다. */
 class SnsCoroutinesTemplateAwsMeasurementTest: AbstractSnsTest() {
@@ -121,7 +122,7 @@ class SnsCoroutinesTemplateAwsMeasurementTest: AbstractSnsTest() {
             }
 
             if (primaryFailure == null) {
-                delay(timeMillis = retentionSeconds * 1_000L)
+                delay(retentionSeconds.seconds)
                 retentionCompleted = true
             }
         } finally {
@@ -340,7 +341,7 @@ class SnsCoroutinesTemplateAwsMeasurementTest: AbstractSnsTest() {
                 .redirectErrorStream(true)
                 .start()
             val text = process.inputStream.bufferedReader().readText()
-            val completed = process.waitFor(30, TimeUnit.SECONDS)
+            val completed = process.waitFor(30.seconds())
             if (!completed) {
                 process.destroyForcibly()
             }

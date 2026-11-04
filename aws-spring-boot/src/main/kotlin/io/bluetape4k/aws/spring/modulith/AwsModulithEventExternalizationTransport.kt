@@ -78,7 +78,7 @@ internal class AwsModulithEventExternalizationTransport(
     private fun admitLocked(payload: Any, target: RoutingTarget): Admission = when {
         state != LifecycleState.OPEN -> Admission(lifecycleFailure())
         !permits.tryAcquire() -> Admission(failedFuture(AwsModulithProducerCapacityException()))
-        else -> createPublication(payload, target)
+        else                  -> createPublication(payload, target)
     }
 
     private fun createPublication(payload: Any, target: RoutingTarget): Admission {

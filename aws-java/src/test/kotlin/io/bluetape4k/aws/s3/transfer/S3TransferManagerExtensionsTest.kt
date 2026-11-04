@@ -12,7 +12,6 @@ import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import io.bluetape4k.support.toUtf8Bytes
 import io.bluetape4k.support.toUtf8String
-import kotlinx.coroutines.future.await
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.io.TempDir
 import org.junit.jupiter.params.ParameterizedTest
@@ -34,18 +33,11 @@ class S3TransferManagerExtensionsTest: AbstractS3Test() {
         val key = randomKey()
         val content = Fakers.defaultFaker.lorem().paragraph()
 
-        val completedUpload = s3TransferManager
-            .uploadByteArrayAsync(BUCKET_NAME, key, content.toUtf8Bytes())
-            .completionFuture()
-            .await()
+        val completedUpload = s3TransferManager.uploadByteArray(BUCKET_NAME, key, content.toUtf8Bytes())
         log.debug { "completed upload: $completedUpload" }
         completedUpload.response().eTag().shouldNotBeEmpty()
 
-        val completedDownload = s3TransferManager
-            .downloadAsByteArrayAsync(BUCKET_NAME, key)
-            .completionFuture()
-            .await()
-
+        val completedDownload = s3TransferManager.downloadAsByteArray(BUCKET_NAME, key)
         log.debug { "completed download: $completedDownload" }
         val downloadContent = completedDownload.result().asByteArray().toUtf8String()
         downloadContent shouldBeEqualTo content
@@ -56,19 +48,14 @@ class S3TransferManagerExtensionsTest: AbstractS3Test() {
         val key = randomKey()
         val content = Base58.randomString(128)
 
-        s3TransferManager
-            .uploadByteArrayAsync(BUCKET_NAME, key, content.toUtf8Bytes())
-            .completionFuture()
-            .await()
+        s3TransferManager.uploadByteArray(BUCKET_NAME, key, content.toUtf8Bytes())
 
         val downloadFile = tempDir.resolve("range-part.txt")
 
         s3TransferManager
-            .downloadFileAsync(BUCKET_NAME, key, downloadFile.toPath()) {
+            .downloadFile(BUCKET_NAME, key, downloadFile.toPath()) {
                 getObjectRequest { it.bucket(BUCKET_NAME).key(key).range("bytes=0-4") }
             }
-            .completionFuture()
-            .await()
 
         val downloaded = downloadFile.readText().toUtf8Bytes()
         log.debug { "downloaded content: ${downloaded.contentToString()}" }
@@ -85,11 +72,8 @@ class S3TransferManagerExtensionsTest: AbstractS3Test() {
         file.exists().shouldBeTrue()
 
         // Upload a file by S3TransferManager
-        val completedUpload = s3TransferManager
-            .uploadFileAsync(BUCKET_NAME, key, file.toPath())
-            .completionFuture()
-            .await()
-
+        val completedUpload = s3TransferManager.uploadFile(BUCKET_NAME, key, file.toPath())
+        log.debug { "completed upload: $completedUpload" }
         completedUpload.response().eTag().shouldNotBeEmpty()
 
         // TempDir 에 파일을 다운로드 한다
@@ -97,9 +81,7 @@ class S3TransferManagerExtensionsTest: AbstractS3Test() {
         val downloadPath = downloadFile.toPath()
 
         // Downlod a file by S3TransferManager
-        s3TransferManager.downloadFileAsync(BUCKET_NAME, key, downloadPath)
-            .completionFuture()
-            .await()
+        s3TransferManager.downloadFile(BUCKET_NAME, key, downloadPath)
 
         log.debug { "downloadFile=$downloadFile, size=${downloadFile.length()}" }
         downloadFile.exists().shouldBeTrue()

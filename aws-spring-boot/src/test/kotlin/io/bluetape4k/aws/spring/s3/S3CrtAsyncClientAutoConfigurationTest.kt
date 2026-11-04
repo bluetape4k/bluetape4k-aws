@@ -6,6 +6,7 @@ import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.aws.spring.AwsClientCustomizer
+import io.bluetape4k.logging.KLogging
 import io.mockk.mockk
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.getBean
@@ -23,6 +24,8 @@ import software.amazon.awssdk.services.s3.S3CrtAsyncClientBuilder
 import kotlin.test.assertFailsWith
 
 class S3CrtAsyncClientAutoConfigurationTest {
+
+    companion object: KLogging()
 
     private val contextRunner = ApplicationContextRunner()
         .withConfiguration(

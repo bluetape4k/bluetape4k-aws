@@ -3,6 +3,8 @@ package io.bluetape4k.aws.spring.sqs
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
+import io.bluetape4k.support.requireNotNull
+import io.bluetape4k.utils.Resourcex
 import org.junit.jupiter.api.Test
 
 class SqsExtendedClientExampleTest {
@@ -11,7 +13,8 @@ class SqsExtendedClientExampleTest {
 
     @Test
     fun `extended example configuration keeps the canonical opt in contract`() {
-        val resource = requireNotNull(javaClass.getResourceAsStream("/application-extended.yml"))
+        val resource = Resourcex.getInputStream("/application-extended.yml")
+            .requireNotNull("application-extended.yml")
             .bufferedReader()
             .use { it.readText() }
 

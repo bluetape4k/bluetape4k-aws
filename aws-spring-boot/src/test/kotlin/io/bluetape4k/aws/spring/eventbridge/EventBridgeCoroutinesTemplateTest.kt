@@ -27,7 +27,7 @@ class EventBridgeCoroutinesTemplateTest {
 
     companion object: KLoggingChannel()
 
-    private val client = mockk<EventBridgeAsyncClient>()
+    private val client = mockk<EventBridgeAsyncClient>(relaxed = true)
 
     @BeforeEach
     fun beforeEach() {

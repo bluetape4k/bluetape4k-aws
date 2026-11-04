@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.ktor.imds
 
+import aws.sdk.kotlin.runtime.config.imds.EndpointMode
 import aws.smithy.kotlin.runtime.http.HttpBody
 import aws.smithy.kotlin.runtime.http.HttpCall
 import aws.smithy.kotlin.runtime.http.HttpMethod
@@ -9,44 +10,48 @@ import aws.smithy.kotlin.runtime.http.engine.CloseableHttpClientEngine
 import aws.smithy.kotlin.runtime.http.engine.HttpClientEngineConfig
 import aws.smithy.kotlin.runtime.http.request.HttpRequest
 import aws.smithy.kotlin.runtime.http.response.HttpResponse
-import aws.smithy.kotlin.runtime.io.SdkByteReadChannel
 import aws.smithy.kotlin.runtime.io.SdkBuffer
+import aws.smithy.kotlin.runtime.io.SdkByteReadChannel
 import aws.smithy.kotlin.runtime.io.SdkSource
-import aws.sdk.kotlin.runtime.config.imds.EndpointMode
+import com.sun.net.httpserver.HttpExchange
+import com.sun.net.httpserver.HttpServer
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.concurrent.await
+import io.bluetape4k.javatimes.hours
+import io.bluetape4k.javatimes.inNanos
+import io.bluetape4k.javatimes.millis
+import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.junit5.coroutines.runSuspendIO
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.jupiter.api.Test
+import java.io.IOException
 import java.net.InetSocketAddress
 import java.net.URI
 import java.nio.file.Files
 import java.nio.file.Path
-import java.io.IOException
 import java.time.Duration
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.coroutines.CoroutineContext
-import com.sun.net.httpserver.HttpExchange
-import com.sun.net.httpserver.HttpServer
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 class ImdsKtorTemplateTest {
 
@@ -57,7 +62,7 @@ class ImdsKtorTemplateTest {
         val readStarted = CompletableDeferred<Unit>()
         val cancellationRequested = CompletableDeferred<Unit>()
         val allowReadToFinish = CompletableDeferred<Unit>()
-        val responseChannel = object : SdkByteReadChannel {
+        val responseChannel = object: SdkByteReadChannel {
             override val availableForRead: Int = 0
             override val isClosedForRead: Boolean
                 get() = allowReadToFinish.isCompleted
@@ -74,7 +79,7 @@ class ImdsKtorTemplateTest {
 
             override fun cancel(cause: Throwable?): Boolean = cancellationRequested.complete(Unit)
         }
-        val responseBody = object : HttpBody.ChannelContent() {
+        val responseBody = object: HttpBody.ChannelContent() {
             override fun readFrom(): SdkByteReadChannel = responseChannel
         }
         val activeChild = CoroutineScope(Dispatchers.Unconfined + callJob).launch {
@@ -139,27 +144,27 @@ class ImdsKtorTemplateTest {
                 WireResponse(body = "metadata")
             }
         }
-        val engine = ImdsHttpClientFactory.createEngine(Duration.ofSeconds(1))
+        val engine = ImdsHttpClientFactory.createEngine(1.seconds())
         val adapter = ImdsSmithyAdapter(
             client = SdkHttpClient(engine),
             endpoint = server.endpointUri,
-            tokenTtl = Duration.ofSeconds(1),
+            tokenTtl = 1.seconds(),
             retries = 0,
             nowNanos = nowNanos::get,
         )
-        val template = ImdsKtorTemplate(adapter, Duration.ofSeconds(2))
+        val template = ImdsKtorTemplate(adapter, 2.seconds())
 
         try {
             template.get("latest/meta-data/status") shouldBeEqualTo "metadata"
             template.get("latest/meta-data/status") shouldBeEqualTo "metadata"
             server.requests.count { it.method == "PUT" } shouldBeEqualTo 1
 
-            nowNanos.set(Duration.ofSeconds(1).toNanos() + 1)
+            nowNanos.set(1.seconds().inNanos() + 1)
             template.get("latest/meta-data/status") shouldBeEqualTo "metadata"
 
             server.requests.count { it.method == "PUT" } shouldBeEqualTo 2
             server.requests.filter { it.method == "GET" }.map { it.token } shouldBeEqualTo
-                listOf("token-1", "token-1", "token-2")
+                    listOf("token-1", "token-1", "token-2")
         } finally {
             engine.close()
             server.close()
@@ -177,21 +182,21 @@ class ImdsKtorTemplateTest {
                 WireResponse(body = "metadata")
             }
         }
-        val engine = ImdsHttpClientFactory.createEngine(Duration.ofSeconds(1))
+        val engine = ImdsHttpClientFactory.createEngine(1.seconds())
         val adapter = ImdsSmithyAdapter(
             client = SdkHttpClient(engine),
             endpoint = server.endpointUri,
-            tokenTtl = Duration.ofMillis(1500),
+            tokenTtl = 1500.millis(),
             retries = 0,
             nowNanos = nowNanos::get,
         )
-        val template = ImdsKtorTemplate(adapter, Duration.ofSeconds(2))
+        val template = ImdsKtorTemplate(adapter, 2.seconds())
 
         try {
             template.get("latest/meta-data/status") shouldBeEqualTo "metadata"
             server.requests.single { it.method == "PUT" }.ttl shouldBeEqualTo "1"
 
-            nowNanos.set(Duration.ofMillis(1100).toNanos())
+            nowNanos.set(1100.millis().inNanos())
             template.get("latest/meta-data/status") shouldBeEqualTo "metadata"
 
             server.requests.count { it.method == "PUT" } shouldBeEqualTo 2
@@ -208,29 +213,29 @@ class ImdsKtorTemplateTest {
         val nowNanos = AtomicLong(0L)
         val server = ImdsWireServer { request ->
             if (request.method == "PUT") {
-                nowNanos.set(Duration.ofMillis(900).toNanos())
+                nowNanos.set(900.millis().inNanos())
                 WireResponse(body = "token-${tokenNumber.incrementAndGet()}")
             } else {
                 WireResponse(body = "metadata")
             }
         }
-        val engine = ImdsHttpClientFactory.createEngine(Duration.ofSeconds(1))
+        val engine = ImdsHttpClientFactory.createEngine(1.seconds())
         val adapter = ImdsSmithyAdapter(
             client = SdkHttpClient(engine),
             endpoint = server.endpointUri,
-            tokenTtl = Duration.ofSeconds(1),
+            tokenTtl = 1.seconds(),
             retries = 0,
             nowNanos = nowNanos::get,
         )
-        val template = ImdsKtorTemplate(adapter, Duration.ofSeconds(2))
+        val template = ImdsKtorTemplate(adapter, 2.seconds())
 
         try {
             template.get("latest/meta-data/status") shouldBeEqualTo "metadata"
-            nowNanos.set(Duration.ofMillis(1100).toNanos())
+            nowNanos.set(1100.millis().inNanos())
             template.get("latest/meta-data/status") shouldBeEqualTo "metadata"
             server.requests.count { it.method == "PUT" } shouldBeEqualTo 1
 
-            nowNanos.set(Duration.ofMillis(1900).toNanos() + 1)
+            nowNanos.set(1900.millis().inNanos() + 1)
             template.get("latest/meta-data/status") shouldBeEqualTo "metadata"
             server.requests.count { it.method == "PUT" } shouldBeEqualTo 2
         } finally {
@@ -366,7 +371,7 @@ class ImdsKtorTemplateTest {
             server.requests.count { it.method == "PUT" } shouldBeEqualTo 1
             server.requests.count { it.method == "GET" } shouldBeEqualTo 2
             server.requests.filter { it.method == "GET" }.map { it.token }.distinct() shouldBeEqualTo
-                listOf("cached-token")
+                    listOf("cached-token")
         } finally {
             runtime.stop()
             server.close()
@@ -448,13 +453,13 @@ class ImdsKtorTemplateTest {
             val adapter = ImdsSmithyAdapter(
                 client = SdkHttpClient(engine),
                 endpoint = URI("http://127.0.0.1"),
-                tokenTtl = Duration.ofHours(6),
+                tokenTtl = 6.hours(),
                 retries = 3,
             )
 
             try {
                 val error = assertFailsWith<IllegalStateException> {
-                    ImdsKtorTemplate(adapter, Duration.ofSeconds(2)).get("latest/meta-data/status")
+                    ImdsKtorTemplate(adapter, 2.seconds()).get("latest/meta-data/status")
                 }
 
                 error.message shouldContain status.toString()
@@ -494,7 +499,7 @@ class ImdsKtorTemplateTest {
                 WireResponse(body = "data", delayMillis = 250)
             }
         }
-        val runtime = server.runtime(requestTimeout = Duration.ofMillis(400))
+        val runtime = server.runtime(requestTimeout = 400.millis())
         try {
             val error = assertFailsWith<TimeoutCancellationException> {
                 (runtime.operations as ImdsKtorTemplate).get("latest/meta-data/status")
@@ -519,14 +524,14 @@ class ImdsKtorTemplateTest {
                 WireResponse(body = "late", delayMillis = 500)
             }
         }
-        val runtime = server.runtime(retries = 5, requestTimeout = Duration.ofSeconds(5))
+        val runtime = server.runtime(retries = 5, requestTimeout = 5.seconds())
         try {
             val template = runtime.operations as ImdsKtorTemplate
             val call = async(Dispatchers.IO) { template.get("latest/meta-data/status") }
-            metadataStarted.await(2, TimeUnit.SECONDS).shouldBeTrue()
+            metadataStarted.await(2.seconds).shouldBeTrue()
             call.cancelAndJoin()
             call.isCancelled.shouldBeTrue()
-            delay(50)
+            delay(50.milliseconds)
             server.requests.count { it.method == "GET" } shouldBeEqualTo 1
         } finally {
             runtime.stop()
@@ -548,8 +553,8 @@ class ImdsKtorTemplateTest {
 
     private fun ImdsWireServer.runtime(
         retries: Int = 0,
-        requestTimeout: Duration = Duration.ofSeconds(2),
-        tokenTtl: Duration = Duration.ofHours(6),
+        requestTimeout: Duration = 2.seconds(),
+        tokenTtl: Duration = 6.hours(),
         allowInsecureLocalHttpEndpoint: Boolean = true,
     ): ImdsKtorRuntime = ImdsKtorPluginConfig().apply {
         endpoint = endpointUri
@@ -567,7 +572,7 @@ class ImdsKtorTemplateTest {
 
 private class TerminalStatusHttpEngine(
     private val status: Int,
-) : CloseableHttpClientEngine {
+): CloseableHttpClientEngine {
     private val engineJob = SupervisorJob()
     override val coroutineContext: CoroutineContext = Dispatchers.Unconfined + engineJob
     override val config = HttpClientEngineConfig.Default
@@ -583,10 +588,10 @@ private class TerminalStatusHttpEngine(
         val response = if (request.method == HttpMethod.PUT) {
             HttpResponse(HttpStatusCode.OK, body = HttpBody.fromBytes("token".encodeToByteArray()))
         } else {
-            HttpResponse(HttpStatusCode(status, "test"), body = object : HttpBody.SourceContent() {
+            HttpResponse(HttpStatusCode(status, "test"), body = object: HttpBody.SourceContent() {
                 override val contentLength: Long = 64
 
-                override fun readFrom(): SdkSource = object : SdkSource {
+                override fun readFrom(): SdkSource = object: SdkSource {
                     override fun read(sink: SdkBuffer, limit: Long): Long {
                         bodyReads.incrementAndGet()
                         throw IOException("synthetic terminal response body failure")
@@ -628,7 +633,7 @@ private data class WireResponse(
 
 private class ImdsWireServer(
     private val respond: (WireRequest) -> WireResponse,
-) : AutoCloseable {
+): AutoCloseable {
 
     val requests = CopyOnWriteArrayList<WireRequest>()
     private val executor = Executors.newCachedThreadPool { runnable ->

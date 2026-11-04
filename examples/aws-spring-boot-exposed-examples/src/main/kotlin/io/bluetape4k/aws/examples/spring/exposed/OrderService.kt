@@ -105,10 +105,10 @@ class OrderService(
         customerId != null ->
             OrderEntity.find { OrdersTable.customerId eq customerId }.firstOrNull()
 
-        status != null ->
+        status != null     ->
             OrderEntity.find { OrdersTable.status eq status }.firstOrNull()
 
-        else -> OrderEntity.all().firstOrNull()
+        else               -> OrderEntity.all().firstOrNull()
     }
 
     companion object {

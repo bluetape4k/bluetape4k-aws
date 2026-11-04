@@ -202,7 +202,7 @@ class S3ResourcePatternResolverTest {
 
             val resources = resolver.getResources("s3://bucket/config/%2A/literal.txt")
             resources.map { it.shouldBeInstanceOf<S3Resource>().location.key } shouldBeEqualTo
-                listOf("config/*/literal.txt")
+                    listOf("config/*/literal.txt")
         } finally {
             context.close()
         }

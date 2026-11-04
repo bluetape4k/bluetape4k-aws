@@ -20,20 +20,14 @@ Issue #529는 Floci에서 36셀 SNS batch 경로를 측정했지만, 자격증�
 - 승인 없는 wrapper 실행은 exit 2로 끝났고 AWS identity 호출 전에 중단됐다.
 - 새 Kotlin 테스트는 system property가 없으면 실행되지 않으며, 기존 production API는 변경하지 않았다.
 
-사용자는 실제 AWS 계정이 없으므로 Floci 결과를 이 이슈의 최종 수용 범위로 결정했다. 실제
-AWS raw result, backend JFR, class histogram, long retention 관측은 이 이슈에서 수집하지
-않으며, production performance baseline이나 release readiness로 해석하지 않는다.
+사용자는 실제 AWS 계정이 없으므로 Floci 결과를 이 이슈의 최종 수용 범위로 결정했다. 실제 AWS raw result, backend JFR, class histogram, long retention 관측은 이 이슈에서 수집하지 않으며, production performance baseline이나 release readiness로 해석하지 않는다.
 
 ## FlociServer 최종 수용 측정
 
 실제 AWS를 호출하지 않고 `bluetape4k-testcontainers`의
-`FlociServer.Launcher.floci`를 통해 `issue-530-floci-20260826`을 실행했다. 36행
-행렬(`success`/`transport` × `entryCount` 6개 × `maxInFlightBatches` 3개)이 생성되었고,
-warmup 1회·측정 3회, parser JSON 검증, redaction 검사가 통과했다.
+`FlociServer.Launcher.floci`를 통해 `issue-530-floci-20260826`을 실행했다. 36행 행렬 (`success`/`transport` × `entryCount` 6개 × `maxInFlightBatches` 3개)이 생성되었고, warmup 1회·측정 3회, parser JSON 검증, redaction 검사가 통과했다.
 
-이는 로컬 Floci/JVM 경로의 재현 가능한 최종 baseline이다. 실제 AWS publisher의 backend
-지연시간, 비용·quota, 장기 retention, heap profile을 대체하지 않지만, 사용자 결정에 따라
-Issue #530의 측정 완료 증거로 수용한다.
+이는 로컬 Floci/JVM 경로의 재현 가능한 최종 baseline이다. 실제 AWS publisher의 backend 지연시간, 비용·quota, 장기 retention, heap profile을 대체하지 않지만, 사용자 결정에 따라 Issue #530의 측정 완료 증거로 수용한다.
 
 ## 놓친 점과 보완
 

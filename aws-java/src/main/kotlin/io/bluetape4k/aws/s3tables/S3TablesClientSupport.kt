@@ -40,8 +40,8 @@ inline fun s3TablesClientOf(
     region: Region? = null,
     credentialsProvider: AwsCredentialsProvider? = null,
     httpClient: SdkHttpClient = SdkHttpClientProvider.defaultHttpClient,
-    noinline builder: S3TablesClientBuilder.() -> Unit = {},
-): S3TablesClient = buildS3TablesClient(endpoint, region, credentialsProvider, httpClient, builder)
+    crossinline builder: S3TablesClientBuilder.() -> Unit = {},
+): S3TablesClient = buildS3TablesClient(endpoint, region, credentialsProvider, httpClient) { builder() }
     .apply(ShutdownQueue::register)
 
 /**
@@ -86,16 +86,19 @@ internal inline fun <R> withS3TablesClient(
 }
 
 @PublishedApi
-internal fun buildS3TablesClient(
+internal inline fun buildS3TablesClient(
     endpoint: URI?,
     region: Region?,
     credentialsProvider: AwsCredentialsProvider?,
     httpClient: SdkHttpClient,
     builder: S3TablesClientBuilder.() -> Unit,
-): S3TablesClient = S3TablesClient.builder().apply {
-    endpoint?.let(::endpointOverride)
-    region?.let(::region)
-    credentialsProvider?.let(::credentialsProvider)
-    httpClient(httpClient)
-    builder()
-}.build()
+): S3TablesClient =
+    S3TablesClient.builder()
+        .apply {
+            endpoint?.let(::endpointOverride)
+            region?.let(::region)
+            credentialsProvider?.let(::credentialsProvider)
+            httpClient(httpClient)
+            builder()
+        }
+        .build()

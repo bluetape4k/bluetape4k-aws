@@ -6,6 +6,7 @@ import io.bluetape4k.assertions.shouldBeGreaterOrEqualTo
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeBlank
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.aws.spring.sns.SnsAutoConfiguration
 import io.bluetape4k.aws.spring.sns.SnsHttpMessageParser
@@ -44,7 +45,7 @@ import software.amazon.awssdk.services.sns.SnsAsyncClient
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import java.time.Duration
-import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.toKotlinDuration
@@ -85,13 +86,13 @@ class AwsModulithEventsFlociTest {
                     val acknowledgement = deletingAcknowledgement(operations, message.queueUrl, message.receiptHandle)
                     listener.onMessage(message, acknowledgement)
 
-                    handler.events shouldBeEqualTo listOf(event)
+                    handler.events.toList() shouldBeEqualTo listOf(event)
                     acknowledgement.acknowledgeCalls.get() shouldBeEqualTo 1
                     operations.receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1).size shouldBeEqualTo 0
 
                     val duplicateAcknowledgement = RecordingAcknowledgement {}
                     listener.onMessage(message, duplicateAcknowledgement)
-                    handler.events shouldBeEqualTo listOf(event)
+                    handler.events.toList() shouldBeEqualTo listOf(event)
                     duplicateAcknowledgement.acknowledgeCalls.get() shouldBeEqualTo 1
                 }
             }
@@ -147,7 +148,7 @@ class AwsModulithEventsFlociTest {
                     val acknowledgement = deletingAcknowledgement(operations, message.queueUrl, message.receiptHandle)
                     listener.onMessage(message.withFlociSignatureFixture(), acknowledgement)
 
-                    handler.events shouldBeEqualTo listOf(event)
+                    handler.events.toList() shouldBeEqualTo listOf(event)
                     acknowledgement.acknowledgeCalls.get() shouldBeEqualTo 1
                 }
             }
@@ -323,6 +324,7 @@ class AwsModulithEventsFlociTest {
             "bluetape4k.aws.modulith.events.consumer.redrive-required=false",
         )
 
+    @Suppress("SameParameterValue")
     private fun consumerContext(queueName: String, redriveRequired: Boolean): ApplicationContextRunner =
         baseContext(queueName)
             .withPropertyValues(
@@ -401,6 +403,7 @@ class AwsModulithEventsFlociTest {
     private fun queuePolicy(queueArn: String, topicArn: String): String =
         """{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":"*","Action":"sqs:SendMessage","Resource":"$queueArn","Condition":{"ArnEquals":{"aws:SourceArn":"$topicArn"}}}]}"""
 
+    @Suppress("SameParameterValue")
     private fun redrivePolicy(deadLetterQueueArn: String, maxReceiveCount: Int): String =
         """{"deadLetterTargetArn":"$deadLetterQueueArn","maxReceiveCount":"$maxReceiveCount"}"""
 
@@ -485,11 +488,11 @@ private object FlociEventSerializer: EventSerializer {
     }
 
     private fun String.field(name: String): String =
-        requireNotNull(Regex("\\\"$name\\\":\\\"([^\\\"]+)\\\"").find(this)?.groupValues?.get(1))
+        Regex("\"$name\":\"([^\"]+)\"").find(this)?.groupValues?.get(1).shouldNotBeNull()
 }
 
 private class FlociEventHandler {
-    val events = CopyOnWriteArrayList<FlociEvent>()
+    val events = ConcurrentLinkedQueue<FlociEvent>()
 
     @EventListener
     fun on(event: FlociEvent) {

@@ -6,25 +6,23 @@ import aws.sdk.kotlin.services.dynamodb.endpoints.DynamoDbEndpointParameters
 import aws.sdk.kotlin.services.dynamodb.endpoints.DynamoDbEndpointProvider
 import aws.sdk.kotlin.services.dynamodb.model.AttributeDefinition
 import aws.sdk.kotlin.services.dynamodb.model.CreateTableRequest
-import aws.sdk.kotlin.services.dynamodb.model.ListTablesRequest
 import aws.sdk.kotlin.services.dynamodb.model.KeySchemaElement
+import aws.sdk.kotlin.services.dynamodb.model.ListTablesRequest
+import aws.smithy.kotlin.runtime.auth.awscredentials.CloseableCredentialsProvider
 import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
 import aws.smithy.kotlin.runtime.client.endpoints.Endpoint
-import aws.smithy.kotlin.runtime.auth.awscredentials.CloseableCredentialsProvider
 import aws.smithy.kotlin.runtime.http.engine.CloseableHttpClientEngine
 import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
-import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.aws.kotlin.dynamodb.model.partitionKeyOf
 import io.bluetape4k.aws.kotlin.dynamodb.model.stringAttrDefinitionOf
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.AwsKtorDynamoDbClientCustomizer
-import io.bluetape4k.aws.ktor.AwsKotlinEndpointPolicyInterceptor
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.ktor.core.ApplicationResourceRegistry
 import io.bluetape4k.ktor.core.ApplicationResourceRegistryState
@@ -35,7 +33,6 @@ import io.mockk.verify
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.io.Serializable
-import kotlin.Function1
 import kotlin.time.Duration.Companion.seconds
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)

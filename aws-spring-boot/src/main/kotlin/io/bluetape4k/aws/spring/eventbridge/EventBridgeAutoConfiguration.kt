@@ -67,8 +67,8 @@ class EventBridgeAutoConfiguration {
             )
             .apply {
                 httpClient.getIfAvailable()?.let { httpClient(it) }
+                applyGlobalCustomizers("eventbridge", globalCustomizers)
             }
-            .also { it.applyGlobalCustomizers("eventbridge", globalCustomizers) }
             .applyServiceCustomizers(serviceCustomizers)
             .build()
 

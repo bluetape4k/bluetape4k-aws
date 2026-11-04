@@ -55,15 +55,16 @@ inline fun s3ClientOf(
  *
  * @param block client를 사용하는 suspend 블록입니다. AWS SDK 작업은 suspend 함수입니다.
  */
-suspend fun <R> withS3Client(
+suspend inline fun <R> withS3Client(
     endpointUrl: Url? = null,
     region: String? = null,
     credentialsProvider: CredentialsProvider? = null,
     block: suspend (S3Client) -> R,
-): R = withS3Client(
-    clientFactory = { s3ClientOf(endpointUrl, region, credentialsProvider) },
-    block = block,
-)
+): R =
+    withS3Client(
+        clientFactory = { s3ClientOf(endpointUrl, region, credentialsProvider) },
+        block = block,
+    )
 
 /**
  * [clientFactory]가 생성한 client로 블록을 실행하고 정상 반환, 실패, coroutine 취소 시 client를 닫습니다.
@@ -71,7 +72,7 @@ suspend fun <R> withS3Client(
  * 이 내부 seam은 public helper가 동일한 소유권 경로를 사용하도록 유지하면서
  * 네트워크 I/O 없이 client 수명 주기를 결정적으로 회귀 테스트할 수 있게 합니다.
  */
-internal suspend fun <R> withS3Client(
+suspend inline fun <R> withS3Client(
     clientFactory: () -> S3Client,
     block: suspend (S3Client) -> R,
 ): R = clientFactory().useSafe { client ->

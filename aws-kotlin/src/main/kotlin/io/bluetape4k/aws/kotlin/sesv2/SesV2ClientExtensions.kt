@@ -41,7 +41,7 @@ import kotlinx.coroutines.CancellationException
  * @param emailRequest [SendEmailRequest] email 전송 요청 정보
  * @return [SendEmailResponse] email 전송 결과
  */
-suspend fun SesV2Client.send(emailRequest: SendEmailRequest): SendEmailResponse =
+suspend inline fun SesV2Client.send(emailRequest: SendEmailRequest): SendEmailResponse =
     sendEmail(emailRequest)
 
 /**
@@ -66,7 +66,7 @@ suspend fun SesV2Client.send(emailRequest: SendEmailRequest): SendEmailResponse 
  * @param emailRequest [SendBulkTemplatedEmailRequest] email 전송 요청 정보
  * @return [SendBulkTemplatedEmailResponse] email 전송 결과
  */
-suspend fun SesV2Client.sendBulk(emailRequest: SendBulkEmailRequest): SendBulkEmailResponse =
+suspend inline fun SesV2Client.sendBulk(emailRequest: SendBulkEmailRequest): SendBulkEmailResponse =
     sendBulkEmail(emailRequest)
 
 

@@ -11,12 +11,12 @@ import aws.smithy.kotlin.runtime.net.url.Url
  * 반환된 클라이언트는 호출자가 소유합니다. 블록 실행 후 닫아야 하는 단기 클라이언트에는
  * [withEventBridgeClient]를 사용하세요.
  */
-fun eventBridgeClientOf(
+inline fun eventBridgeClientOf(
     endpointUrl: Url? = null,
     region: String? = null,
     credentialsProvider: CredentialsProvider? = null,
     httpClient: HttpClientEngine? = null,
-    builder: EventBridgeClient.Config.Builder.() -> Unit = {},
+    crossinline builder: EventBridgeClient.Config.Builder.() -> Unit = {},
 ): EventBridgeClient =
     EventBridgeClient {
         endpointUrl?.let { this.endpointUrl = it }
@@ -29,7 +29,7 @@ fun eventBridgeClientOf(
 /**
  * [EventBridgeClient]를 생성하고 [block]을 실행한 뒤 클라이언트를 닫습니다.
  */
-suspend fun <R> withEventBridgeClient(
+suspend inline fun <R> withEventBridgeClient(
     endpointUrl: Url? = null,
     region: String? = null,
     credentialsProvider: CredentialsProvider? = null,

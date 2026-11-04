@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.ktor.ses
 
+import aws.sdk.kotlin.services.sesv2.SesV2Client
 import io.bluetape4k.ktor.core.ApplicationResourceRegistry
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
@@ -7,7 +8,6 @@ import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.runInterruptible
-import aws.sdk.kotlin.services.sesv2.SesV2Client
 
 /**
  * SES Ktor 작업과 플러그인이 소유한 클라이언트 수명 주기를 보관하는 런타임입니다.

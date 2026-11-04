@@ -26,8 +26,8 @@ import org.springframework.context.annotation.Configuration
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import tools.jackson.databind.ObjectMapper
-import java.time.Duration
-import java.util.concurrent.CopyOnWriteArrayList
+import java.util.*
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration.Companion.milliseconds
@@ -148,7 +148,7 @@ class SqsListenerAwsEmulatorTest: AbstractSqsTest() {
 
                 runSuspendIO { operations.send(queueUrl, "listener-suspend-ok") }
 
-                await.atMost(Duration.ofSeconds(10)).untilAsserted {
+                await atMost 10.seconds untilAsserted {
                     listener.bodies shouldContain "listener-suspend-ok"
                 }
             }
@@ -269,7 +269,7 @@ class SqsListenerAwsEmulatorTest: AbstractSqsTest() {
 
                 runSuspendIO { operations.send(queueUrl, "manual-ack-ok") }
 
-                await.atMost(Duration.ofSeconds(10)).untilAsserted {
+                await atMost 10.seconds untilAsserted {
                     listener.bodies shouldContain "manual-ack-ok"
                 }
                 runSuspendIO {
@@ -317,7 +317,7 @@ class SqsListenerAwsEmulatorTest: AbstractSqsTest() {
     }
 
     internal class StringListener {
-        val bodies: MutableList<String> = CopyOnWriteArrayList()
+        val bodies: Queue<String> = ConcurrentLinkedQueue()
 
         @SqsListener($$"${test.queue-url}")
         fun handle(body: String) {
@@ -361,7 +361,7 @@ class SqsListenerAwsEmulatorTest: AbstractSqsTest() {
     }
 
     internal class JsonListener {
-        val payloads: MutableList<OrderPayload> = CopyOnWriteArrayList()
+        val payloads: Queue<OrderPayload> = ConcurrentLinkedQueue()
 
         @SqsListener($$"${test.queue-url}")
         fun handle(payload: OrderPayload) {
@@ -376,7 +376,7 @@ class SqsListenerAwsEmulatorTest: AbstractSqsTest() {
     }
 
     internal class ManualAckListener {
-        val bodies: MutableList<String> = CopyOnWriteArrayList()
+        val bodies: Queue<String> = ConcurrentLinkedQueue()
 
         @SqsListener($$"${test.queue-url}")
         suspend fun handle(body: String, acknowledgement: SqsAcknowledgement) {
@@ -393,7 +393,7 @@ class SqsListenerAwsEmulatorTest: AbstractSqsTest() {
 
     internal class RetryListener {
         val attempts = AtomicInteger()
-        val bodies: MutableList<String> = CopyOnWriteArrayList()
+        val bodies: Queue<String> = ConcurrentLinkedQueue()
 
         @SqsListener($$"${test.queue-url}")
         fun handle(body: String) {
@@ -411,7 +411,7 @@ class SqsListenerAwsEmulatorTest: AbstractSqsTest() {
     }
 
     internal class SuspendListener {
-        val bodies: MutableList<String> = CopyOnWriteArrayList()
+        val bodies: Queue<String> = ConcurrentLinkedQueue()
 
         @SqsListener($$"${test.queue-url}")
         fun handle(message: SqsReceivedMessage) {
@@ -443,7 +443,7 @@ class SqsListenerAwsEmulatorTest: AbstractSqsTest() {
 
     internal class ConcurrencyListener {
         private val latch = CountDownLatch(2)
-        val bodies: MutableList<String> = CopyOnWriteArrayList()
+        val bodies: Queue<String> = ConcurrentLinkedQueue()
 
         @SqsListener($$"${test.queue-url}")
         fun handle(body: String) {
@@ -465,7 +465,7 @@ class SqsListenerAwsEmulatorTest: AbstractSqsTest() {
 
     open class ProxiedListener {
         companion object {
-            val bodies: MutableList<String> = CopyOnWriteArrayList()
+            val bodies: Queue<String> = ConcurrentLinkedQueue()
         }
 
         @SqsListener($$"${test.queue-url}")

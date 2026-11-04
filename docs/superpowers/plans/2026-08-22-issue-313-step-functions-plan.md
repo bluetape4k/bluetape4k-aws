@@ -1,12 +1,14 @@
 # Issue #313 AWS Step Functions 실행 helper Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic
+workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Java SDK v2와 AWS SDK for Kotlin에 Step Functions 실행 request·client·polling helper를 추가하고 compileOnly consumer, lifecycle, cancellation, emulator 증거를 고정한다.
 
 **Architecture:** `aws-java`는 sync, `CompletableFuture`, `.await()`, cold Flow 계층을 분리하고 polling은 non-blocking `SfnAsyncClient`에만 둔다. `aws-kotlin`은 native suspend `SfnClient` 위에 같은 request/response 의미와 cold Flow를 제공한다. 두 모듈 모두 raw SDK model과 exception을 유지하며, state machine과 Map Run 목록 helper를 분리하고 client·HTTP engine의 소유권을 명시한다.
 
-**Tech Stack:** Kotlin 2.x, JDK 25, Gradle Kotlin DSL, AWS SDK for Java v2, AWS SDK for Kotlin, kotlinx-coroutines `Flow`/`future.await`, JUnit 5, MockK, Kluent, Floci-first static guard와 Testcontainers LocalStack fallback.
+**Tech
+Stack:** Kotlin 2.x, JDK 25, Gradle Kotlin DSL, AWS SDK for Java v2, AWS SDK for Kotlin, kotlinx-coroutines `Flow`/`future.await`, JUnit 5, MockK, Kluent, Floci-first static guard와 Testcontainers LocalStack fallback.
 
 ---
 
@@ -24,22 +26,22 @@
 
 ## 파일 책임 맵
 
-| 책임 | 파일 |
-|---|---|
-| SDK catalog·BOM·compileOnly 검증 | `gradle/libs.versions.toml`, `build.gradle.kts`, `aws-java/build.gradle.kts`, `aws-kotlin/build.gradle.kts` |
-| Java client lifecycle | `aws-java/src/main/kotlin/io/bluetape4k/aws/sfn/SfnClientSupport.kt`, `SfnAsyncClientSupport.kt` |
-| Java request model | `aws-java/src/main/kotlin/io/bluetape4k/aws/sfn/model/SfnRequestSupport.kt` |
-| Java one-shot operation | `aws-java/src/main/kotlin/io/bluetape4k/aws/sfn/SfnExtensions.kt` |
-| Java polling | `aws-java/src/main/kotlin/io/bluetape4k/aws/sfn/SfnExecutionFlow.kt` |
-| Kotlin client lifecycle | `aws-kotlin/src/main/kotlin/io/bluetape4k/aws/kotlin/sfn/SfnClientSupport.kt` |
-| Kotlin request model | `aws-kotlin/src/main/kotlin/io/bluetape4k/aws/kotlin/sfn/model/SfnRequestSupport.kt` |
-| Kotlin one-shot operation | `aws-kotlin/src/main/kotlin/io/bluetape4k/aws/kotlin/sfn/SfnExtensions.kt` |
-| Kotlin polling | `aws-kotlin/src/main/kotlin/io/bluetape4k/aws/kotlin/sfn/SfnExecutionFlow.kt` |
-| Java tests·emulator | `aws-java/src/test/kotlin/io/bluetape4k/aws/sfn/` |
-| Kotlin tests·emulator | `aws-kotlin/src/test/kotlin/io/bluetape4k/aws/kotlin/sfn/` |
-| 외부 consumer compile | `aws-java/src/consumerFixture/kotlin/io/bluetape4k/aws/consumer/JavaServiceConsumerFixture.kt`, `aws-kotlin/src/consumerFixture/kotlin/io/bluetape4k/aws/kotlin/consumer/KotlinServiceConsumerFixture.kt` |
-| 사용자 문서 | root/module README EN·KO, manual EN·KO module/operations pages, `CHANGELOG.md` |
-| 검증 증거 | `docs/review/evidence/2026-08-22-issue-313-step-functions.md` |
+| 책임                             | 파일                                                                                                                                                                                                      |
+|----------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| SDK catalog·BOM·compileOnly 검증 | `gradle/libs.versions.toml`, `build.gradle.kts`, `aws-java/build.gradle.kts`, `aws-kotlin/build.gradle.kts`                                                                                               |
+| Java client lifecycle            | `aws-java/src/main/kotlin/io/bluetape4k/aws/sfn/SfnClientSupport.kt`, `SfnAsyncClientSupport.kt`                                                                                                          |
+| Java request model               | `aws-java/src/main/kotlin/io/bluetape4k/aws/sfn/model/SfnRequestSupport.kt`                                                                                                                               |
+| Java one-shot operation          | `aws-java/src/main/kotlin/io/bluetape4k/aws/sfn/SfnExtensions.kt`                                                                                                                                         |
+| Java polling                     | `aws-java/src/main/kotlin/io/bluetape4k/aws/sfn/SfnExecutionFlow.kt`                                                                                                                                      |
+| Kotlin client lifecycle          | `aws-kotlin/src/main/kotlin/io/bluetape4k/aws/kotlin/sfn/SfnClientSupport.kt`                                                                                                                             |
+| Kotlin request model             | `aws-kotlin/src/main/kotlin/io/bluetape4k/aws/kotlin/sfn/model/SfnRequestSupport.kt`                                                                                                                      |
+| Kotlin one-shot operation        | `aws-kotlin/src/main/kotlin/io/bluetape4k/aws/kotlin/sfn/SfnExtensions.kt`                                                                                                                                |
+| Kotlin polling                   | `aws-kotlin/src/main/kotlin/io/bluetape4k/aws/kotlin/sfn/SfnExecutionFlow.kt`                                                                                                                             |
+| Java tests·emulator              | `aws-java/src/test/kotlin/io/bluetape4k/aws/sfn/`                                                                                                                                                         |
+| Kotlin tests·emulator            | `aws-kotlin/src/test/kotlin/io/bluetape4k/aws/kotlin/sfn/`                                                                                                                                                |
+| 외부 consumer compile            | `aws-java/src/consumerFixture/kotlin/io/bluetape4k/aws/consumer/JavaServiceConsumerFixture.kt`, `aws-kotlin/src/consumerFixture/kotlin/io/bluetape4k/aws/kotlin/consumer/KotlinServiceConsumerFixture.kt` |
+| 사용자 문서                      | root/module README EN·KO, manual EN·KO module/operations pages, `CHANGELOG.md`                                                                                                                            |
+| 검증 증거                        | `docs/review/evidence/2026-08-22-issue-313-step-functions.md`                                                                                                                                             |
 
 ## Task 0: 승인된 설계·계획 기준선 기록
 
@@ -53,8 +55,7 @@
 
 - [x] **Step 1: explicit plan approval과 pinned SHA를 확인한다**
 
-사용자의 구현 계획 승인 메시지가 이 계획의 SHA-256 이후에 있는지 확인한다. 계획 검토 artifact에 기록된
-design/plan SHA-256이 현재 파일과 일치하지 않으면 구현을 시작하지 않고 검토 gate를 다시 실행한다.
+사용자의 구현 계획 승인 메시지가 이 계획의 SHA-256 이후에 있는지 확인한다. 계획 검토 artifact에 기록된 design/plan SHA-256이 현재 파일과 일치하지 않으면 구현을 시작하지 않고 검토 gate를 다시 실행한다.
 
 ```bash
 shasum -a 256 \
@@ -76,15 +77,11 @@ git diff --no-index --check /dev/null docs/superpowers/plans/2026-08-22-issue-31
 git diff --no-index --check /dev/null docs/review/2026-08-22-issue-313-step-functions-plan-review.md || test "$?" = 1
 ```
 
-Expected: terminology findings 0, whitespace error output 0. `git diff --no-index`의 exit 1은 새 파일 diff를
-뜻하므로 stderr/stdout에 whitespace finding이 없을 때만 허용한다.
+Expected: terminology findings 0, whitespace error output 0. `git diff --no-index`의 exit 1은 새 파일 diff를 뜻하므로 stderr/stdout에 whitespace finding이 없을 때만 허용한다.
 
 - [x] **Step 3: 변경 전 baseline을 실행하고 evidence에 기록한다**
 
-아직 production/build source를 수정하지 않은 pinned base에서 lifecycle regression, 양 module 전체 test,
-detekt를 순차 실행한다. 각 command의 raw exit code와 final Gradle status를 즉시 기록하고, 전체 test XML의
-tests/failures/errors/skipped aggregate를 evidence의 `Baseline` 절에 `apply_patch`로 남긴다. timeout, Docker,
-dependency 또는 기존 제품 실패는 exact output과 함께 분리하며 PASS로 축약하지 않는다.
+아직 production/build source를 수정하지 않은 pinned base에서 lifecycle regression, 양 module 전체 test, detekt를 순차 실행한다. 각 command의 raw exit code와 final Gradle status를 즉시 기록하고, 전체 test XML의 tests/failures/errors/skipped aggregate를 evidence의 `Baseline` 절에 `apply_patch`로 남긴다. timeout, Docker, dependency 또는 기존 제품 실패는 exact output과 함께 분리하며 PASS로 축약하지 않는다.
 
 ```bash
 ./gradlew :bluetape4k-aws-kotlin:test --tests "io.bluetape4k.aws.kotlin.lifecycle.ClientLifecycleTest" --no-daemon --max-workers=1 --console=plain
@@ -103,8 +100,7 @@ ruby -rrexml/document -e '
 ' aws-java/build/test-results/test aws-kotlin/build/test-results/test
 ```
 
-Expected: targeted lifecycle PASS. Full module tests와 detekt는 PASS가 목표다. 실패하면 baseline evidence를
-고정한 뒤 원인이 Issue #313 범위인지 분류하고, final verification에서 동일 command/aggregate와 비교한다.
+Expected: targeted lifecycle PASS. Full module tests와 detekt는 PASS가 목표다. 실패하면 baseline evidence를 고정한 뒤 원인이 Issue #313 범위인지 분류하고, final verification에서 동일 command/aggregate와 비교한다.
 
 - [x] **Step 4: Task 0을 Lore commit으로 기록한다**
 
@@ -237,23 +233,23 @@ Not-tested: production Step Functions helper
 
 테스트 이름과 입력을 다음 표 그대로 사용한다.
 
-| 테스트 | 입력 | 기대 |
-|---|---|---|
-| null input | `input = null` | `"{}"` |
-| blank input | `""`, `"   "` | `IllegalArgumentException` |
-| callback null input | `builder = { input(null) }` | `"{}"` |
-| callback invalid input | `builder = { input(" ") }` | `IllegalArgumentException` |
-| required ARN | start/stop/describe의 빈 ARN | field-specific `IllegalArgumentException` |
-| name boundary | 1자, 80자, 81자 | 앞 둘 PASS, 81자 FAIL |
-| valid callback override | ARN/name/input을 다른 유효한 값으로 변경 | callback 값 보존 |
-| raw input | 유효 JSON 문자열 | 변환 없이 원문 보존 |
-| stop KMS boundary | `error = null`, `cause = null` | 두 field 미설정 |
-| list exact-one | none, both | `IllegalArgumentException` |
-| pending redrive | state machine + `PENDING_REDRIVE` | `IllegalArgumentException` |
-| redrive filter | state machine + filter | `IllegalArgumentException` |
-| page size | `-1`, `1001` | `IllegalArgumentException` |
-| next token | blank | `IllegalArgumentException` |
-| next page | source/filter + non-blank token | source/filter 보존, token만 전달 |
+| 테스트                  | 입력                                     | 기대                                      |
+|-------------------------|------------------------------------------|-------------------------------------------|
+| null input              | `input = null`                           | `"{}"`                                    |
+| blank input             | `""`, `"   "`                            | `IllegalArgumentException`                |
+| callback null input     | `builder = { input(null) }`              | `"{}"`                                    |
+| callback invalid input  | `builder = { input(" ") }`               | `IllegalArgumentException`                |
+| required ARN            | start/stop/describe의 빈 ARN             | field-specific `IllegalArgumentException` |
+| name boundary           | 1자, 80자, 81자                          | 앞 둘 PASS, 81자 FAIL                     |
+| valid callback override | ARN/name/input을 다른 유효한 값으로 변경 | callback 값 보존                          |
+| raw input               | 유효 JSON 문자열                         | 변환 없이 원문 보존                       |
+| stop KMS boundary       | `error = null`, `cause = null`           | 두 field 미설정                           |
+| list exact-one          | none, both                               | `IllegalArgumentException`                |
+| pending redrive         | state machine + `PENDING_REDRIVE`        | `IllegalArgumentException`                |
+| redrive filter          | state machine + filter                   | `IllegalArgumentException`                |
+| page size               | `-1`, `1001`                             | `IllegalArgumentException`                |
+| next token              | blank                                    | `IllegalArgumentException`                |
+| next page               | source/filter + non-blank token          | source/filter 보존, token만 전달          |
 
 대표 테스트는 다음 형태로 작성한다.
 
@@ -431,11 +427,8 @@ fun `async response는 await 계층까지 그대로 전달한다`() = runTest {
 }
 ```
 
-Lifecycle test는 factory가 `ShutdownQueue.register`를 한 번 호출하고 `withSfn*Client`는 등록하지 않는지, block 실패/cancellation에도 service client만 닫고 외부 HTTP client는 닫지 않는지 확인한다.
-명시적 endpoint/region/credentials/HTTP client를 builder의 다른 유효한 값이 덮어쓰는지도 sync/async 각각 검증한다.
-Operation test는 Start/Stop/Describe/List의 exact request와 raw response/SDK exception을 그대로 전달하고,
-`StopExecution(error=null, cause=null)`이 두 field를 설정하지 않으며, 다음 page token이 source/filter를
-유지하는지 확인한다. Async coroutine cancellation은 `CancellationException`을 재전파하고 자동
+Lifecycle test는 factory가 `ShutdownQueue.register`를 한 번 호출하고 `withSfn*Client`는 등록하지 않는지, block 실패/cancellation에도 service client만 닫고 외부 HTTP client는 닫지 않는지 확인한다. 명시적 endpoint/region/credentials/HTTP client를 builder의 다른 유효한 값이 덮어쓰는지도 sync/async 각각 검증한다. Operation test는 Start/Stop/Describe/List의 exact request와 raw response/SDK exception을 그대로 전달하고,
+`StopExecution(error=null, cause=null)`이 두 field를 설정하지 않으며, 다음 page token이 source/filter를 유지하는지 확인한다. Async coroutine cancellation은 `CancellationException`을 재전파하고 자동
 `StopExecution`을 호출하지 않아야 한다.
 
 - [x] **Step 2: Java client test RED를 확인한다**
@@ -448,9 +441,7 @@ Expected: lifecycle/extension symbol 미정의로 compilation FAIL.
 
 - [x] **Step 3: lifecycle helper를 구현한다**
 
-두 support 파일은 explicit 설정 후 builder를 마지막에 실행한다. `sfnClient`/`sfnAsyncClient`와
-각 `*Of` application factory만 `ShutdownQueue`에 등록하고, `withSfn*Client`는 같은 internal builder로
-미등록 client를 만들어 범위 종료 시 service client만 닫는다.
+두 support 파일은 explicit 설정 후 builder를 마지막에 실행한다. `sfnClient`/`sfnAsyncClient`와 각 `*Of` application factory만 `ShutdownQueue`에 등록하고, `withSfn*Client`는 같은 internal builder로 미등록 client를 만들어 범위 종료 시 service client만 닫는다.
 
 ```kotlin
 inline fun sfnClient(
@@ -512,10 +503,7 @@ fun SfnClient.listExecutionsByStateMachine(
 }
 ```
 
-Map Run, async future, async coroutine도 동일 source validator를 공유한다. Coroutine은 future helper만 호출하고 `.await()`한다.
-Map Run validator도 기대 helper/source와 실제 `stateMachineArn`, `mapRunArn`, `statusFilter`, `redriveFilter`를
-포함한 field-specific message를 사용한다. Dedicated helper의 모든 invalid callback test는 예외 타입뿐 아니라
-exact field name과 기대 source를 포함한 message를 assertion한다.
+Map Run, async future, async coroutine도 동일 source validator를 공유한다. Coroutine은 future helper만 호출하고 `.await()`한다. Map Run validator도 기대 helper/source와 실제 `stateMachineArn`, `mapRunArn`, `statusFilter`, `redriveFilter`를 포함한 field-specific message를 사용한다. Dedicated helper의 모든 invalid callback test는 예외 타입뿐 아니라 exact field name과 기대 source를 포함한 message를 assertion한다.
 
 ```kotlin
 suspend fun SfnAsyncClient.startExecution(
@@ -574,15 +562,9 @@ fun `running 뒤 terminal raw response를 방출하고 끝난다`() = runTest {
 }
 ```
 
-추가 RED cases: immediate first call, 1초 virtual delay, `take(1)` 추가 호출 0, slow collector backpressure,
-cancellation 후 future 취소와 client non-close, `PENDING_REDRIVE` terminal, null status,
-`UNKNOWN_TO_SDK_VERSION`의 `statusAsString()`, poll interval 999ms/1s/±infinite를 포함한다.
-Java null/unknown status는 별도 mutable emission list로 collect하고 exception 뒤 `emissions.isEmpty()`,
-`describeExecution` exact 1회, 후속 describe/stop 0회를 함께 assertion한다.
-Request overload는 `includedData=METADATA_ONLY`와 `ALL_DATA` 각각에 대해 첫 호출과 반복 호출 모두
-동일한 immutable `DescribeExecutionRequest`를 전달하는지 검증한다.
-같은 cold Flow를 두 collector가 수집하면 collector별 SDK 호출이 발생하고, caller가 `shareIn`/`stateIn`으로
-공유한 경우 upstream polling 호출이 하나로 합쳐지는지 virtual time과 exact invocation count로 검증한다.
+추가 RED cases: immediate first call, 1초 virtual delay, `take(1)` 추가 호출 0, slow collector backpressure, cancellation 후 future 취소와 client non-close, `PENDING_REDRIVE` terminal, null status,
+`UNKNOWN_TO_SDK_VERSION`의 `statusAsString()`, poll interval 999ms/1s/±infinite를 포함한다. Java null/unknown status는 별도 mutable emission list로 collect하고 exception 뒤 `emissions.isEmpty()`,
+`describeExecution` exact 1회, 후속 describe/stop 0회를 함께 assertion한다. Request overload는 `includedData=METADATA_ONLY`와 `ALL_DATA` 각각에 대해 첫 호출과 반복 호출 모두 동일한 immutable `DescribeExecutionRequest`를 전달하는지 검증한다. 같은 cold Flow를 두 collector가 수집하면 collector별 SDK 호출이 발생하고, caller가 `shareIn`/`stateIn`으로 공유한 경우 upstream polling 호출이 하나로 합쳐지는지 virtual time과 exact invocation count로 검증한다.
 
 - [x] **Step 2: Flow test RED를 확인한다**
 
@@ -758,11 +740,8 @@ Not-tested: Kotlin client와 Flow
 
 Java와 같은 request/source/response/cancellation/lifecycle matrix에 Kotlin 전용
 `ExecutionStatus.SdkUnknown("FUTURE")`를 추가한다. request overload의 `includedData` 보존,
-`take(1)`, slow collector backpressure, client non-close, poll interval 999ms/1s/±infinite도 각각 검증한다.
-Unknown test는 별도 mutable emission list에 `onEach(emissions::add)`로 기록하고 exception 뒤
-`emissions.isEmpty()`, `describeExecution` exact 1회, 후속 describe/stop 0회를 assertion한다.
-State-machine/Map Run source-switch 두 concrete test도 Java snippet과 같은 expected/actual field 값의 exact
-message를 Kotlin property syntax로 assertion하고 native client 호출이 0회인지 `coVerify`한다.
+`take(1)`, slow collector backpressure, client non-close, poll interval 999ms/1s/±infinite도 각각 검증한다. Unknown test는 별도 mutable emission list에 `onEach(emissions::add)`로 기록하고 exception 뒤
+`emissions.isEmpty()`, `describeExecution` exact 1회, 후속 describe/stop 0회를 assertion한다. State-machine/Map Run source-switch 두 concrete test도 Java snippet과 같은 expected/actual field 값의 exact message를 Kotlin property syntax로 assertion하고 native client 호출이 0회인지 `coVerify`한다.
 
 ```kotlin
 @Test
@@ -784,12 +763,7 @@ fun `SdkUnknown은 raw response를 방출하지 않는다`() = runTest {
 }
 ```
 
-`withSfnClient`는 success/failure/cancellation마다 service client를 닫고 caller의 `HttpClientEngine`은 닫지 않는지 확인한다.
-명시적 endpoint/region/credentials/HTTP engine을 builder의 다른 유효한 값이 덮어쓰는지도 검증한다.
-Java/Kotlin lifecycle test는 지원되는 사용법으로 Flow collection이 `withSfn*Client` block 안에서 terminal 또는
-caller timeout까지 완료된 뒤 client가 닫히는 순서를 검증한다. Generic `R` lifecycle contract를 바꾸거나
-terminal 전용 API를 추가하지 않으며, block 밖으로 반환된 cold Flow는 닫힌 client를 참조하므로 지원하지
-않는다는 KDoc/README compile example을 고정한다.
+`withSfnClient`는 success/failure/cancellation마다 service client를 닫고 caller의 `HttpClientEngine`은 닫지 않는지 확인한다. 명시적 endpoint/region/credentials/HTTP engine을 builder의 다른 유효한 값이 덮어쓰는지도 검증한다. Java/Kotlin lifecycle test는 지원되는 사용법으로 Flow collection이 `withSfn*Client` block 안에서 terminal 또는 caller timeout까지 완료된 뒤 client가 닫히는 순서를 검증한다. Generic `R` lifecycle contract를 바꾸거나 terminal 전용 API를 추가하지 않으며, block 밖으로 반환된 cold Flow는 닫힌 client를 참조하므로 지원하지 않는다는 KDoc/README compile example을 고정한다.
 
 - [x] **Step 2: Kotlin client/Flow RED를 확인한다**
 
@@ -894,9 +868,7 @@ Not-tested: emulator
 
 Java fixture는 `sfnClient(builder)`, `sfnClientOf`, `withSfnClient`, `sfnAsyncClient(builder)`,
 `sfnAsyncClientOf`, `withSfnAsyncClient`, custom sync/async HTTP client, 그리고
-`listExecutionsByStateMachine(..., builder = {})`, `listExecutionsByMapRun(..., builder = {})`의
-callable reference 또는 미실행 lambda를 포함한다. Kotlin fixture도 `sfnClientOf`, `withSfnClient`,
-custom `HttpClientEngine`, 두 list helper를 포함한다.
+`listExecutionsByStateMachine(..., builder = {})`, `listExecutionsByMapRun(..., builder = {})`의 callable reference 또는 미실행 lambda를 포함한다. Kotlin fixture도 `sfnClientOf`, `withSfnClient`, custom `HttpClientEngine`, 두 list helper를 포함한다.
 
 ```kotlin
 // Java fixture의 미실행 lambda 예
@@ -1005,24 +977,15 @@ Kotlin module도 같은 service selection과 exact message를 사용하고 SDK�
 5. Wait state machine execution 생성 후 `StopExecution(error=null, cause=null)`
 6. test-created state machine 삭제
 
-각 SDK operation/wait/delete는 30초 `withTimeout`을 사용하고 Java smoke도 async client `.await()` 경로를
-사용한다. Testcontainers startup을 포함한 test 전체에는 JUnit `@Timeout(120, unit = TimeUnit.SECONDS)`을
-적용한다. 생성된 state machine ARN과 execution ARN을 모두 `try/finally`로 추적한다. `finally`는
-`withContext(NonCancellable)` 안에서 resource별 별도 30초 timeout과 `runCatching`을 사용해 outstanding RUNNING
-execution의 `StopExecution(error=null, cause=null)`을 먼저 시도하고, 이어 모든 test-created state machine을
-삭제한다. cleanup 오류는 모아 원래 test 실패에 suppressed exception으로 붙인다. service client는 test scope에서
-닫고, 외부 emulator는 공유 test lifecycle 소유이므로 개별 smoke test가 종료하지 않는다.
+각 SDK operation/wait/delete는 30초 `withTimeout`을 사용하고 Java smoke도 async client `.await()` 경로를 사용한다. Testcontainers startup을 포함한 test 전체에는 JUnit `@Timeout(120, unit = TimeUnit.SECONDS)`을 적용한다. 생성된 state machine ARN과 execution ARN을 모두 `try/finally`로 추적한다. `finally`는
+`withContext(NonCancellable)` 안에서 resource별 별도 30초 timeout과 `runCatching`을 사용해 outstanding RUNNING execution의 `StopExecution(error=null, cause=null)`을 먼저 시도하고, 이어 모든 test-created state machine을 삭제한다. cleanup 오류는 모아 원래 test 실패에 suppressed exception으로 붙인다. service client는 test scope에서 닫고, 외부 emulator는 공유 test lifecycle 소유이므로 개별 smoke test가 종료하지 않는다.
 
 LocalStack 호출이 HTTP 501 또는 error code `NotImplemented`/`NotImplementedException`을 반환한 경우에만
-`live integration unverified: LocalStack does not support Step Functions: <status/code>` exact prefix로 assumption
-skip한다. 다른 `SfnException`, timeout, assertion, container 오류는 그대로 실패시켜 제품/인프라 문제를 숨기지 않는다.
+`live integration unverified: LocalStack does not support Step Functions: <status/code>` exact prefix로 assumption skip한다. 다른 `SfnException`, timeout, assertion, container 오류는 그대로 실패시켜 제품/인프라 문제를 숨기지 않는다.
 
 - [x] **Step 4: evidence 골격을 만들고 Floci skip과 LocalStack fallback을 순차 검증한다**
 
-먼저 Step 5 표와 security boundary를 가진 evidence 파일을 `apply_patch`로 만든다. 아래 함수는 각 Gradle
-process 직후 raw exit code를 잡고, fresh XML 여부·XML 사본·count·exact message·SHA-256을 backend별 receipt에
-영속화한다. 한 case가 실패해도 나머지 독립 case의 bounded evidence 수집은 계속하지만, code/docs downstream
-task로는 진행하지 않는다. evidence 수집 완전성과 live integration 결과는 서로 다른 status로 기록한다.
+먼저 Step 5 표와 security boundary를 가진 evidence 파일을 `apply_patch`로 만든다. 아래 함수는 각 Gradle process 직후 raw exit code를 잡고, fresh XML 여부·XML 사본·count·exact message·SHA-256을 backend별 receipt에 영속화한다. 한 case가 실패해도 나머지 독립 case의 bounded evidence 수집은 계속하지만, code/docs downstream task로는 진행하지 않는다. evidence 수집 완전성과 live integration 결과는 서로 다른 status로 기록한다.
 
 ```bash
 bash -euo pipefail <<'ISSUE313'
@@ -1110,12 +1073,7 @@ cat build/test-results/issue-313/live-integration.status
 ISSUE313
 ```
 
-Expected: Floci 실행 직후 각 XML에는 skipped count와 exact `live integration unverified` 문구가 있다.
-LocalStack 실행 뒤 같은 XML 경로를 다시 읽어 tests/failures/errors/skipped count를 기록한다. 두 smoke가 PASS하지
-않으면 unsupported exact error와 XML을 evidence에 기록하고 `live integration unverified`로 남긴다.
-Skip/unsupported를 live PASS로 쓰지 않는다.
-각 Gradle process의 exit code와 XML 사본 SHA-256·경로는 다음 case 실행 전에 backend별 receipt에 기록된다.
-Step 5에서 네 receipt의 값을 evidence Markdown에 `apply_patch`로 옮기고 read-back한다.
+Expected: Floci 실행 직후 각 XML에는 skipped count와 exact `live integration unverified` 문구가 있다. LocalStack 실행 뒤 같은 XML 경로를 다시 읽어 tests/failures/errors/skipped count를 기록한다. 두 smoke가 PASS하지 않으면 unsupported exact error와 XML을 evidence에 기록하고 `live integration unverified`로 남긴다. Skip/unsupported를 live PASS로 쓰지 않는다. 각 Gradle process의 exit code와 XML 사본 SHA-256·경로는 다음 case 실행 전에 backend별 receipt에 기록된다. Step 5에서 네 receipt의 값을 evidence Markdown에 `apply_patch`로 옮기고 read-back한다.
 `build/test-results/issue-313/` XML 사본과 receipt는 로컬 증거이며 commit하지 않는다.
 
 - [x] **Step 5: evidence artifact를 최종화한다**
@@ -1138,12 +1096,9 @@ Step 5에서 네 receipt의 값을 evidence Markdown에 `apply_patch`로 옮기�
 - emulator 성공은 IAM resource policy 또는 KMS key policy 증거가 아님
 ```
 
-실제 작성에서는 실행한 command, exit code, XML test/skipped/failure count와 exact error를 기록한다.
-네 receipt와 evidence Markdown을 read-back한 뒤
+실제 작성에서는 실행한 command, exit code, XML test/skipped/failure count와 exact error를 기록한다. 네 receipt와 evidence Markdown을 read-back한 뒤
 `test "$(cat build/test-results/issue-313/evidence-collection.status)" = "PASS"`를 실행한다.
-`live-integration.status`는 LocalStack 두 SDK가 모두 실행되면 `PASS`, exact unsupported skip이면 `UNVERIFIED`,
-그 밖의 실패면 `FAIL`이어야 한다. evidence collection 또는 live integration이 FAIL이면 증거는 보존하되
-Task 8은 완료 처리하지 않고 제품·인프라를 분리한다. `UNVERIFIED`는 기능 미검증 상태로 명시하며 PASS로 쓰지 않는다.
+`live-integration.status`는 LocalStack 두 SDK가 모두 실행되면 `PASS`, exact unsupported skip이면 `UNVERIFIED`, 그 밖의 실패면 `FAIL`이어야 한다. evidence collection 또는 live integration이 FAIL이면 증거는 보존하되 Task 8은 완료 처리하지 않고 제품·인프라를 분리한다. `UNVERIFIED`는 기능 미검증 상태로 명시하며 PASS로 쓰지 않는다.
 
 - [x] **Step 6: Task 8을 Lore commit으로 기록한다**
 
@@ -1209,25 +1164,15 @@ Kotlin 문서는 `aws.sdk.kotlin:sfn`, `withSfnClient`, native suspend Flow 예�
 ### Emulator evidence {#step-functions-emulator}
 ```
 
-Manual front matter의 `releaseRef: "0.5.0"`와 기존 release source link는 바꾸지 않는다. 새 절은 unreleased/develop API임을 명시하고 새 파일을 0.5.0 release source라고 링크하지 않는다. 다음 release 작업에서 releaseRef가 갱신될 때 source link를 추가한다.
-Capability 표에는 Standard/Express/Map Run 차이와 Express에서 Describe/Stop/List를 일반 실행처럼 사용할 수
-없는 경계를 명시한다. 운영 절에는 polling 최소 간격, caller-owned timeout/rate-limit/jitter, AWS service quota
-확인, CloudWatch execution/throttling 지표와 AWS request ID 기반 관측을 기록한다. 1초는 collector별 하한일
-뿐 account/Region aggregate quota를 보장하지 않으므로 collector 수·동시성·polling budget을 caller가 제한하고,
-동일 execution의 다중 구독은 `shareIn`/`stateIn`으로 합친다. 전체 request/response를 운영 로그에 기록하지 않는다.
+Manual front matter의 `releaseRef: "0.5.0"`와 기존 release source link는 바꾸지 않는다. 새 절은 unreleased/develop API임을 명시하고 새 파일을 0.5.0 release source라고 링크하지 않는다. 다음 release 작업에서 releaseRef가 갱신될 때 source link를 추가한다. Capability 표에는 Standard/Express/Map Run 차이와 Express에서 Describe/Stop/List를 일반 실행처럼 사용할 수 없는 경계를 명시한다. 운영 절에는 polling 최소 간격, caller-owned timeout/rate-limit/jitter, AWS service quota 확인, CloudWatch execution/throttling 지표와 AWS request ID 기반 관측을 기록한다. 1초는 collector별 하한일 뿐 account/Region aggregate quota를 보장하지 않으므로 collector 수·동시성·polling budget을 caller가 제한하고, 동일 execution의 다중 구독은 `shareIn`/`stateIn`으로 합친다. 전체 request/response를 운영 로그에 기록하지 않는다.
 
 보안 절은 다음 acceptance criteria를 모두 포함한다.
 
 - IAM 표를 `StartExecution`(`states:StartExecution`과 dependent `states:DescribeExecution`),
-  `DescribeExecution`, `StopExecution`, `ListExecutions`로 나누고 state machine alias/version,
-  Standard execution, Express execution, labelled Map Run child, Map Run resource를 statement별로 구분한다.
-- `StopExecution(error=null,cause=null)`이 execution role의 추가 KMS data-key 권한을 피하는 조건과,
-  암호화된 execution data를 요청하는 `includedData=ALL_DATA`의 caller KMS 권한 경계를 설명한다.
-- ARN, execution name, input, output, error, cause, traceHeader, raw response payload는 기본적으로 기록하지 않거나
-  redaction한다. 상관관계가 필요하면 비밀키가 관리되는 HMAC만 사용하고, plain hash는 사용하지 않는다.
-- custom endpoint/endpointUrl은 caller가 신뢰하는 emulator 또는 private endpoint에만 사용한다. production
-  credential이나 payload를 untrusted 또는 non-TLS endpoint로 보내지 않으며, custom credentials provider와
-  외부 HTTP client/engine도 caller-owned trust boundary임을 KDoc와 manual에 명시한다.
+  `DescribeExecution`, `StopExecution`, `ListExecutions`로 나누고 state machine alias/version, Standard execution, Express execution, labelled Map Run child, Map Run resource를 statement별로 구분한다.
+- `StopExecution(error=null,cause=null)`이 execution role의 추가 KMS data-key 권한을 피하는 조건과, 암호화된 execution data를 요청하는 `includedData=ALL_DATA`의 caller KMS 권한 경계를 설명한다.
+- ARN, execution name, input, output, error, cause, traceHeader, raw response payload는 기본적으로 기록하지 않거나 redaction한다. 상관관계가 필요하면 비밀키가 관리되는 HMAC만 사용하고, plain hash는 사용하지 않는다.
+- custom endpoint/endpointUrl은 caller가 신뢰하는 emulator 또는 private endpoint에만 사용한다. production credential이나 payload를 untrusted 또는 non-TLS endpoint로 보내지 않으며, custom credentials provider와 외부 HTTP client/engine도 caller-owned trust boundary임을 KDoc와 manual에 명시한다.
 - emulator 기능 smoke는 IAM resource policy, KMS key policy, production credential 경계를 증명하지 않는다.
 
 - [x] **Step 3: CHANGELOG 미출시 항목을 추가한다**
@@ -1243,8 +1188,7 @@ Capability 표에는 Standard/Express/Map Run 차이와 Express에서 Describe/S
   ([#313](https://github.com/bluetape4k/bluetape4k-aws/issues/313)).
 ```
 
-`WIP.md`의 #313 Backlog 행은 issue/PR이 아직 병합되지 않았으므로 이 작업 범위에서는 유지한다.
-PR 병합 뒤 별도 canonical sync에서 제거 또는 완료 이력 반영 여부를 판단한다.
+`WIP.md`의 #313 Backlog 행은 issue/PR이 아직 병합되지 않았으므로 이 작업 범위에서는 유지한다. PR 병합 뒤 별도 canonical sync에서 제거 또는 완료 이력 반영 여부를 판단한다.
 
 - [x] **Step 4: 문서 계약을 검증한다**
 
@@ -1258,8 +1202,7 @@ test "$(rg -o '664e4dfb544a3c19db484b0f9a8e023a73774b49' docs/manual/{en,ko}/mod
 git diff --check
 ```
 
-Expected: 기존 terminology baseline 10건을 보존하고 Issue #313 diff 추가 finding 0건, manifest check PASS,
-manual contract PASS, whitespace 오류 0.
+Expected: 기존 terminology baseline 10건을 보존하고 Issue #313 diff 추가 finding 0건, manifest check PASS, manual contract PASS, whitespace 오류 0.
 
 - [x] **Step 5: targeted test와 정적 분석을 실행한다**
 
@@ -1279,9 +1222,7 @@ Expected: all PASS. Raw process exit code와 전체 output의 final status를 ev
 ./gradlew :bluetape4k-aws-kotlin:test --no-daemon --max-workers=1 --console=plain
 ```
 
-Expected: 두 task 모두 PASS. timeout/infra failure가 나면 제품 실패와 분리하고 partial PASS로 축약하지 않는다.
-Task 0의 동일 command·XML aggregate와 비교해 새 failure/error/skipped 증가를 회귀로 분류한다. baseline에 있던
-실패도 exact 상태를 다시 기록하며, 새 targeted/public consumer/detekt/manual failure는 completion을 차단한다.
+Expected: 두 task 모두 PASS. timeout/infra failure가 나면 제품 실패와 분리하고 partial PASS로 축약하지 않는다. Task 0의 동일 command·XML aggregate와 비교해 새 failure/error/skipped 증가를 회귀로 분류한다. baseline에 있던 실패도 exact 상태를 다시 기록하며, 새 targeted/public consumer/detekt/manual failure는 completion을 차단한다.
 
 - [x] **Step 7: 최종 diff와 worktree 상태를 검증한다**
 
@@ -1324,18 +1265,13 @@ Not-tested: 실제 AWS IAM/KMS
 
 ## 실패 격리와 rollback 절차
 
-- 각 Task는 자신의 RED→GREEN과 Lore commit을 완료하기 전 다음 Task로 진행하지 않는다. 실패한 command의
-  raw exit/XML을 evidence에 기록하고 제품, baseline, Docker/Testcontainers, external service 경계를 분리한다.
-- emulator test가 중단되면 Task 8의 `NonCancellable` cleanup으로 outstanding execution을 중지하고 test-created
-  state machine을 삭제한다. cleanup 실패도 숨기지 않고 suppressed exception과 evidence에 남긴다.
-- 구현을 계속할 수 있으면 같은 Task 안에서 최소 수정 후 동일 command를 재실행한다. baseline과 동일한 외부
-  실패는 별도 gap으로 유지하되 새 targeted test, compile fixture, static analysis 실패를 baseline으로 축약하지 않는다.
-- Issue #313 변경을 폐기하는 rollback은 자동 실행하지 않는다. 사용자가 rollback을 명시하면 현재 branch와
-  exact Issue #313 commit SHA를 read-back하고, 다른 변경이 없는지 확인한 뒤 reverse order로
+- 각 Task는 자신의 RED→GREEN과 Lore commit을 완료하기 전 다음 Task로 진행하지 않는다. 실패한 command의 raw exit/XML을 evidence에 기록하고 제품, baseline, Docker/Testcontainers, external service 경계를 분리한다.
+- emulator test가 중단되면 Task 8의 `NonCancellable` cleanup으로 outstanding execution을 중지하고 test-created state machine을 삭제한다. cleanup 실패도 숨기지 않고 suppressed exception과 evidence에 남긴다.
+- 구현을 계속할 수 있으면 같은 Task 안에서 최소 수정 후 동일 command를 재실행한다. baseline과 동일한 외부 실패는 별도 gap으로 유지하되 새 targeted test, compile fixture, static analysis 실패를 baseline으로 축약하지 않는다.
+- Issue #313 변경을 폐기하는 rollback은 자동 실행하지 않는다. 사용자가 rollback을 명시하면 현재 branch와 exact Issue #313 commit SHA를 read-back하고, 다른 변경이 없는지 확인한 뒤 reverse order로
   `git revert --no-commit <exact-sha>`를 적용한다. 결과는 별도 한국어 Lore commit과 targeted/full 검증으로 기록한다.
   `git reset --hard`, branch 삭제, worktree 강제 삭제는 사용하지 않는다.
-- 이미 배포된 consumer의 운영 rollback은 새 API 호출을 제거하고 도입 전 사용하던 artifact version을 다시 pin하는
-  방식이다. 이 저장소의 publish/tag/release는 현재 범위 밖이며 별도 승인 없이 실행하지 않는다.
+- 이미 배포된 consumer의 운영 rollback은 새 API 호출을 제거하고 도입 전 사용하던 artifact version을 다시 pin하는 방식이다. 이 저장소의 publish/tag/release는 현재 범위 밖이며 별도 승인 없이 실행하지 않는다.
 
 ## 계획 자체 검토 체크리스트
 

@@ -6,7 +6,6 @@ import io.bluetape4k.javatimes.minutes
 import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.warn
-import kotlinx.atomicfu.atomic
 import org.springframework.context.SmartLifecycle
 import org.springframework.core.env.ConfigurableEnvironment
 import java.time.Duration
@@ -15,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 import kotlin.math.min
@@ -75,7 +75,7 @@ internal class AppConfigReloadLifecycle(
     }
 
     private val lifecycleLock = ReentrantLock()
-    private val stopping = atomic(false)
+    private val stopping = AtomicBoolean(false)
     private val futures = ConcurrentHashMap<AppConfigDataPropertySource, ScheduledTask>()
     private val retryAttempts = ConcurrentHashMap<AppConfigDataPropertySource, Int>()
     private var executor: ScheduledThreadPoolExecutor? = null
@@ -98,7 +98,7 @@ internal class AppConfigReloadLifecycle(
     override fun start() {
         lifecycleLock.withLock {
             if (running) return
-            stopping.value = false
+            stopping.set(false)
             val sources = sourcesSupplier().distinctBy { it.name }.filter { it.refreshInterval != null }
             if (sources.isEmpty()) {
                 running = true
@@ -115,7 +115,7 @@ internal class AppConfigReloadLifecycle(
                 sources.forEach { source -> schedule(source, initialDelay(source)) }
                 running = true
             } catch (error: RuntimeException) {
-                stopping.value = true
+                stopping.set(true)
                 executor?.let(::cancelAndShutdown)
                 executor = null
                 runtimeClient?.close()
@@ -128,7 +128,7 @@ internal class AppConfigReloadLifecycle(
     override fun stop() {
         val resources = lifecycleLock.withLock {
             if (!running && executor == null) return
-            stopping.value = true
+            stopping.set(true)
             running = false
             val value = executor
             executor = null
@@ -156,7 +156,7 @@ internal class AppConfigReloadLifecycle(
 
     private fun schedule(source: AppConfigDataPropertySource, delay: Duration) {
         lifecycleLock.withLock {
-            if (!stopping.value) {
+            if (!stopping.get()) {
                 executor?.let { currentExecutor ->
                     val existing = futures[source]
                     if (existing == null || existing.future?.let { it.isDone || it.isCancelled } == true) {
@@ -182,7 +182,7 @@ internal class AppConfigReloadLifecycle(
     }
 
     private fun pollAndReschedule(source: AppConfigDataPropertySource) {
-        if (stopping.value) return
+        if (stopping.get()) return
         var nextDelay = baseDelay(source)
 
         try {
@@ -215,7 +215,7 @@ internal class AppConfigReloadLifecycle(
                 "AppConfig poll failed; retaining previous values and retrying: ${source.resource.opaqueIdentity}"
             }
         }
-        if (!stopping.value) schedule(source, nextDelay)
+        if (!stopping.get()) schedule(source, nextDelay)
     }
 
     private fun fetch(source: AppConfigDataPropertySource): AppConfigDataResponse {

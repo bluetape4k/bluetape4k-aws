@@ -50,12 +50,13 @@ suspend inline fun <T: Any> S3TransferManager.download(
  * // result.response().sdkHttpResponse().isSuccessful == true
  * ```
  */
-suspend fun <T: Any> S3TransferManager.download(
+suspend inline fun <T: Any> S3TransferManager.download(
     bucket: String,
     key: String,
     responseTransformer: AsyncResponseTransformer<GetObjectResponse, T>,
-    builder: DownloadRequest.UntypedBuilder.() -> Unit = {},
-): CompletedDownload<T> = downloadAsync(bucket, key, responseTransformer, builder).completionFuture().await()
+    crossinline builder: DownloadRequest.UntypedBuilder.() -> Unit = {},
+): CompletedDownload<T> =
+    downloadAsync(bucket, key, responseTransformer, builder).completionFuture().await()
 
 /**
  * [S3TransferManager]를 이용하여 S3 Object 를 ByteArray 로 다운로드 받습니다.

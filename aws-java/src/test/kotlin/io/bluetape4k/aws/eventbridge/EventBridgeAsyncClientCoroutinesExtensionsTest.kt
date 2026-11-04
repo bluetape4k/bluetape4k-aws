@@ -5,8 +5,9 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.aws.AbstractAwsTest
 import io.bluetape4k.aws.eventbridge.model.putEventsRequestEntryOf
+import io.bluetape4k.concurrent.completableFutureOf
 import io.bluetape4k.junit5.coroutines.assertResourceCancelledOnCoroutineCancellation
-import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import io.mockk.clearMocks
 import io.mockk.every
@@ -23,7 +24,7 @@ import java.util.concurrent.CompletableFuture
 
 class EventBridgeAsyncClientCoroutinesExtensionsTest: AbstractAwsTest() {
 
-    companion object: KLogging()
+    companion object: KLoggingChannel()
 
     private val client = mockk<EventBridgeAsyncClient>()
 
@@ -36,7 +37,9 @@ class EventBridgeAsyncClientCoroutinesExtensionsTest: AbstractAwsTest() {
     fun `putEvents coroutine awaits raw SDK response once`() = runTest {
         val entry = putEventsRequestEntryOf("source", "type", "{}")
         val expected = PutEventsResponse.builder().failedEntryCount(1).build()
-        every { client.putEvents(any<PutEventsRequest>()) } returns CompletableFuture.completedFuture(expected)
+        every {
+            client.putEvents(any<PutEventsRequest>())
+        } returns completableFutureOf(expected)
 
         val result = client.putEvents(listOf(entry))
 
@@ -50,8 +53,8 @@ class EventBridgeAsyncClientCoroutinesExtensionsTest: AbstractAwsTest() {
     @Test
     fun `putEvents coroutine propagates cancellation`() = runTest {
         val entry = putEventsRequestEntryOf("source", "type", "{}")
-        val future = CompletableFuture<PutEventsResponse>()
-        future.completeExceptionally(CancellationException("cancelled"))
+        val future = CompletableFuture.failedFuture<PutEventsResponse>(CancellationException("cancelled"))
+
         every { client.putEvents(any<PutEventsRequest>()) } returns future
 
         assertFailsWith<CancellationException> {

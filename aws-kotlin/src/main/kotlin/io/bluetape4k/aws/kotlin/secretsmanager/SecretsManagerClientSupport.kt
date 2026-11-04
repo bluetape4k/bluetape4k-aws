@@ -32,7 +32,7 @@ inline fun secretsManagerClientOf(
 /**
  * [SecretsManagerClient]를 생성하고 [block]을 실행한 뒤 클라이언트를 닫습니다.
  */
-suspend fun <R> withSecretsManagerClient(
+suspend inline fun <R> withSecretsManagerClient(
     endpointUrl: Url? = null,
     region: String? = null,
     credentialsProvider: CredentialsProvider? = null,

@@ -18,7 +18,7 @@ import software.amazon.awssdk.services.scheduler.model.UpdateScheduleResponse
 import java.time.Instant
 
 /** [createScheduleAsync]의 코루틴 어댑터입니다. */
-suspend fun SchedulerAsyncClient.createSchedule(
+suspend inline fun SchedulerAsyncClient.createSchedule(
     name: String,
     scheduleExpression: String,
     target: Target,
@@ -48,7 +48,7 @@ suspend fun SchedulerAsyncClient.createSchedule(
     ).await()
 
 /** [updateScheduleAsync]의 코루틴 어댑터입니다. */
-suspend fun SchedulerAsyncClient.updateSchedule(
+suspend inline fun SchedulerAsyncClient.updateSchedule(
     name: String,
     scheduleExpression: String,
     target: Target,
@@ -78,7 +78,7 @@ suspend fun SchedulerAsyncClient.updateSchedule(
     ).await()
 
 /** [deleteScheduleAsync]의 코루틴 어댑터입니다. */
-suspend fun SchedulerAsyncClient.deleteSchedule(
+suspend inline fun SchedulerAsyncClient.deleteSchedule(
     name: String,
     groupName: String? = null,
     clientToken: String? = null,
@@ -86,14 +86,14 @@ suspend fun SchedulerAsyncClient.deleteSchedule(
     deleteScheduleAsync(name, groupName, clientToken).await()
 
 /** [getScheduleAsync]의 코루틴 어댑터입니다. */
-suspend fun SchedulerAsyncClient.getSchedule(
+suspend inline fun SchedulerAsyncClient.getSchedule(
     name: String,
     groupName: String? = null,
 ): GetScheduleResponse =
     getScheduleAsync(name, groupName).await()
 
 /** [listSchedulesAsync]의 코루틴 어댑터입니다. */
-suspend fun SchedulerAsyncClient.listSchedules(
+suspend inline fun SchedulerAsyncClient.listSchedules(
     groupName: String? = null,
     namePrefix: String? = null,
     state: ScheduleState? = null,
@@ -103,25 +103,25 @@ suspend fun SchedulerAsyncClient.listSchedules(
     listSchedulesAsync(groupName, namePrefix, state, maxResults, nextToken).await()
 
 /** [createScheduleGroupAsync]의 코루틴 어댑터입니다. */
-suspend fun SchedulerAsyncClient.createScheduleGroup(
+suspend inline fun SchedulerAsyncClient.createScheduleGroup(
     name: String,
     clientToken: String? = null,
 ): CreateScheduleGroupResponse =
     createScheduleGroupAsync(name, clientToken).await()
 
 /** [deleteScheduleGroupAsync]의 코루틴 어댑터입니다. */
-suspend fun SchedulerAsyncClient.deleteScheduleGroup(
+suspend inline fun SchedulerAsyncClient.deleteScheduleGroup(
     name: String,
     clientToken: String? = null,
 ): DeleteScheduleGroupResponse =
     deleteScheduleGroupAsync(name, clientToken).await()
 
 /** [getScheduleGroupAsync]의 코루틴 어댑터입니다. */
-suspend fun SchedulerAsyncClient.getScheduleGroup(name: String): GetScheduleGroupResponse =
+suspend inline fun SchedulerAsyncClient.getScheduleGroup(name: String): GetScheduleGroupResponse =
     getScheduleGroupAsync(name).await()
 
 /** [listScheduleGroupsAsync]의 코루틴 어댑터입니다. */
-suspend fun SchedulerAsyncClient.listScheduleGroups(
+suspend inline fun SchedulerAsyncClient.listScheduleGroups(
     namePrefix: String? = null,
     maxResults: Int? = null,
     nextToken: String? = null,
