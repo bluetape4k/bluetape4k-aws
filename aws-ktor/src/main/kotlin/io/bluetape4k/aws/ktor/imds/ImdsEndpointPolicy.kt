@@ -9,6 +9,9 @@ internal object ImdsEndpointPolicy {
 
     private val IPV4_ENDPOINT = URI("http://169.254.169.254")
     private val IPV6_ENDPOINT = URI("http://[fd00:ec2::254]")
+    private const val IPV4_OCTET_COUNT = 4
+    private const val LOOPBACK_IPV4_PREFIX = "127"
+    private const val MAX_IPV4_OCTET = 255
 
     fun resolve(
         endpoint: URI?,
@@ -55,11 +58,11 @@ internal object ImdsEndpointPolicy {
         if (host == "localhost" || host == "::1") return true
 
         val octets = host.split('.')
-        return octets.size == 4 && octets.first() == "127" && octets.all { octet ->
+        return octets.size == IPV4_OCTET_COUNT && octets.first() == LOOPBACK_IPV4_PREFIX && octets.all { octet ->
             octet.isNotEmpty() &&
                     (octet.length == 1 || octet.first() != '0') &&
                     octet.all(Char::isDigit) &&
-                    octet.toIntOrNull()?.let { it in 0..255 } == true
+                    octet.toIntOrNull()?.let { it <= MAX_IPV4_OCTET } == true
         }
     }
 

@@ -7,7 +7,12 @@ import aws.smithy.kotlin.runtime.client.endpoints.EndpointProvider
 import aws.smithy.kotlin.runtime.http.interceptors.HttpInterceptor
 import aws.smithy.kotlin.runtime.http.request.HttpRequest
 import java.net.URI
+import java.net.URISyntaxException
 import java.util.*
+
+private const val IPV4_OCTET_COUNT = 4
+private const val LOOPBACK_IPV4_PREFIX = "127"
+private const val MAX_IPV4_OCTET = 255
 
 /** AWS 서비스 요청에 사용할 최종 endpoint URL을 검사합니다. */
 internal fun validateAwsKotlinServiceEndpoint(
@@ -58,7 +63,7 @@ private fun parseAwsKotlinServiceEndpoint(endpoint: String?): URI? {
 
     val uri = try {
         URI(endpoint)
-    } catch (cause: Exception) {
+    } catch (cause: URISyntaxException) {
         throw IllegalArgumentException("AWS service endpoint must be an absolute HTTP(S) URL.", cause)
     }
 
@@ -105,15 +110,15 @@ internal class AwsKotlinEndpointPolicyInterceptor(
 
 private fun isLoopbackLiteral(host: String): Boolean {
     val normalizedHost = host.removePrefix("[").removeSuffix("]")
-    if (normalizedHost.equals("localhost", ignoreCase = true) || normalizedHost == "::1") return true
-
+    val namedLoopback = normalizedHost.equals("localhost", ignoreCase = true) || normalizedHost == "::1"
     val octets = normalizedHost.split('.')
-    if (octets.size != 4 || octets.first() != "127") return false
-
-    return octets.all { octet ->
-        octet.isNotEmpty() &&
+    val ipv4Loopback =
+        octets.size == IPV4_OCTET_COUNT && octets.firstOrNull() == LOOPBACK_IPV4_PREFIX &&
+            octets.all { octet ->
+                octet.isNotEmpty() &&
                 (octet.length == 1 || octet.first() != '0') &&
                 octet.all { it in '0'..'9' } &&
-                octet.toIntOrNull()?.let { it <= 255 } == true
-    }
+                octet.toIntOrNull()?.let { it <= MAX_IPV4_OCTET } == true
+            }
+    return namedLoopback || ipv4Loopback
 }

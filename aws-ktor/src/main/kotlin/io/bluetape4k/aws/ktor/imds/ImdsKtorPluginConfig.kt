@@ -45,6 +45,7 @@ class ImdsKtorPluginConfig {
 
     internal var profileResolver: ImdsProfileResolver = ImdsProfileResolver()
 
+    @Suppress("ReturnCount", "TooGenericExceptionCaught")
     internal fun toRuntime(): ImdsKtorRuntime? {
         if (!enabled) return null
         imdsOperations?.let { return ImdsKtorRuntime(it) }

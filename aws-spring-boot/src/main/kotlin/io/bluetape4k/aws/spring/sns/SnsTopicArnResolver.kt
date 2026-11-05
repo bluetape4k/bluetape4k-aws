@@ -320,7 +320,10 @@ class SnsTopicArnResolver(
                                 throw cause
                             }
                             log.warn {
-                                "SNS topic ARN lookup failed (scopeHash=${scope.stableHash()}, topicNameHash=${topicName.hashCode()}, exceptionType=${cause::class.java.simpleName})"
+                                "SNS topic ARN lookup failed " +
+                                    "(scopeHash=${scope.stableHash()}, " +
+                                    "topicNameHash=${topicName.hashCode()}, " +
+                                    "exceptionType=${cause::class.java.simpleName})"
                             }
                             flight.outcome = FlightOutcome.Failure(cause)
                             throw cause

@@ -80,6 +80,7 @@ internal class ImdsSmithyAdapter(
         value
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private suspend fun retry(block: suspend () -> String): String {
         var retriesUsed = 0
         while (true) {
@@ -117,7 +118,7 @@ internal class ImdsSmithyAdapter(
         var unconsumedErrorBody = false
         return try {
             val response = call.response
-            if (response.status.value !in 200..299) {
+            if (response.status.value !in SUCCESS_STATUS_MIN..SUCCESS_STATUS_MAX) {
                 unconsumedErrorBody = true
                 return response to ByteArray(0)
             }
@@ -138,7 +139,7 @@ internal class ImdsSmithyAdapter(
 
     private fun Pair<HttpResponse, ByteArray>.requireSuccess(): Pair<HttpResponse, ByteArray> {
         val status = first.status.value
-        if (status !in 200..299) throw ImdsHttpResponseException(status)
+        if (status !in SUCCESS_STATUS_MIN..SUCCESS_STATUS_MAX) throw ImdsHttpResponseException(status)
         return this
     }
 
@@ -149,6 +150,8 @@ internal class ImdsSmithyAdapter(
         const val TOKEN_TTL_HEADER = "x-aws-ec2-metadata-token-ttl-seconds"
         const val TOKEN_HEADER = "x-aws-ec2-metadata-token"
         const val MAX_TOKEN_TTL_SECONDS = 21_600L
+        const val SUCCESS_STATUS_MIN = 200
+        const val SUCCESS_STATUS_MAX = 299
     }
 }
 
@@ -160,9 +163,13 @@ internal class ImdsHttpResponseException(val statusCode: Int):
 internal object ImdsRetryPolicy {
     private const val INITIAL_BACKOFF_MILLIS = 200L
     private const val MAX_BACKOFF_MILLIS = 20_000L
+    private const val JITTER_LOWER_BOUND = 1L
+    private const val JITTER_UPPER_BOUND_INCREMENT = 1L
+    private const val RETRYABLE_STATUS_MIN = 500
+    private const val RETRYABLE_STATUS_MAX = 599
 
     fun shouldRetry(cause: Throwable): Boolean = when (cause) {
-        is ImdsHttpResponseException -> cause.statusCode in 500..599
+        is ImdsHttpResponseException -> cause.statusCode in RETRYABLE_STATUS_MIN..RETRYABLE_STATUS_MAX
         is HttpException -> cause.sdkErrorMetadata.isRetryable
         else             -> false
     }
@@ -175,8 +182,8 @@ internal object ImdsRetryPolicy {
 
     fun fullJitterMillis(retryIndex: Int, randomLong: (Long, Long) -> Long): Long {
         val upperBound = backoffCapMillis(retryIndex)
-        return randomLong(1L, upperBound + 1L).also {
-            check(it in 1L..upperBound) { "Jitter source returned a value outside its bounds." }
+        return randomLong(JITTER_LOWER_BOUND, upperBound + JITTER_UPPER_BOUND_INCREMENT).also {
+            check(it in JITTER_LOWER_BOUND..upperBound) { "Jitter source returned a value outside its bounds." }
         }
     }
 }
@@ -209,6 +216,7 @@ internal class ImdsOwnedHttpClientEngine(
     val client: OkHttpClient,
 ): CloseableHttpClientEngine by delegate {
 
+    @Suppress("TooGenericExceptionCaught")
     override fun close() {
         var failure: Throwable? = null
         try {
