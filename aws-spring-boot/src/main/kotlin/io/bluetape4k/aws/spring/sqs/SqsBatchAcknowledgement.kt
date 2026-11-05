@@ -544,7 +544,9 @@ internal class DefaultSqsBatchAcknowledgement(
                         item.message.messageId in successIds -> item to Outcome(true)
                         item.message.messageId in failureById ->
                             item to Outcome(false, failure(item, failureById.getValue(item.message.messageId)))
-                        else                                 -> error("validated visibility response did not contain ${item.message.messageId}")
+                        else -> error(
+                            "validated visibility response did not contain ${item.message.messageId}",
+                        )
                     }
                 }
             }

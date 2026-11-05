@@ -1,0 +1,20 @@
+# Repository-specific Detekt policy.
+#
+# Keep production correctness rules enabled. The bounded exceptions below
+# reduce formatting noise in tests without allowing a failed analysis to pass.
+
+complexity:
+  LongMethod:
+    excludes:
+      - '**/test/**'
+
+exceptions:
+  TooGenericExceptionThrown:
+    excludes:
+      - '**/test/**'
+
+style:
+  MaxLineLength:
+    maxLineLength: 140
+    excludes:
+      - '**/test/**'

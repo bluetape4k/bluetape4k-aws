@@ -1376,6 +1376,8 @@ subprojects {
 
     pluginManager.withPlugin("dev.detekt") {
         extensions.configure<DetektExtension>("detekt") {
+            buildUponDefaultConfig.set(true)
+            config.setFrom(rootProject.layout.projectDirectory.file("config/detekt/detekt.yml"))
             baseline.set(rootProject.layout.projectDirectory.file("config/detekt/baseline-${project.name}.xml"))
         }
         configurations.matching { it.name == "detekt" }.configureEach {

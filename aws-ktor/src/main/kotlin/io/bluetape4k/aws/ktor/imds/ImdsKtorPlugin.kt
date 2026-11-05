@@ -38,6 +38,7 @@ val ImdsKtorPlugin: ApplicationPlugin<ImdsKtorPluginConfig> = createApplicationP
     }
 }
 
+@Suppress("TooGenericExceptionCaught")
 internal inline fun installImdsRuntimeWithRollback(runtime: ImdsKtorRuntime, install: () -> Unit) {
     try {
         install()

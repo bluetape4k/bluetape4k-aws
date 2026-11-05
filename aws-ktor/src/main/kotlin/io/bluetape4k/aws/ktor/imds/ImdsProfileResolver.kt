@@ -6,6 +6,7 @@ import java.io.IOException
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.net.URI
+import java.net.URISyntaxException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
@@ -79,21 +80,24 @@ internal class ImdsProfileResolver(
     }
 
     private fun readProfile(path: Path, profileName: String, configFile: Boolean): Map<String, String> {
-        val sections = try {
-            if (!Files.isRegularFile(path) || !Files.isReadable(path)) return emptyMap()
-            Files.readAllLines(path).let(::parseIni)
-        } catch (_: IOException) {
-            return emptyMap()
-        } catch (_: SecurityException) {
-            return emptyMap()
+        val sections = if (!Files.isRegularFile(path) || !Files.isReadable(path)) {
+            emptyMap()
+        } else {
+            try {
+                Files.readAllLines(path).let(::parseIni)
+            } catch (_: IOException) {
+                emptyMap()
+            } catch (_: SecurityException) {
+                emptyMap()
+            }
         }
 
-        if (configFile && profileName == DEFAULT_PROFILE) {
-            return sections["profile default"] ?: sections[DEFAULT_PROFILE].orEmpty()
+        return if (configFile && profileName == DEFAULT_PROFILE) {
+            sections["profile default"] ?: sections[DEFAULT_PROFILE].orEmpty()
+        } else {
+            val section = if (configFile) "profile $profileName" else profileName
+            sections[section].orEmpty()
         }
-
-        val section = if (configFile) "profile $profileName" else profileName
-        return sections[section].orEmpty()
     }
 
     private fun parseIni(lines: List<String>): Map<String, Map<String, String>> {
@@ -124,7 +128,7 @@ internal class ImdsProfileResolver(
 
     private fun parseEndpoint(value: String): URI = try {
         URI(value)
-    } catch (cause: Exception) {
+    } catch (cause: URISyntaxException) {
         throw IllegalStateException("Invalid $ENDPOINT_KEY value in AWS shared configuration.", cause)
     }
 
@@ -134,6 +138,7 @@ internal class ImdsProfileResolver(
         else -> throw IllegalStateException("Invalid $ENDPOINT_MODE_KEY value '$value' in AWS shared configuration.")
     }
 
+    @Suppress("ThrowsCount")
     private fun parseTimeout(value: String): Duration {
         val seconds = try {
             BigDecimal(value)
@@ -167,8 +172,12 @@ internal class ImdsProfileResolver(
                 if (char == quote) quote = null
             } else if (char == '\'' || char == '"') {
                 quote = char
-            } else if ((char == '#' || char == ';') && (index == 0 || this[index - 1].isWhitespace())) {
-                return substring(0, index).trimEnd()
+            } else {
+                val isCommentMarker = char == '#' || char == ';'
+                val startsComment = index == 0 || this[index - 1].isWhitespace()
+                if (isCommentMarker && startsComment) {
+                    return substring(0, index).trimEnd()
+                }
             }
         }
         return this

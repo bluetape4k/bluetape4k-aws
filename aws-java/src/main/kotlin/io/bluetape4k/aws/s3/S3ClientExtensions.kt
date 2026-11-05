@@ -521,7 +521,10 @@ fun S3Client.moveObjectAtomic(
 
     if (result.isPartialSuccess) {
         // 복사는 성공했지만 삭제가 실패한 경우, 롤백 시도
-        S3ClientLogger.log.warn { "Move partially succeeded. Attempting rollback by deleting copied object. Dest: $destBucketName/$destKey" }
+        S3ClientLogger.log.warn {
+            "Move partially succeeded. Attempting rollback by deleting copied object. " +
+                "Dest: $destBucketName/$destKey"
+        }
 
         runCatching {
             deleteObject { it.bucket(destBucketName).key(destKey) }

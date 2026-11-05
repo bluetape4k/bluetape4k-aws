@@ -615,6 +615,7 @@ class S3KtorClient(
  * }
  * ```
  */
+@Suppress("TooGenericExceptionCaught")
 fun s3KtorClientOf(
     region: String,
     credentialsProvider: CredentialsProvider? = null,

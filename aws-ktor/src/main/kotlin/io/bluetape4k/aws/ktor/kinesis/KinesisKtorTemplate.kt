@@ -195,7 +195,7 @@ class KinesisKtorTemplate(
 
     private fun KinesisException.isKinesisThrottlingException(): Boolean =
         this is ProvisionedThroughputExceededException ||
-                (sdkErrorMetadata.protocolResponse as? HttpResponse)?.status?.value == 429 ||
+                (sdkErrorMetadata.protocolResponse as? HttpResponse)?.status?.value == TOO_MANY_REQUESTS_STATUS ||
                 sdkErrorMetadata.errorCode in KINESIS_THROTTLING_ERROR_CODES
 
     private fun jitteredBackoff(attempt: Int, options: KinesisRecordFlowOptions): Duration {
@@ -218,6 +218,7 @@ class KinesisKtorTemplate(
     }
 
     private companion object {
+        const val TOO_MANY_REQUESTS_STATUS = 429
         val KINESIS_THROTTLING_ERROR_CODES = setOf(
             "BandwidthLimitExceeded",
             "EC2ThrottledException",
