@@ -26,11 +26,14 @@ inline fun putRecordRequest(
  * ## 동작/계약
  * - [streamName]이 blank이면 `IllegalArgumentException`을 던진다.
  * - [partitionKey]가 blank이면 `IllegalArgumentException`을 던진다.
+ * - [explicitHashKey]가 지정되고 blank이면 `IllegalArgumentException`을 던진다.
+ * - [data]는 필수 입력이다.
  *
  * ```kotlin
  * val req = putRecordRequestOf(
  *     streamName = "my-stream",
  *     partitionKey = "pk",
+ *     explicitHashKey = "123",
  *     data = SdkBytes.fromUtf8String("hello world")
  * )
  * ```
@@ -39,18 +42,35 @@ inline fun putRecordRequestOf(
     streamName: String,
     partitionKey: String,
     explicitHashKey: String? = null,
-    data: SdkBytes? = null,
+    data: SdkBytes,
     builder: PutRecordRequest.Builder.() -> Unit = {},
 ): PutRecordRequest {
     streamName.requireNotBlank("streamName")
     partitionKey.requireNotBlank("partitionKey")
+    explicitHashKey?.requireNotBlank("explicitHashKey")
 
     return putRecordRequest {
         streamName(streamName)
         partitionKey(partitionKey)
         explicitHashKey?.let { this.explicitHashKey(it) }
-        data?.let { this.data(it) }
+        data(data)
 
         builder()
     }
 }
+
+/**
+ * 기존 호출자와 JVM ABI를 유지하면서 데이터만 지정하는 오버로드입니다.
+ */
+inline fun putRecordRequestOf(
+    streamName: String,
+    partitionKey: String,
+    data: SdkBytes,
+    builder: PutRecordRequest.Builder.() -> Unit = {},
+): PutRecordRequest = putRecordRequestOf(
+    streamName = streamName,
+    partitionKey = partitionKey,
+    explicitHashKey = null,
+    data = data,
+    builder = builder,
+)

@@ -12,15 +12,17 @@ import org.gradle.api.attributes.Usage
 import org.gradle.api.attributes.java.TargetJvmVersion
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
-import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Classpath
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
@@ -322,6 +324,172 @@ data class KinesisLegacyReference(
     val descriptor: String,
 )
 
+abstract class VerifyKinesisLegacyClasspathTask : DefaultTask() {
+    @get:Classpath
+    abstract val classpath: ConfigurableFileCollection
+
+    @get:Optional
+    @get:Input
+    abstract val forbiddenJarPath: Property<String>
+
+    @get:Optional
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val requiredStubOutput: DirectoryProperty
+
+    @get:Optional
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val forbiddenStubOutput: DirectoryProperty
+
+    @get:Input
+    abstract val requireProductionJar: Property<Boolean>
+
+    @TaskAction
+    fun verifyClasspath() {
+        val entries = classpath.files
+        val forbiddenPath = forbiddenJarPath.orNull?.let(::File)?.canonicalFile
+        val hasForbiddenJar = forbiddenPath != null && entries.any { it.canonicalFile == forbiddenPath }
+        if (requireProductionJar.get()) {
+            require(forbiddenPath != null) {
+                "Kinesis legacy runtime classpath verification requires the production JAR input"
+            }
+            require(hasForbiddenJar) {
+                "Kinesis legacy runtime classpath must contain the production JAR"
+            }
+        } else {
+            require(!hasForbiddenJar) {
+                "Kinesis legacy compile classpath must not contain the production JAR"
+            }
+        }
+
+        if (requiredStubOutput.isPresent) {
+            val stubOutput = requiredStubOutput.get().asFile.canonicalFile
+            require(entries.any { it.canonicalFile == stubOutput }) {
+                "Kinesis legacy consumer compile classpath must contain the pre-change stub output"
+            }
+        }
+        if (forbiddenStubOutput.isPresent) {
+            val stubOutput = forbiddenStubOutput.get().asFile.canonicalFile
+            require(entries.none { it.canonicalFile == stubOutput }) {
+                "Kinesis legacy runtime classpath must not contain the pre-change stub output"
+            }
+        }
+    }
+}
+
+abstract class VerifyKinesisDryRunLegacyInvocationsTask : DefaultTask() {
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val baselineFiles: ConfigurableFileCollection
+
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val consumerClasses: DirectoryProperty
+
+    @TaskAction
+    fun verifyInvocations() {
+        val expected = baselineFiles.files.sortedBy(File::getName).flatMap { fixture ->
+            val lines = fixture.readLines()
+            val owner = lines.single { it.startsWith("CLASS ") }
+                .removePrefix("CLASS ")
+                .replace('.', '/')
+            lines.mapIndexedNotNull { index, line ->
+                if (!line.startsWith("public static ")) {
+                    null
+                } else {
+                    val method = Regex(" ([^ (]+)\\(").find(line)?.groupValues?.get(1)
+                        ?: error("Cannot parse method from ${fixture.path}:${index + 1}")
+                    val descriptor = lines.getOrNull(index + 1)?.removePrefix("descriptor: ")?.trim()
+                        ?: error("Missing descriptor after ${fixture.path}:${index + 1}")
+                    KinesisLegacyReference(owner, method, descriptor)
+                }
+            }
+        }
+        require(expected.size == 12) { "Expected exactly 12 legacy Kinesis references, found ${expected.size}" }
+
+        val outputDirectory = consumerClasses.get().asFile
+        val javap = ProcessBuilder(
+            "javap",
+            "-classpath",
+            outputDirectory.absolutePath,
+            "-p",
+            "-c",
+            "-s",
+            "io.bluetape4k.aws.kotlin.kinesis.KinesisDryRunLegacyConsumer",
+        ).redirectErrorStream(true).start()
+        val output = javap.inputStream.bufferedReader().use { it.readText() }
+        require(javap.waitFor() == 0) { "javap failed for isolated Kinesis legacy consumer: $output" }
+        expected.forEach { reference ->
+            val token = "Method ${reference.owner}.${reference.method}:${reference.descriptor}"
+            require(token in output) { "Missing exact legacy invocation: $token" }
+        }
+    }
+}
+
+abstract class VerifyAwsJavaLegacyRequestInvocationsTask : DefaultTask() {
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val baselineFile: RegularFileProperty
+
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val consumerClasses: DirectoryProperty
+
+    @get:Input
+    abstract val consumerClassName: Property<String>
+
+    @get:Input
+    abstract val expectedBaselineSha256: Property<String>
+
+    @get:Input
+    abstract val expectedReferenceCount: Property<Int>
+
+    @TaskAction
+    fun verifyInvocations() {
+        val baseline = baselineFile.get().asFile
+        val baselineSha256 = MessageDigest.getInstance("SHA-256")
+            .digest(baseline.readBytes())
+            .joinToString("") { byte -> "%02x".format(byte) }
+        require(baselineSha256 == expectedBaselineSha256.get()) {
+            "Legacy AWS Java ABI baseline digest changed: $baselineSha256"
+        }
+
+        val expected = baseline.readLines()
+            .asSequence()
+            .filter(String::isNotBlank)
+            .map { line ->
+                val fields = line.trim().split(" ", limit = 3)
+                require(fields.size == 3) { "Invalid legacy AWS Java ABI fixture line: $line" }
+                "Method ${fields[0].replace('.', '/')}.${fields[1]}:${fields[2]}"
+            }
+            .toList()
+        require(expected.size == expectedReferenceCount.get()) {
+            "Expected exactly ${expectedReferenceCount.get()} legacy AWS Java references, found ${expected.size}"
+        }
+
+        val outputDirectory = consumerClasses.get().asFile
+        val javap = ProcessBuilder(
+            "javap",
+            "-classpath",
+            outputDirectory.absolutePath,
+            "-p",
+            "-c",
+            "-s",
+            consumerClassName.get(),
+        ).redirectErrorStream(true).start()
+        val output = javap.inputStream.bufferedReader().use { it.readText() }
+        require(javap.waitFor() == 0) {
+            "javap failed for legacy AWS Java consumer: $output"
+        }
+        expected.forEach { reference ->
+            require(reference in output) {
+                "Missing exact legacy AWS Java invocation: $reference"
+            }
+        }
+    }
+}
+
 abstract class WriteCompatibilityReportTask : DefaultTask() {
     @get:Input
     abstract val checks: ListProperty<String>
@@ -589,6 +757,16 @@ val awsKotlinServiceConsumerFixtureClasspath =
 val kinesisDryRunLegacyDependencies = configurations.create("kinesisDryRunLegacyDependencies") {
     configureAwsServiceConsumerFixtureVersions()
 }
+val awsJavaLegacyRequestDependencies = configurations.create("awsJavaLegacyRequestDependencies") {
+    configureAwsServiceConsumerFixtureVersions()
+}
+val awsJavaSfnInlineEvolutionDependencies = configurations.create("awsJavaSfnInlineEvolutionDependencies") {
+    configureAwsServiceConsumerFixtureVersions()
+}
+val awsKotlinS3TablesInlineEvolutionDependencies =
+    configurations.create("awsKotlinS3TablesInlineEvolutionDependencies") {
+        configureAwsServiceConsumerFixtureVersions()
+    }
 
 fun addConsumerFixtureDependency(
     configuration: Configuration,
@@ -682,6 +860,25 @@ dependencies {
 
     kinesisDryRunLegacyDependencies(libs.aws.kotlin.kinesis)
     kinesisDryRunLegacyDependencies(rootLibs.kotlin.stdlib)
+
+    awsJavaLegacyRequestDependencies(libs.aws2.s3)
+    awsJavaLegacyRequestDependencies(libs.aws2.sqs)
+    awsJavaLegacyRequestDependencies(libs.aws2.kms)
+    awsJavaLegacyRequestDependencies(libs.aws2.kinesis)
+    awsJavaLegacyRequestDependencies(libs.aws2.sns)
+    awsJavaLegacyRequestDependencies(rootLibs.kotlin.stdlib)
+    awsJavaLegacyRequestDependencies(bt4k.bluetape4k.core)
+    awsJavaLegacyRequestDependencies(bt4k.bluetape4k.io)
+    awsJavaLegacyRequestDependencies(bt4k.bluetape4k.netty)
+    awsJavaLegacyRequestDependencies(bt4k.bluetape4k.idgenerators)
+
+    awsJavaSfnInlineEvolutionDependencies(libs.aws2.sfn)
+    awsJavaSfnInlineEvolutionDependencies(rootLibs.kotlin.stdlib)
+    awsJavaSfnInlineEvolutionDependencies(bt4k.bluetape4k.coroutines)
+    awsJavaSfnInlineEvolutionDependencies(libs.kotlinx.coroutines.core)
+
+    awsKotlinS3TablesInlineEvolutionDependencies(libs.aws.kotlin.s3tables)
+    awsKotlinS3TablesInlineEvolutionDependencies(rootLibs.kotlin.stdlib)
 }
 
 val awsKtorSqsConsumerFixtureSourceSet = sourceSets.create("awsKtorSqsConsumerFixture")
@@ -921,17 +1118,6 @@ val awsKotlinProductionJar = layout.projectDirectory.file(
     "aws-kotlin/build/libs/bluetape4k-aws-kotlin-${baseVersion + snapshotVersion}.jar",
 )
 
-fun requireClasspathExcludes(
-    label: String,
-    classpath: FileCollection,
-    forbidden: File,
-) {
-    val forbiddenPath = forbidden.canonicalFile
-    require(classpath.files.none { it.canonicalFile == forbiddenPath }) {
-        "$label must not contain ${forbiddenPath.path}"
-    }
-}
-
 val verifyKinesisDryRunFixtureIntegrity = tasks.register<VerifyKinesisDryRunFixtureIntegrityTask>(
     "verifyKinesisDryRunFixtureIntegrity",
 ) {
@@ -960,35 +1146,62 @@ val verifyKinesisDryRunFixtureIntegrity = tasks.register<VerifyKinesisDryRunFixt
     reportFile.set(layout.buildDirectory.file("reports/abi/issue-620/kinesis-dry-run-fixture-integrity.json"))
 }
 
+val verifyKinesisDryRunLegacyStubClasspath = tasks.register<VerifyKinesisLegacyClasspathTask>(
+    "verifyKinesisDryRunLegacyStubClasspath",
+) {
+    description = "Verifies the isolated Kinesis stub compiler classpath excludes the production JAR."
+    group = "verification"
+    classpath.from(kinesisDryRunLegacyDependencies)
+    forbiddenJarPath.set(awsKotlinProductionJar.asFile.absolutePath)
+    requireProductionJar.set(false)
+}
+
+val verifyKinesisDryRunLegacyConsumerClasspath = tasks.register<VerifyKinesisLegacyClasspathTask>(
+    "verifyKinesisDryRunLegacyConsumerClasspath",
+) {
+    description = "Verifies the isolated Kinesis consumer compiler classpath uses pre-change stubs."
+    group = "verification"
+    classpath.from(files(kinesisDryRunStubClasses) + kinesisDryRunLegacyDependencies)
+    forbiddenJarPath.set(awsKotlinProductionJar.asFile.absolutePath)
+    requiredStubOutput.set(kinesisDryRunStubClasses)
+    requireProductionJar.set(false)
+    dependsOn("compileKinesisDryRunLegacyStubs")
+}
+
+val verifyKinesisDryRunLegacyRuntimeClasspath = tasks.register<VerifyKinesisLegacyClasspathTask>(
+    "verifyKinesisDryRunLegacyRuntimeClasspath",
+) {
+    description = "Verifies the isolated Kinesis runtime classpath links the production JAR without stubs."
+    group = "verification"
+    classpath.from(files(kinesisDryRunConsumerClasses, awsKotlinProductionJar) + kinesisDryRunLegacyDependencies)
+    forbiddenJarPath.set(awsKotlinProductionJar.asFile.absolutePath)
+    forbiddenStubOutput.set(kinesisDryRunStubClasses)
+    requireProductionJar.set(true)
+    dependsOn("compileKinesisDryRunLegacyConsumer", ":bluetape4k-aws-kotlin:jar")
+}
+
 val compileKinesisDryRunLegacyStubs = tasks.register<JavaCompile>("compileKinesisDryRunLegacyStubs") {
     description = "Compiles the pre-change Kinesis JVM surface without the production JAR."
     group = "verification"
     dependsOn(verifyKinesisDryRunFixtureIntegrity)
+    dependsOn(verifyKinesisDryRunLegacyStubClasspath)
     source(fileTree(kinesisDryRunFixtureRoot.dir("stub")) { include("**/*.java") })
     classpath = kinesisDryRunLegacyDependencies
     destinationDirectory.set(kinesisDryRunStubClasses)
     options.release.set(25)
     options.encoding = "UTF-8"
-    doFirst {
-        requireClasspathExcludes("Kinesis legacy stub compile classpath", classpath, awsKotlinProductionJar.asFile)
-    }
 }
 
 val compileKinesisDryRunLegacyConsumer = tasks.register<JavaCompile>("compileKinesisDryRunLegacyConsumer") {
     description = "Compiles a legacy Kinesis consumer against stubs instead of the production JAR."
     group = "verification"
     dependsOn(compileKinesisDryRunLegacyStubs)
+    dependsOn(verifyKinesisDryRunLegacyConsumerClasspath)
     source(fileTree(kinesisDryRunFixtureRoot.dir("consumer")) { include("**/*.java") })
     classpath = files(kinesisDryRunStubClasses) + kinesisDryRunLegacyDependencies
     destinationDirectory.set(kinesisDryRunConsumerClasses)
     options.release.set(25)
     options.encoding = "UTF-8"
-    doFirst {
-        requireClasspathExcludes("Kinesis legacy consumer compile classpath", classpath, awsKotlinProductionJar.asFile)
-        require(classpath.files.any { it.canonicalFile == kinesisDryRunStubClasses.get().asFile.canonicalFile }) {
-            "Kinesis legacy consumer compile classpath must contain the pre-change stub output"
-        }
-    }
 }
 
 val verifyKinesisDryRunAdditiveAbi = tasks.register<VerifyAdditiveKinesisAbiTask>(
@@ -1006,72 +1219,178 @@ val verifyKinesisDryRunAdditiveAbi = tasks.register<VerifyAdditiveKinesisAbiTask
     reportFile.set(layout.buildDirectory.file("reports/abi/issue-620/kinesis-dry-run-additive.json"))
 }
 
-val verifyKinesisDryRunLegacyInvocations = tasks.register("verifyKinesisDryRunLegacyInvocations") {
+val verifyKinesisDryRunLegacyInvocations = tasks.register<VerifyKinesisDryRunLegacyInvocationsTask>("verifyKinesisDryRunLegacyInvocations") {
     description = "Verifies the isolated legacy consumer references all 12 exact pre-change JVM descriptors."
     group = "verification"
     dependsOn(compileKinesisDryRunLegacyConsumer)
-    val baselineFiles = files(
+    baselineFiles.from(
         kinesisDryRunFixtureRoot.file("kinesis-client-extensions.javap.txt"),
         kinesisDryRunFixtureRoot.file("put-record.javap.txt"),
         kinesisDryRunFixtureRoot.file("get-shard-iterator.javap.txt"),
     )
-    inputs.files(baselineFiles)
-    inputs.dir(kinesisDryRunConsumerClasses)
-    doLast {
-        val expected = baselineFiles.files.sortedBy(File::getName).flatMap { fixture ->
-            val lines = fixture.readLines()
-            val owner = lines.single { it.startsWith("CLASS ") }
-                .removePrefix("CLASS ")
-                .replace('.', '/')
-            lines.mapIndexedNotNull { index, line ->
-                if (!line.startsWith("public static ")) {
-                    null
-                } else {
-                    val method = Regex(" ([^ (]+)\\(").find(line)?.groupValues?.get(1)
-                        ?: error("Cannot parse method from ${fixture.path}:${index + 1}")
-                    val descriptor = lines.getOrNull(index + 1)?.removePrefix("descriptor: ")?.trim()
-                        ?: error("Missing descriptor after ${fixture.path}:${index + 1}")
-                    KinesisLegacyReference(owner, method, descriptor)
-                }
-            }
-        }
-        require(expected.size == 12) { "Expected exactly 12 legacy Kinesis references, found ${expected.size}" }
-
-        val outputDirectory = kinesisDryRunConsumerClasses.get().asFile
-        val javap = ProcessBuilder(
-            "javap",
-            "-classpath",
-            outputDirectory.absolutePath,
-            "-p",
-            "-c",
-            "-s",
-            "io.bluetape4k.aws.kotlin.kinesis.KinesisDryRunLegacyConsumer",
-        ).redirectErrorStream(true).start()
-        val output = javap.inputStream.bufferedReader().use { it.readText() }
-        require(javap.waitFor() == 0) { "javap failed for isolated Kinesis legacy consumer: $output" }
-        expected.forEach { reference ->
-            val token = "Method ${reference.owner}.${reference.method}:${reference.descriptor}"
-            require(token in output) { "Missing exact legacy invocation: $token" }
-        }
-    }
+    consumerClasses.set(kinesisDryRunConsumerClasses)
 }
 
 val runKinesisDryRunLegacyConsumer = tasks.register<JavaExec>("runKinesisDryRunLegacyConsumer") {
     description = "Links and runs the isolated pre-change Kinesis consumer against the production JAR."
     group = "verification"
     dependsOn(compileKinesisDryRunLegacyConsumer, ":bluetape4k-aws-kotlin:jar")
+    dependsOn(verifyKinesisDryRunLegacyRuntimeClasspath)
     mainClass.set("io.bluetape4k.aws.kotlin.kinesis.KinesisDryRunLegacyConsumer")
     classpath = files(kinesisDryRunConsumerClasses, awsKotlinProductionJar) + kinesisDryRunLegacyDependencies
-    doFirst {
-        val stubOutput = kinesisDryRunStubClasses.get().asFile.canonicalFile
-        require(classpath.files.none { it.canonicalFile == stubOutput }) {
-            "Kinesis legacy runtime classpath must not contain the pre-change stub output"
-        }
-        require(classpath.files.any { it.canonicalFile == awsKotlinProductionJar.asFile.canonicalFile }) {
-            "Kinesis legacy runtime classpath must contain the production JAR"
-        }
-    }
 }
+
+val awsJavaLegacyRequestFixtureRoot = layout.projectDirectory.dir("src/abi-fixtures/aws-java-request-pre-change")
+val awsJavaLegacyRequestStubClasses = layout.buildDirectory.dir("consumer-fixtures/aws-java-request/stub-classes")
+val awsJavaLegacyRequestConsumerClasses = layout.buildDirectory.dir("consumer-fixtures/aws-java-request/consumer-classes")
+val awsJavaProductionJar = layout.projectDirectory.file(
+    "aws-java/build/libs/bluetape4k-aws-java-${baseVersion + snapshotVersion}.jar",
+)
+
+val compileAwsJavaLegacyRequestStubs = tasks.register<JavaCompile>("compileAwsJavaLegacyRequestStubs") {
+    description = "Compiles the pre-change aws-java request-helper JVM surface without the production JAR."
+    group = "verification"
+    source(fileTree(awsJavaLegacyRequestFixtureRoot.dir("stub")) { include("**/*.java") })
+    classpath = awsJavaLegacyRequestDependencies
+    destinationDirectory.set(awsJavaLegacyRequestStubClasses)
+    options.release.set(25)
+    options.encoding = "UTF-8"
+}
+
+val compileAwsJavaLegacyRequestConsumer = tasks.register<JavaCompile>("compileAwsJavaLegacyRequestConsumer") {
+    description = "Compiles a pre-change aws-java request-helper consumer against isolated stubs."
+    group = "verification"
+    dependsOn(compileAwsJavaLegacyRequestStubs)
+    source(fileTree(awsJavaLegacyRequestFixtureRoot.dir("consumer")) { include("**/*.java") })
+    classpath = files(awsJavaLegacyRequestStubClasses) + awsJavaLegacyRequestDependencies
+    destinationDirectory.set(awsJavaLegacyRequestConsumerClasses)
+    options.release.set(25)
+    options.encoding = "UTF-8"
+}
+
+val verifyAwsJavaLegacyRequestInvocations = tasks.register<VerifyAwsJavaLegacyRequestInvocationsTask>(
+    "verifyAwsJavaLegacyRequestInvocations",
+) {
+    description = "Verifies all pre-change aws-java request-helper JVM descriptors in the compiled consumer."
+    group = "verification"
+    dependsOn(compileAwsJavaLegacyRequestConsumer)
+    baselineFile.set(awsJavaLegacyRequestFixtureRoot.file("legacy-methods.txt"))
+    consumerClasses.set(awsJavaLegacyRequestConsumerClasses)
+    consumerClassName.set("io.bluetape4k.aws.consumer.LegacyAwsJavaRequestConsumer")
+    expectedBaselineSha256.set("2f2c020fe62648cf130b6ece5bf40dba62db6e9f4e14549500c8819fa42c8bca")
+    expectedReferenceCount.set(13)
+}
+
+val runAwsJavaLegacyRequestConsumer = tasks.register<JavaExec>("runAwsJavaLegacyRequestConsumer") {
+    description = "Links the pre-change aws-java request-helper consumer against the current production JAR."
+    group = "verification"
+    dependsOn(compileAwsJavaLegacyRequestConsumer, ":bluetape4k-aws-java:jar")
+    mainClass.set("io.bluetape4k.aws.consumer.LegacyAwsJavaRequestConsumer")
+    classpath = files(awsJavaLegacyRequestConsumerClasses, awsJavaProductionJar) + awsJavaLegacyRequestDependencies
+}
+
+val awsJavaSfnInlineEvolutionFixtureRoot =
+    layout.projectDirectory.dir("src/abi-fixtures/aws-java-sfn-inline-pre-change")
+val awsJavaSfnInlineEvolutionStubClasses =
+    layout.buildDirectory.dir("consumer-fixtures/aws-java-sfn-inline/stub-classes")
+val awsJavaSfnInlineEvolutionConsumerClasses =
+    layout.buildDirectory.dir("consumer-fixtures/aws-java-sfn-inline/consumer-classes")
+
+val compileAwsJavaSfnInlineEvolutionStubs = tasks.register<JavaCompile>("compileAwsJavaSfnInlineEvolutionStubs") {
+    description = "Compiles the pre-change SFN helper JVM surface without the production JAR."
+    group = "verification"
+    source(fileTree(awsJavaSfnInlineEvolutionFixtureRoot.dir("stub")) { include("**/*.java") })
+    classpath = awsJavaSfnInlineEvolutionDependencies
+    destinationDirectory.set(awsJavaSfnInlineEvolutionStubClasses)
+    options.release.set(25)
+    options.encoding = "UTF-8"
+}
+
+val compileAwsJavaSfnInlineEvolutionConsumer = tasks.register<JavaCompile>("compileAwsJavaSfnInlineEvolutionConsumer") {
+    description = "Compiles an inline SFN consumer against the pre-change helper stubs."
+    group = "verification"
+    dependsOn(compileAwsJavaSfnInlineEvolutionStubs)
+    source(fileTree(awsJavaSfnInlineEvolutionFixtureRoot.dir("consumer")) { include("**/*.java") })
+    classpath = files(awsJavaSfnInlineEvolutionStubClasses) + awsJavaSfnInlineEvolutionDependencies
+    destinationDirectory.set(awsJavaSfnInlineEvolutionConsumerClasses)
+    options.release.set(25)
+    options.encoding = "UTF-8"
+}
+
+val verifyAwsJavaSfnInlineEvolutionInvocations = tasks.register<VerifyAwsJavaLegacyRequestInvocationsTask>(
+    "verifyAwsJavaSfnInlineEvolutionInvocations",
+) {
+    description = "Verifies the old inline SFN helper descriptors in the compiled consumer."
+    group = "verification"
+    dependsOn(compileAwsJavaSfnInlineEvolutionConsumer)
+    baselineFile.set(awsJavaSfnInlineEvolutionFixtureRoot.file("legacy-methods.txt"))
+    consumerClasses.set(awsJavaSfnInlineEvolutionConsumerClasses)
+    consumerClassName.set("io.bluetape4k.aws.consumer.SfnInlineEvolutionConsumer")
+    expectedBaselineSha256.set("0c4265797e4d019238a1d6f88eca1dd7cb06368bbb61b06bd6388f99cba6eeb1")
+    expectedReferenceCount.set(2)
+}
+
+val runAwsJavaSfnInlineEvolutionConsumer = tasks.register<JavaExec>("runAwsJavaSfnInlineEvolutionConsumer") {
+    description = "Links an old inline SFN consumer against the current production JAR."
+    group = "verification"
+    dependsOn(compileAwsJavaSfnInlineEvolutionConsumer, ":bluetape4k-aws-java:jar")
+    mainClass.set("io.bluetape4k.aws.consumer.SfnInlineEvolutionConsumer")
+    classpath = files(awsJavaSfnInlineEvolutionConsumerClasses, awsJavaProductionJar) +
+        awsJavaSfnInlineEvolutionDependencies
+}
+
+val awsKotlinS3TablesInlineEvolutionFixtureRoot =
+    layout.projectDirectory.dir("src/abi-fixtures/aws-kotlin-s3tables-inline-pre-change")
+val awsKotlinS3TablesInlineEvolutionStubClasses =
+    layout.buildDirectory.dir("consumer-fixtures/aws-kotlin-s3tables-inline/stub-classes")
+val awsKotlinS3TablesInlineEvolutionConsumerClasses =
+    layout.buildDirectory.dir("consumer-fixtures/aws-kotlin-s3tables-inline/consumer-classes")
+
+val compileAwsKotlinS3TablesInlineEvolutionStubs =
+    tasks.register<JavaCompile>("compileAwsKotlinS3TablesInlineEvolutionStubs") {
+        description = "Compiles the pre-change S3 Tables helper JVM surface without the production JAR."
+        group = "verification"
+        source(fileTree(awsKotlinS3TablesInlineEvolutionFixtureRoot.dir("stub")) { include("**/*.java") })
+        classpath = awsKotlinS3TablesInlineEvolutionDependencies
+        destinationDirectory.set(awsKotlinS3TablesInlineEvolutionStubClasses)
+        options.release.set(25)
+        options.encoding = "UTF-8"
+    }
+
+val compileAwsKotlinS3TablesInlineEvolutionConsumer =
+    tasks.register<JavaCompile>("compileAwsKotlinS3TablesInlineEvolutionConsumer") {
+        description = "Compiles an inline S3 Tables consumer against the pre-change helper stubs."
+        group = "verification"
+        dependsOn(compileAwsKotlinS3TablesInlineEvolutionStubs)
+        source(fileTree(awsKotlinS3TablesInlineEvolutionFixtureRoot.dir("consumer")) { include("**/*.java") })
+        classpath = files(awsKotlinS3TablesInlineEvolutionStubClasses) +
+            awsKotlinS3TablesInlineEvolutionDependencies
+        destinationDirectory.set(awsKotlinS3TablesInlineEvolutionConsumerClasses)
+        options.release.set(25)
+        options.encoding = "UTF-8"
+    }
+
+val verifyAwsKotlinS3TablesInlineEvolutionInvocations =
+    tasks.register<VerifyAwsJavaLegacyRequestInvocationsTask>("verifyAwsKotlinS3TablesInlineEvolutionInvocations") {
+        description = "Verifies old inline S3 Tables helper descriptors in the compiled consumer."
+        group = "verification"
+        dependsOn(compileAwsKotlinS3TablesInlineEvolutionConsumer)
+        baselineFile.set(awsKotlinS3TablesInlineEvolutionFixtureRoot.file("legacy-methods.txt"))
+        consumerClasses.set(awsKotlinS3TablesInlineEvolutionConsumerClasses)
+        consumerClassName.set("io.bluetape4k.aws.consumer.S3TablesInlineEvolutionConsumer")
+        expectedBaselineSha256.set("c8c7f9a1f0df7984ce062f5d5f7bf32499ffc84c34a2d418d5b91a88ae594265")
+        expectedReferenceCount.set(7)
+    }
+
+val runAwsKotlinS3TablesInlineEvolutionConsumer =
+    tasks.register<JavaExec>("runAwsKotlinS3TablesInlineEvolutionConsumer") {
+        description = "Links an old inline S3 Tables consumer against the current production JAR."
+        group = "verification"
+        dependsOn(compileAwsKotlinS3TablesInlineEvolutionConsumer, ":bluetape4k-aws-kotlin:jar")
+        mainClass.set("io.bluetape4k.aws.consumer.S3TablesInlineEvolutionConsumer")
+        classpath = files(awsKotlinS3TablesInlineEvolutionConsumerClasses, awsKotlinProductionJar) +
+            awsKotlinS3TablesInlineEvolutionDependencies
+    }
 
 val verifyAwsConsumerFixturePublication = tasks.register("verifyAwsConsumerFixturePublication") {
     description = "Verifies AWS service SDKs remain compileOnly in generated Java/Kotlin publication metadata."
@@ -1267,6 +1586,12 @@ val compatibilityCheck = tasks.register<WriteCompatibilityReportTask>("compatibi
             "verifyKinesisDryRunFixtureIntegrity",
             "verifyKinesisDryRunLegacyInvocations",
             "runKinesisDryRunLegacyConsumer",
+            "verifyAwsJavaLegacyRequestInvocations",
+            "runAwsJavaLegacyRequestConsumer",
+            "verifyAwsJavaSfnInlineEvolutionInvocations",
+            "runAwsJavaSfnInlineEvolutionConsumer",
+            "verifyAwsKotlinS3TablesInlineEvolutionInvocations",
+            "runAwsKotlinS3TablesInlineEvolutionConsumer",
             "compileAwsKotlinServiceConsumerFixture",
         ),
     )
@@ -1285,6 +1610,12 @@ val compatibilityCheck = tasks.register<WriteCompatibilityReportTask>("compatibi
         verifyKinesisDryRunFixtureIntegrity,
         verifyKinesisDryRunLegacyInvocations,
         runKinesisDryRunLegacyConsumer,
+        verifyAwsJavaLegacyRequestInvocations,
+        runAwsJavaLegacyRequestConsumer,
+        verifyAwsJavaSfnInlineEvolutionInvocations,
+        runAwsJavaSfnInlineEvolutionConsumer,
+        verifyAwsKotlinS3TablesInlineEvolutionInvocations,
+        runAwsKotlinS3TablesInlineEvolutionConsumer,
         compileAwsKotlinServiceConsumerFixture,
     )
     reportFile.set(layout.buildDirectory.file("reports/compatibility/compatibility-check.json"))

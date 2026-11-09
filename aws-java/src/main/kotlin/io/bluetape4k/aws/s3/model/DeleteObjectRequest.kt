@@ -96,6 +96,16 @@ inline fun deleteObjectsRequestOf(
 
     }
 
+/** Java 바이너리 호환성을 위해 builder 없는 기존 오버로드를 유지합니다. */
+@JvmName("deleteObjectsRequestOf")
+internal fun deleteObjectsRequestOfLegacy(
+    bucket: String,
+    delete: Delete,
+    requestPlayer: String? = null,
+): DeleteObjectsRequest = deleteObjectsRequest(bucket, delete) {
+    requestPlayer?.let { requestPayer(it) }
+}
+
 /**
  * 식별자 컬렉션으로 [DeleteObjectsRequest]를 생성합니다.
  *

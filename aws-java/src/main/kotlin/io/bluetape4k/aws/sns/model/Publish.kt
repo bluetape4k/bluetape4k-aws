@@ -1,12 +1,13 @@
 package io.bluetape4k.aws.sns.model
 
-import io.bluetape4k.aws.sns.validatePublishBatchRequest
 import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.awscore.AwsRequestOverrideConfiguration
 import software.amazon.awssdk.services.sns.model.MessageAttributeValue
 import software.amazon.awssdk.services.sns.model.PublishBatchRequest
 import software.amazon.awssdk.services.sns.model.PublishBatchRequestEntry
 import software.amazon.awssdk.services.sns.model.PublishRequest
+
+private const val SNS_BATCH_MAX_SIZE: Int = 10
 
 /**
  * DSL 블록으로 [PublishRequest]를 빌드합니다.
@@ -94,7 +95,7 @@ inline fun publishBatchRequestEntryOf(
 }
 
 /** SNS 배치 발행 요청을 생성하고 SNS의 1..10개·고유 ID 계약을 검증합니다. */
-inline fun publishBatchRequestOf(
+fun publishBatchRequestOf(
     topicArn: String,
     entries: List<PublishBatchRequestEntry>,
     overrideConfiguration: AwsRequestOverrideConfiguration? = null,
@@ -112,4 +113,24 @@ inline fun publishBatchRequestOf(
         .build()
     request.validatePublishBatchRequest()
     return request
+}
+
+private fun validatePublishBatchRequest(
+    topicArn: String,
+    entries: List<PublishBatchRequestEntry>,
+) {
+    topicArn.requireNotBlank("topicArn")
+    require(entries.isNotEmpty()) { "entries must not be empty." }
+    require(entries.size <= SNS_BATCH_MAX_SIZE) { "entries must contain at most 10 items." }
+
+    val ids = entries.map { entry ->
+        entry.id().requireNotBlank("entry.id")
+        entry.message().requireNotBlank("entry.message")
+        entry.id()
+    }
+    require(ids.size == ids.toSet().size) { "entries must have distinct ids." }
+}
+
+private fun PublishBatchRequest.validatePublishBatchRequest() {
+    validatePublishBatchRequest(topicArn(), publishBatchRequestEntries())
 }

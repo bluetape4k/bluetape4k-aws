@@ -23,7 +23,7 @@ import software.amazon.awssdk.services.sfn.model.StopExecutionResponse
 import java.util.concurrent.CompletableFuture
 
 /** [SfnClient]로 실행을 시작하고 AWS 원본 응답을 반환합니다. */
-inline fun SfnClient.startExecution(
+fun SfnClient.startExecution(
     stateMachineArn: String,
     name: String? = null,
     input: String? = null,
@@ -34,7 +34,7 @@ inline fun SfnClient.startExecution(
 )
 
 /** [SfnClient]로 실행을 중지하고 AWS 원본 응답을 반환합니다. */
-inline fun SfnClient.stopExecution(
+fun SfnClient.stopExecution(
     executionArn: String,
     error: String? = null,
     cause: String? = null,
@@ -42,13 +42,13 @@ inline fun SfnClient.stopExecution(
 ): StopExecutionResponse = stopExecution(stopExecutionRequestOf(executionArn, error, cause, builder))
 
 /** [SfnClient]로 실행 상세를 조회하고 AWS 원본 응답을 반환합니다. */
-inline fun SfnClient.describeExecution(
+fun SfnClient.describeExecution(
     executionArn: String,
     builder: DescribeExecutionRequest.Builder.() -> Unit = {},
 ): DescribeExecutionResponse = describeExecution(describeExecutionRequestOf(executionArn, builder))
 
 /** state machine ARN을 기준으로 실행 목록을 조회합니다. */
-inline fun SfnClient.listExecutionsByStateMachine(
+fun SfnClient.listExecutionsByStateMachine(
     stateMachineArn: String,
     statusFilter: ExecutionStatus? = null,
     maxResults: Int? = null,
@@ -64,7 +64,7 @@ inline fun SfnClient.listExecutionsByStateMachine(
         nextToken = nextToken,
         builder = builder,
     )
-    request.requireStateMachineSource(stateMachineArn)
+    request.validateStateMachineSource(stateMachineArn)
     require(request.statusFilter() != ExecutionStatus.PENDING_REDRIVE && request.redriveFilter() == null) {
         "listExecutionsByStateMachine does not support PENDING_REDRIVE or redriveFilter; " +
                 "actual statusFilter=${request.statusFilter()}, redriveFilter=${request.redriveFilter()}"
@@ -74,7 +74,7 @@ inline fun SfnClient.listExecutionsByStateMachine(
 }
 
 /** Map Run ARN을 기준으로 실행 목록을 조회합니다. */
-inline fun SfnClient.listExecutionsByMapRun(
+fun SfnClient.listExecutionsByMapRun(
     mapRunArn: String,
     statusFilter: ExecutionStatus? = null,
     redriveFilter: ExecutionRedriveFilter? = null,
@@ -91,13 +91,13 @@ inline fun SfnClient.listExecutionsByMapRun(
         nextToken = nextToken,
         builder = builder,
     )
-    request.requireMapRunSource(mapRunArn)
+    request.validateMapRunSource(mapRunArn)
     request.validateCommon()
     return listExecutions(request)
 }
 
 /** [SfnAsyncClient]의 실행 시작 요청을 [CompletableFuture]로 반환합니다. */
-inline fun SfnAsyncClient.startExecutionAsync(
+fun SfnAsyncClient.startExecutionAsync(
     stateMachineArn: String,
     name: String? = null,
     input: String? = null,
@@ -108,7 +108,7 @@ inline fun SfnAsyncClient.startExecutionAsync(
 )
 
 /** [SfnAsyncClient]의 실행 중지 요청을 [CompletableFuture]로 반환합니다. */
-inline fun SfnAsyncClient.stopExecutionAsync(
+fun SfnAsyncClient.stopExecutionAsync(
     executionArn: String,
     error: String? = null,
     cause: String? = null,
@@ -122,7 +122,7 @@ fun SfnAsyncClient.describeExecutionAsync(
 ): CompletableFuture<DescribeExecutionResponse> = describeExecution(describeExecutionRequestOf(executionArn, builder))
 
 /** state machine ARN 기준 실행 목록 조회를 [CompletableFuture]로 반환합니다. */
-inline fun SfnAsyncClient.listExecutionsByStateMachineAsync(
+fun SfnAsyncClient.listExecutionsByStateMachineAsync(
     stateMachineArn: String,
     statusFilter: ExecutionStatus? = null,
     maxResults: Int? = null,
@@ -138,7 +138,7 @@ inline fun SfnAsyncClient.listExecutionsByStateMachineAsync(
         nextToken = nextToken,
         builder = builder,
     )
-    request.requireStateMachineSource(stateMachineArn)
+    request.validateStateMachineSource(stateMachineArn)
     require(request.statusFilter() != ExecutionStatus.PENDING_REDRIVE && request.redriveFilter() == null) {
         "listExecutionsByStateMachine does not support PENDING_REDRIVE or redriveFilter; " +
                 "actual statusFilter=${request.statusFilter()}, redriveFilter=${request.redriveFilter()}"
@@ -148,7 +148,7 @@ inline fun SfnAsyncClient.listExecutionsByStateMachineAsync(
 }
 
 /** Map Run ARN 기준 실행 목록 조회를 [CompletableFuture]로 반환합니다. */
-inline fun SfnAsyncClient.listExecutionsByMapRunAsync(
+fun SfnAsyncClient.listExecutionsByMapRunAsync(
     mapRunArn: String,
     statusFilter: ExecutionStatus? = null,
     redriveFilter: ExecutionRedriveFilter? = null,
@@ -165,13 +165,13 @@ inline fun SfnAsyncClient.listExecutionsByMapRunAsync(
         nextToken = nextToken,
         builder = builder,
     )
-    request.requireMapRunSource(mapRunArn)
+    request.validateMapRunSource(mapRunArn)
     request.validateCommon()
     return listExecutions(request)
 }
 
 /** [startExecutionAsync]를 기다리는 coroutine helper입니다. */
-suspend inline fun SfnAsyncClient.startExecution(
+suspend fun SfnAsyncClient.startExecution(
     stateMachineArn: String,
     name: String? = null,
     input: String? = null,
@@ -180,7 +180,7 @@ suspend inline fun SfnAsyncClient.startExecution(
 ): StartExecutionResponse = startExecutionAsync(stateMachineArn, name, input, traceHeader, builder).await()
 
 /** [stopExecutionAsync]를 기다리는 coroutine helper입니다. */
-suspend inline fun SfnAsyncClient.stopExecution(
+suspend fun SfnAsyncClient.stopExecution(
     executionArn: String,
     error: String? = null,
     cause: String? = null,
@@ -194,7 +194,7 @@ suspend fun SfnAsyncClient.describeExecution(
 ): DescribeExecutionResponse = describeExecutionAsync(executionArn, builder).await()
 
 /** state machine ARN 기준 목록 조회를 기다리는 coroutine helper입니다. */
-suspend inline fun SfnAsyncClient.listExecutionsByStateMachine(
+suspend fun SfnAsyncClient.listExecutionsByStateMachine(
     stateMachineArn: String,
     statusFilter: ExecutionStatus? = null,
     maxResults: Int? = null,
@@ -209,7 +209,7 @@ suspend inline fun SfnAsyncClient.listExecutionsByStateMachine(
 ).await()
 
 /** Map Run ARN 기준 목록 조회를 기다리는 coroutine helper입니다. */
-suspend inline fun SfnAsyncClient.listExecutionsByMapRun(
+suspend fun SfnAsyncClient.listExecutionsByMapRun(
     mapRunArn: String,
     statusFilter: ExecutionStatus? = null,
     redriveFilter: ExecutionRedriveFilter? = null,
@@ -225,17 +225,35 @@ suspend inline fun SfnAsyncClient.listExecutionsByMapRun(
     builder,
 ).await()
 
-fun ListExecutionsRequest.requireStateMachineSource(expectedArn: String) {
+private fun ListExecutionsRequest.validateStateMachineSource(expectedArn: String) {
     require(stateMachineArn() == expectedArn && mapRunArn() == null) {
         "listExecutionsByStateMachine must retain stateMachineArn=$expectedArn and must not set mapRunArn; " +
                 "actual stateMachineArn=${stateMachineArn()}, mapRunArn=${mapRunArn()}"
     }
 }
 
-fun ListExecutionsRequest.requireMapRunSource(expectedArn: String) {
+private fun ListExecutionsRequest.validateMapRunSource(expectedArn: String) {
     require(mapRunArn() == expectedArn && stateMachineArn() == null) {
         "listExecutionsByMapRun must retain mapRunArn=$expectedArn and must not set stateMachineArn; " +
                 "actual mapRunArn=${mapRunArn()}, stateMachineArn=${stateMachineArn()}, " +
                 "statusFilter=${statusFilter()}, redriveFilter=${redriveFilter()}"
     }
+}
+
+/**
+ * 이전에 inline된 소비자의 JVM 호출을 보존하는 호환성 bridge입니다.
+ * 새 코드는 [SfnClient.listExecutionsByStateMachine]을 사용해야 합니다.
+ */
+@Deprecated("Use listExecutionsByStateMachine instead.", level = DeprecationLevel.WARNING)
+fun ListExecutionsRequest.requireStateMachineSource(expectedArn: String) {
+    validateStateMachineSource(expectedArn)
+}
+
+/**
+ * 이전에 inline된 소비자의 JVM 호출을 보존하는 호환성 bridge입니다.
+ * 새 코드는 [SfnClient.listExecutionsByMapRun]을 사용해야 합니다.
+ */
+@Deprecated("Use listExecutionsByMapRun instead.", level = DeprecationLevel.WARNING)
+fun ListExecutionsRequest.requireMapRunSource(expectedArn: String) {
+    validateMapRunSource(expectedArn)
 }

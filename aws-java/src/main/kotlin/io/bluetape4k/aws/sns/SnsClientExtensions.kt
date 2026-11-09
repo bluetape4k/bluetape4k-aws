@@ -80,7 +80,7 @@ fun SnsClient.createFIFOTopic(
 }
 
 /** 토픽 ARN과 최대 10개의 항목으로 SNS 배치 발행을 수행합니다. */
-inline fun SnsClient.publishBatch(
+fun SnsClient.publishBatch(
     topicArn: String,
     entries: List<PublishBatchRequestEntry>,
     builder: PublishBatchRequest.Builder.() -> Unit = {},

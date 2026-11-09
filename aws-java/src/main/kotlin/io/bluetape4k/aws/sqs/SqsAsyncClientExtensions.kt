@@ -206,13 +206,13 @@ fun SqsAsyncClient.sendBatchAsync(
  * // response.messages().size <= 10
  * ```
  */
-inline fun SqsAsyncClient.receiveMessagesAsync(
+fun SqsAsyncClient.receiveMessagesAsync(
     queueUrl: String,
     maxResults: Int? = null,
-    crossinline builder: ReceiveMessageRequest.Builder.() -> Unit = {},
+    builder: ReceiveMessageRequest.Builder.() -> Unit = {},
 ): CompletableFuture<ReceiveMessageResponse> {
     queueUrl.requireNotBlank("queueUrl")
-    maxResults?.let { validateReceiveMessageCount(it) }
+    maxResults?.let { validateReceiveMessageCountAsync(it) }
     return receiveMessage {
         it.queueUrl(queueUrl)
         maxResults?.run { it.maxNumberOfMessages(this) }
@@ -362,5 +362,11 @@ fun SqsAsyncClient.deleteQueueAsync(queueUrl: String): CompletableFuture<DeleteQ
     queueUrl.requireNotBlank("queueUrl")
     return deleteQueue {
         it.queueUrl(queueUrl)
+    }
+}
+
+private fun validateReceiveMessageCountAsync(maxResults: Int) {
+    require(maxResults in MIN_RECEIVE_MESSAGES..MAX_RECEIVE_MESSAGES) {
+        "maxResults must be in $MIN_RECEIVE_MESSAGES..$MAX_RECEIVE_MESSAGES, but was $maxResults"
     }
 }

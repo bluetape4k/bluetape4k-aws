@@ -1,0 +1,7 @@
+io.bluetape4k.aws.kotlin.s3tables.model.S3TablesRequestSupportKt requireSelector (Ljava/lang/String;Ljava/lang/String;)V
+io.bluetape4k.aws.kotlin.s3tables.model.S3TablesRequestSupportKt requireNamespace (Ljava/util/List;)V
+io.bluetape4k.aws.kotlin.s3tables.model.S3TablesRequestSupportKt validateList (Laws/sdk/kotlin/services/s3tables/model/ListTableBucketsRequest;Ljava/lang/Integer;Ljava/lang/String;)V
+io.bluetape4k.aws.kotlin.s3tables.model.S3TablesRequestSupportKt validateList (Laws/sdk/kotlin/services/s3tables/model/ListNamespacesRequest;Ljava/lang/Integer;Ljava/lang/String;)V
+io.bluetape4k.aws.kotlin.s3tables.model.S3TablesRequestSupportKt validateList (Laws/sdk/kotlin/services/s3tables/model/ListTablesRequest;Ljava/lang/Integer;Ljava/lang/String;)V
+io.bluetape4k.aws.kotlin.s3tables.model.S3TablesRequestSupportKt validatePage (Ljava/lang/Integer;Ljava/lang/String;)V
+io.bluetape4k.aws.kotlin.s3tables.model.S3TablesRequestSupportKt requireTableLookup (Laws/sdk/kotlin/services/s3tables/model/GetTableRequest;)V
