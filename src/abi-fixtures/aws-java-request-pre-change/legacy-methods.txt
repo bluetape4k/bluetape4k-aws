@@ -1,0 +1,13 @@
+io.bluetape4k.aws.sqs.model.DeleteMessageKt deleteMessageRequestOf (Ljava/lang/String;Ljava/lang/String;)Lsoftware/amazon/awssdk/services/sqs/model/DeleteMessageRequest;
+io.bluetape4k.aws.sqs.model.DeleteMessageKt deleteMessageBatchRequestOf (Ljava/lang/String;Ljava/util/Collection;)Lsoftware/amazon/awssdk/services/sqs/model/DeleteMessageBatchRequest;
+io.bluetape4k.aws.sqs.model.DeleteMessageKt deleteMessageBatchRequestEntryOf (Ljava/lang/String;Ljava/lang/String;)Lsoftware/amazon/awssdk/services/sqs/model/DeleteMessageBatchRequestEntry;
+io.bluetape4k.aws.kms.model.DeleteAliasRequestKt deleteAliasOf (Ljava/lang/String;)Lsoftware/amazon/awssdk/services/kms/model/DeleteAliasRequest;
+io.bluetape4k.aws.s3.model.GetObjectRequestKt getObjectRequestOf (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;)Lsoftware/amazon/awssdk/services/s3/model/GetObjectRequest;
+io.bluetape4k.aws.s3.model.HeadObjectRequestKt headObjectRequestOf (Ljava/lang/String;Ljava/lang/String;)Lsoftware/amazon/awssdk/services/s3/model/HeadObjectRequest;
+io.bluetape4k.aws.s3.model.DeleteKt deleteOfObjectsArray ([Lsoftware/amazon/awssdk/services/s3/model/ObjectIdentifier;Z)Lsoftware/amazon/awssdk/services/s3/model/Delete;
+io.bluetape4k.aws.s3.model.DeleteKt deleteOfObjectsCollection (Ljava/util/Collection;Z)Lsoftware/amazon/awssdk/services/s3/model/Delete;
+io.bluetape4k.aws.s3.model.DeleteObjectRequestKt deleteObjectsRequestOf (Ljava/lang/String;Lsoftware/amazon/awssdk/services/s3/model/Delete;Ljava/lang/String;)Lsoftware/amazon/awssdk/services/s3/model/DeleteObjectsRequest;
+io.bluetape4k.aws.kinesis.model.PutRecordKt putRecordRequestOf (Ljava/lang/String;Ljava/lang/String;Lsoftware/amazon/awssdk/core/SdkBytes;Lkotlin/jvm/functions/Function1;)Lsoftware/amazon/awssdk/services/kinesis/model/PutRecordRequest;
+io.bluetape4k.aws.sqs.SqsClientExtensionsKt validateReceiveMessageCount (I)V
+io.bluetape4k.aws.sns.SnsBatchValidationKt validatePublishBatchRequest (Ljava/lang/String;Ljava/util/List;)V
+io.bluetape4k.aws.sns.SnsBatchValidationKt validatePublishBatchRequest (Lsoftware/amazon/awssdk/services/sns/model/PublishBatchRequest;)V

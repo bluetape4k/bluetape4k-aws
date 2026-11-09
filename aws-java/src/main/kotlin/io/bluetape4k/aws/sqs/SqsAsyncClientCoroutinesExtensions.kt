@@ -108,10 +108,10 @@ suspend inline fun SqsAsyncClient.sendBatch(
  * // response.messages().size <= 5
  * ```
  */
-suspend inline fun SqsAsyncClient.receiveMessages(
+suspend fun SqsAsyncClient.receiveMessages(
     queueUrl: String,
     maxResults: Int? = null,
-    crossinline builder: ReceiveMessageRequest.Builder.() -> Unit = {},
+    builder: ReceiveMessageRequest.Builder.() -> Unit = {},
 ): ReceiveMessageResponse =
     receiveMessagesAsync(queueUrl, maxResults, builder).await()
 

@@ -6,7 +6,22 @@ import software.amazon.awssdk.services.sns.model.PublishBatchRequestEntry
 
 private const val SNS_BATCH_MAX_SIZE: Int = 10
 
+/** 이전에 inline된 소비자의 JVM 호출을 보존하는 호환성 bridge입니다. */
+@Deprecated("Use publishBatch instead.", level = DeprecationLevel.WARNING)
 fun validatePublishBatchRequest(
+    topicArn: String,
+    entries: List<PublishBatchRequestEntry>,
+) {
+    validatePublishBatchRequestInternal(topicArn, entries)
+}
+
+/** 이전에 inline된 소비자의 JVM 호출을 보존하는 호환성 bridge입니다. */
+@Deprecated("Use publishBatch instead.", level = DeprecationLevel.WARNING)
+fun PublishBatchRequest.validatePublishBatchRequest() {
+    validatePublishBatchRequestInternal(topicArn(), publishBatchRequestEntries())
+}
+
+private fun validatePublishBatchRequestInternal(
     topicArn: String,
     entries: List<PublishBatchRequestEntry>,
 ) {
@@ -20,8 +35,4 @@ fun validatePublishBatchRequest(
         entry.id()
     }
     require(ids.size == ids.toSet().size) { "entries must have distinct ids." }
-}
-
-fun PublishBatchRequest.validatePublishBatchRequest() {
-    validatePublishBatchRequest(topicArn(), publishBatchRequestEntries())
 }

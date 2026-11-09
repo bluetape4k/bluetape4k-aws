@@ -56,6 +56,16 @@ inline fun deleteMessageRequestOf(
 }
 
 /**
+ * 이전 버전의 JVM 호출 호환성을 유지하면서 기본 요청을 생성합니다.
+ *
+ * @see deleteMessageRequestOf
+ */
+fun deleteMessageRequestOf(
+    queueUrl: String,
+    receiptHandle: String,
+): DeleteMessageRequest = deleteMessageRequestOf(queueUrl, receiptHandle) {}
+
+/**
  * 제공된 초기화자를 사용하여 DeleteMessageBatchRequest를 구성합니다.
  *
  * @param builder DeleteMessageBatchRequest.Builder를 초기화하는 람다입니다.
@@ -101,6 +111,16 @@ inline fun deleteMessageBatchRequestOf(
         builder()
     }
 }
+
+/**
+ * 이전 버전의 JVM 호출 호환성을 유지하면서 기본 배치 요청을 생성합니다.
+ *
+ * @see deleteMessageBatchRequestOf
+ */
+fun deleteMessageBatchRequestOf(
+    queueUrl: String,
+    entries: Collection<DeleteMessageBatchRequestEntry>,
+): DeleteMessageBatchRequest = deleteMessageBatchRequestOf(queueUrl, entries) {}
 
 /**
  * 제공된 초기화자를 사용하여 DeleteMessageBatchRequestEntry를 구성합니다.
@@ -149,3 +169,13 @@ inline fun deleteMessageBatchRequestEntryOf(
         builder()
     }
 }
+
+/**
+ * 이전 버전의 JVM 호출 호환성을 유지하면서 기본 배치 항목을 생성합니다.
+ *
+ * @see deleteMessageBatchRequestEntryOf
+ */
+fun deleteMessageBatchRequestEntryOf(
+    id: String,
+    receiptHandle: String,
+): DeleteMessageBatchRequestEntry = deleteMessageBatchRequestEntryOf(id, receiptHandle) {}

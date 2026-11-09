@@ -5,8 +5,11 @@ import software.amazon.awssdk.services.sns.SnsAsyncClient
 import software.amazon.awssdk.services.sns.model.CreatePlatformEndpointResponse
 import software.amazon.awssdk.services.sns.model.CreateTopicResponse
 import software.amazon.awssdk.services.sns.model.PublishBatchRequest
+import software.amazon.awssdk.services.sns.model.PublishBatchRequestEntry
 import software.amazon.awssdk.services.sns.model.PublishBatchResponse
 import java.util.concurrent.CompletableFuture
+
+private const val SNS_BATCH_MAX_SIZE: Int = 10
 
 /**
  * 디바이스 [token]과 플랫폼 애플리케이션 ARN으로 SNS 플랫폼 엔드포인트를 비동기로 생성합니다.
@@ -86,6 +89,26 @@ fun SnsAsyncClient.createFIFOTopicAsync(
 fun SnsAsyncClient.publishBatchAsync(
     request: PublishBatchRequest,
 ): CompletableFuture<PublishBatchResponse> {
-    request.validatePublishBatchRequest()
+    request.validatePublishBatchRequestLocal()
     return publishBatch(request)
+}
+
+private fun validatePublishBatchRequestLocal(
+    topicArn: String,
+    entries: List<PublishBatchRequestEntry>,
+) {
+    topicArn.requireNotBlank("topicArn")
+    require(entries.isNotEmpty()) { "entries must not be empty." }
+    require(entries.size <= SNS_BATCH_MAX_SIZE) { "entries must contain at most 10 items." }
+
+    val ids = entries.map { entry ->
+        entry.id().requireNotBlank("entry.id")
+        entry.message().requireNotBlank("entry.message")
+        entry.id()
+    }
+    require(ids.size == ids.toSet().size) { "entries must have distinct ids." }
+}
+
+private fun PublishBatchRequest.validatePublishBatchRequestLocal() {
+    validatePublishBatchRequestLocal(topicArn(), publishBatchRequestEntries())
 }

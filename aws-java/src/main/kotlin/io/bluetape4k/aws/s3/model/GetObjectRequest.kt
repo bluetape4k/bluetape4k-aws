@@ -48,3 +48,15 @@ inline fun getObjectRequestOf(
         partNumber?.let { partNumber(it) }
         builder()
     }
+
+/**
+ * 이전 버전의 JVM 호출 호환성을 유지하면서 선택 속성을 적용한 요청을 생성합니다.
+ *
+ * @see getObjectRequestOf
+ */
+fun getObjectRequestOf(
+    bucket: String,
+    key: String,
+    versionId: String?,
+    partNumber: Int?,
+): GetObjectRequest = getObjectRequestOf(bucket, key, versionId, partNumber) {}

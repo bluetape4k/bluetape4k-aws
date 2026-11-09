@@ -40,6 +40,16 @@ inline fun deleteOf(
         builder()
     }
 
+/** Java 바이너리 호환성을 위해 builder 없는 배열 오버로드를 유지합니다. */
+@JvmName("deleteOfObjectsArray")
+internal fun deleteOfObjectsArrayLegacy(
+    vararg objectIds: ObjectIdentifier,
+    quiet: Boolean = false,
+): Delete = delete {
+    objects(objectIds.toList())
+    quiet(quiet)
+}
+
 /**
  * [ObjectIdentifier] 컬렉션으로 [Delete]를 생성합니다.
  *
@@ -61,3 +71,13 @@ inline fun deleteOf(
         quiet(quiet)
         builder()
     }
+
+/** Java 바이너리 호환성을 위해 builder 없는 컬렉션 오버로드를 유지합니다. */
+@JvmName("deleteOfObjectsCollection")
+internal fun deleteOfObjectsCollectionLegacy(
+    objectIds: Collection<ObjectIdentifier>,
+    quiet: Boolean = false,
+): Delete = delete {
+    objects(objectIds)
+    quiet(quiet)
+}

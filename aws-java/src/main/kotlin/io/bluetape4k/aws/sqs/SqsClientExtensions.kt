@@ -200,7 +200,7 @@ fun SqsClient.receiveMessages(
     builder: ReceiveMessageRequest.Builder.() -> Unit = {},
 ): ReceiveMessageResponse {
     queueUrl.requireNotBlank("queueUrl")
-    maxResults?.let { validateReceiveMessageCount(it) }
+    maxResults?.let { validateReceiveMessageCountInternal(it) }
 
     return receiveMessage {
         it.queueUrl(queueUrl)
@@ -355,8 +355,14 @@ fun SqsClient.deleteQueue(queueUrl: String): DeleteQueueResponse {
     }
 }
 
-fun validateReceiveMessageCount(maxResults: Int) {
+private fun validateReceiveMessageCountInternal(maxResults: Int) {
     require(maxResults in MIN_RECEIVE_MESSAGES..MAX_RECEIVE_MESSAGES) {
         "maxResults must be in $MIN_RECEIVE_MESSAGES..$MAX_RECEIVE_MESSAGES, but was $maxResults"
     }
+}
+
+/** 이전에 inline된 소비자의 JVM 호출을 보존하는 호환성 bridge입니다. */
+@Deprecated("Use receiveMessages instead.", level = DeprecationLevel.WARNING)
+fun validateReceiveMessageCount(maxResults: Int) {
+    validateReceiveMessageCountInternal(maxResults)
 }

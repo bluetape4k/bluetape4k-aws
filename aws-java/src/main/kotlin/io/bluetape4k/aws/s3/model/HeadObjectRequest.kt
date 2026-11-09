@@ -32,3 +32,10 @@ inline fun headObjectRequestOf(
         .apply(builder)
         .build()
 }
+
+/**
+ * 이전 버전의 JVM 호출 호환성을 유지하면서 기본 요청을 생성합니다.
+ *
+ * @see headObjectRequestOf
+ */
+fun headObjectRequestOf(bucket: String, key: String): HeadObjectRequest = headObjectRequestOf(bucket, key) {}
