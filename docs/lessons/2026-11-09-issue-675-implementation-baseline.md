@@ -1,4 +1,4 @@
-# Issue #675 implementation baseline stale fixture
+# Issue #675 구현 기준선 fixture 불일치
 
 ## 배경
 
