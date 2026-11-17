@@ -237,6 +237,27 @@ jobs:
               - '.github/workflows/ci.yml'
               - '.github/scripts/**'
 
+  documentation-contract:
+    name: Documentation contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: validate-wrapper
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
+        with:
+          repository: bluetape4k/bluetape4k.github.io
+          ref: develop
+          path: .manual-site
+          fetch-depth: 1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Verify README and central manual documentation contracts
+        env:
+          BLUETAPE4K_MANUAL_ROOT: ${{ github.workspace }}/.manual-site/docs/manual/bluetape4k-aws
+        run: python3 .github/scripts/test_documentation_contract.py -v
+
   catalog-governance:
     name: Central Catalog Governance
     runs-on: ubuntu-latest
@@ -897,6 +918,7 @@ jobs:
       - catalog-governance
       - gitleaks
       - validate-disabled-annotations
+      - documentation-contract
       - changes
       - build
       - coverage-report
