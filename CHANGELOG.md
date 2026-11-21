@@ -21,6 +21,14 @@
 - IMDS plugin 소유 HTTP transport는 EC2 link-local endpoint와 테스트용 명시적 loopback endpoint만 허용합니다. 원격 HTTP override는 거부하고 system proxy, redirect, connection retry를 사용하지 않습니다 ([#659](https://github.com/bluetape4k/bluetape4k-aws/issues/659)).
 - `1.0.0` 정식 배포 후 다음 minor 개발선을 `1.1.0-SNAPSHOT`으로 열었다.
 
+## [1.1.0] - 2026-11-21
+
+### 변경
+
+- AWS Java SDK Apache HTTP transport를 Apache HttpComponents 5로 전환하고
+  AWS SDK for Kotlin 기반 service/helper API와 안전한 IMDS transport 경계를
+  정렬했습니다.
+
 ## [1.0.0] - 2026-09-02
 
 ### 추가
