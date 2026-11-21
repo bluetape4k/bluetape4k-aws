@@ -26,7 +26,7 @@ dependencies {
 
     // AWS SDK v2 Core (via BOM)
     api(libs.aws2.aws.core)
-    api(libs.aws2.apache.client)
+    api(libs.aws2.apache5.client)
     api(libs.aws2.aws.crt.client)
     api(libs.aws2.netty.nio.client)
     compileOnly(libs.aws2.url.connection.client)

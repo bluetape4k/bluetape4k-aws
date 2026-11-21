@@ -1947,7 +1947,7 @@ subprojects {
 
             dependency("org.testcontainers:testcontainers-postgresql:${bt4kVersion("testcontainers")}")
 
-            dependency("software.amazon.awssdk:apache-client:${bt4kVersion("aws2")}")
+            dependency("software.amazon.awssdk:apache5-client:${bt4kVersion("aws2")}")
 
             dependency("software.amazon.awssdk:auth:${bt4kVersion("aws2")}")
 

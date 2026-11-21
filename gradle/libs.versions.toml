@@ -90,7 +90,7 @@ spring-cloud-aws-starter-secretsmanager = { module = "io.awspring.cloud:spring-c
 aws2-aws-core = { module = "software.amazon.awssdk:aws-core" }
 aws2-sdk-core = { module = "software.amazon.awssdk:sdk-core" }
 aws2-auth = { module = "software.amazon.awssdk:auth" }
-aws2-apache-client = { module = "software.amazon.awssdk:apache-client" }
+aws2-apache5-client = { module = "software.amazon.awssdk:apache5-client" }
 aws2-aws-crt-client = { module = "software.amazon.awssdk:aws-crt-client" }
 aws2-netty-nio-client = { module = "software.amazon.awssdk:netty-nio-client" }
 aws2-url-connection-client = { module = "software.amazon.awssdk:url-connection-client" }
