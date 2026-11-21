@@ -2,7 +2,7 @@ package io.bluetape4k.aws.http
 
 import io.bluetape4k.utils.ShutdownQueue
 import software.amazon.awssdk.http.SdkHttpClient
-import software.amazon.awssdk.http.apache.ApacheHttpClient
+import software.amazon.awssdk.http.apache5.Apache5HttpClient
 import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient
 
 /**
@@ -25,7 +25,7 @@ object SdkHttpClientProvider {
      * Apache 기반 동기 HTTP 클라이언트를 제공합니다.
      *
      * ## 동작/계약
-     * - [ApacheHttpClient] 빌더 기본값으로 클라이언트를 생성한다.
+     * - [Apache5HttpClient] 빌더 기본값으로 클라이언트를 생성한다.
      * - 생성 직후 [ShutdownQueue]에 등록한 인스턴스를 캐시해 재사용한다.
      *
      * ```kotlin
@@ -49,7 +49,7 @@ object SdkHttpClientProvider {
          * ```
          */
         val httpClient: SdkHttpClient by lazy {
-            ApacheHttpClient.builder().build()
+            Apache5HttpClient.builder().build()
                 .apply(ShutdownQueue::register)
         }
     }
