@@ -7,9 +7,9 @@
 
 English | [한국어](./README.ko.md)
 
-Current stable version: `1.0.0`
+Current stable version: `1.1.0`
 
-Current development line: `1.1.0-SNAPSHOT` on `develop`
+Current development line: `1.2.0-SNAPSHOT` on `develop`
 
 ![Bluetape4k AWS workbench](./docs/assets/aws-workbench.png)
 
@@ -19,7 +19,7 @@ Ktor 3 integration for bluetape4k services that need AWS without committing to
 one application stack.
 
 For task-oriented guidance, SDK and framework choices, lifecycle rules, and
-runnable learning paths, use the [AWS manual](https://bluetape4k.github.io/manual/bluetape4k-aws/1.0/). This
+runnable learning paths, use the [AWS manual](https://bluetape4k.github.io/manual/bluetape4k-aws/). This
 README remains a repository overview; the manual is the detailed source of
 truth.
 

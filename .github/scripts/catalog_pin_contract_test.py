@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-TARGET_REF = "c3605117f0d5f7c7ac8b15147a978c145847577b"
+TARGET_REF = "7a5995fd46031ce1faf16337fa08d954436f8f9a"
 
 
 def require_match(pattern: str, text: str, label: str) -> re.Match[str]:

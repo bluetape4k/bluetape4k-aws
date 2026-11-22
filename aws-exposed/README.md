@@ -34,7 +34,7 @@ This module does not fetch AWS values by itself. Spring Boot and Ktor adapters r
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k.aws:bluetape4k-aws-exposed:1.0.0")
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-exposed:1.1.0")
 }
 ```
 
