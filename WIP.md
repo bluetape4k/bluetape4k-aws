@@ -1,6 +1,6 @@
 # WIP - bluetape4k-aws
 
-- 기준일: 2026-09-02 KST
+- 기준일: 2026-11-23 KST
 - 최신 안정 버전: `1.1.0`
 - 안정 tag commit: `bd271678c5a4dc16655280479c593894cfbb0cfa`
 - 현재 개발선: `1.2.0-SNAPSHOT`

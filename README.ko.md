@@ -19,7 +19,7 @@
 얇게 유지합니다.
 
 SDK와 framework 선택, lifecycle 원칙, 실전 예제 중심의 학습 경로는
-[AWS 매뉴얼](https://bluetape4k.github.io/ko/manual/bluetape4k-aws/1.1/)에서 자세히 설명합니다. README는 저장소를
+[AWS 매뉴얼](https://bluetape4k.github.io/ko/manual/bluetape4k-aws/)에서 자세히 설명합니다. README는 저장소를
 빠르게 둘러보는 문서이고, 상세 설명의 기준은 매뉴얼입니다.
 
 ---
