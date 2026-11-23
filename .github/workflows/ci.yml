@@ -272,7 +272,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
-      - uses: actions/setup-java@v6.2.0
+      - uses: actions/setup-java@v6.3.0
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: ${{ env.JAVA_DISTRIBUTION }}
@@ -301,7 +301,7 @@ jobs:
     needs: [validate-wrapper, changes, catalog-governance]
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6.2.0
+      - uses: actions/setup-java@v6.3.0
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: ${{ env.JAVA_DISTRIBUTION }}
@@ -341,7 +341,7 @@ jobs:
     if: ${{ needs.changes.outputs.compatibility == 'true' || github.event_name == 'workflow_dispatch' }}
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6.2.0
+      - uses: actions/setup-java@v6.3.0
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: ${{ env.JAVA_DISTRIBUTION }}
@@ -372,7 +372,7 @@ jobs:
     if: ${{ needs.changes.outputs['aws'] == 'true' || github.event_name == 'workflow_dispatch' }}
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6.2.0
+      - uses: actions/setup-java@v6.3.0
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: ${{ env.JAVA_DISTRIBUTION }}
@@ -420,7 +420,7 @@ jobs:
     if: ${{ needs.changes.outputs['aws-kotlin'] == 'true' || github.event_name == 'workflow_dispatch' }}
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6.2.0
+      - uses: actions/setup-java@v6.3.0
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: ${{ env.JAVA_DISTRIBUTION }}
@@ -494,7 +494,7 @@ jobs:
     if: ${{ needs.changes.outputs['aws-spring-boot'] == 'true' || github.event_name == 'workflow_dispatch' }}
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6.2.0
+      - uses: actions/setup-java@v6.3.0
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: ${{ env.JAVA_DISTRIBUTION }}
@@ -542,7 +542,7 @@ jobs:
     if: ${{ needs.changes.outputs['aws-exposed'] == 'true' || github.event_name == 'workflow_dispatch' }}
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6.2.0
+      - uses: actions/setup-java@v6.3.0
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: ${{ env.JAVA_DISTRIBUTION }}
@@ -590,7 +590,7 @@ jobs:
     if: ${{ needs.changes.outputs['aws-ktor'] == 'true' || github.event_name == 'workflow_dispatch' }}
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6.2.0
+      - uses: actions/setup-java@v6.3.0
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: ${{ env.JAVA_DISTRIBUTION }}
@@ -638,7 +638,7 @@ jobs:
     if: ${{ needs.changes.outputs['aws-spring-boot-exposed-examples'] == 'true' || github.event_name == 'workflow_dispatch' }}
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6.2.0
+      - uses: actions/setup-java@v6.3.0
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: ${{ env.JAVA_DISTRIBUTION }}
@@ -679,7 +679,7 @@ jobs:
       }}
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6.2.0
+      - uses: actions/setup-java@v6.3.0
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: ${{ env.JAVA_DISTRIBUTION }}
@@ -729,7 +729,7 @@ jobs:
     if: ${{ needs.changes.outputs['aws-ktor-exposed-examples'] == 'true' || github.event_name == 'workflow_dispatch' }}
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6.2.0
+      - uses: actions/setup-java@v6.3.0
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: ${{ env.JAVA_DISTRIBUTION }}
@@ -764,7 +764,7 @@ jobs:
     if: ${{ needs.changes.outputs['aws-ktor-service-coverage-examples'] == 'true' || github.event_name == 'workflow_dispatch' }}
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6.2.0
+      - uses: actions/setup-java@v6.3.0
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: ${{ env.JAVA_DISTRIBUTION }}
@@ -805,7 +805,7 @@ jobs:
       }}
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6.2.0
+      - uses: actions/setup-java@v6.3.0
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: ${{ env.JAVA_DISTRIBUTION }}
